@@ -18,34 +18,34 @@ import (
 	"go.admiral.io/admiral/internal/middleware"
 )
 
-// Test helper to create a logger with observer for log inspection
+// Test helper to create a logger with observer for log inspection.
 func createTestLogger() (*zap.Logger, *observer.ObservedLogs) {
 	core, logs := observer.New(zapcore.DebugLevel)
 	logger := zap.New(core)
 	return logger, logs
 }
 
-// Mock request structure for testing
+// Mock request structure for testing.
 type mockRequest struct {
 	Data string `json:"data"`
 }
 
-// Mock response structure for testing
+// Mock response structure for testing.
 type mockResponse struct {
 	Result string `json:"result"`
 }
 
-// Mock handler that returns success
+// Mock handler that returns success.
 func successHandler(ctx context.Context, req interface{}) (interface{}, error) {
 	return &mockResponse{Result: "success"}, nil
 }
 
-// Mock handler that returns an error
+// Mock handler that returns an error.
 func errorHandler(ctx context.Context, req interface{}) (interface{}, error) {
 	return nil, status.Error(codes.InvalidArgument, "test error")
 }
 
-// Mock handler that returns a specific error code
+// Mock handler that returns a specific error code.
 func customErrorHandler(code codes.Code, message string) grpc.UnaryHandler {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		return nil, status.Error(code, message)
@@ -551,7 +551,7 @@ func TestMid_LogFields(t *testing.T) {
 	})
 }
 
-// Helper function to find a field by key in zap context
+// Helper function to find a field by key in zap context.
 func findField(fields []zapcore.Field, key string) *zapcore.Field {
 	for _, field := range fields {
 		if field.Key == key {
@@ -561,7 +561,7 @@ func findField(fields []zapcore.Field, key string) *zapcore.Field {
 	return nil
 }
 
-// Benchmark tests for performance measurement
+// Benchmark tests for performance measurement.
 func BenchmarkNew(b *testing.B) {
 	logger, _ := createTestLogger()
 	scope := tally.NewTestScope("benchmark", nil)

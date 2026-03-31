@@ -523,7 +523,7 @@ func TestRuntimeStatCollector_MetricValues(t *testing.T) {
 	})
 }
 
-// Benchmark tests for performance measurement
+// Benchmark tests for performance measurement.
 func BenchmarkNewRuntimeStats(b *testing.B) {
 	scope := tally.NewTestScope("benchmark", nil)
 	cfg := &config.GoRuntimeStats{

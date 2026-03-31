@@ -14,7 +14,7 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
-// Test helper to create a logger and capture output
+// Test helper to create a logger and capture output.
 func createTestLogger() (*zap.Logger, *bytes.Buffer, *bufio.Writer) {
 	var b bytes.Buffer
 	w := bufio.NewWriter(&b)
@@ -28,14 +28,14 @@ func createTestLogger() (*zap.Logger, *bytes.Buffer, *bufio.Writer) {
 	return logger, &b, w
 }
 
-// Test helper to flush logger and get output
+// Test helper to flush logger and get output.
 func flushAndGetOutput(t *testing.T, logger *zap.Logger, w *bufio.Writer, b *bytes.Buffer) string {
 	require.NoError(t, logger.Sync())
 	require.NoError(t, w.Flush())
 	return b.String()
 }
 
-// Test helper to parse JSON log output
+// Test helper to parse JSON log output.
 func parseLogOutput(t *testing.T, output string) map[string]interface{} {
 	var logData map[string]interface{}
 	err := json.Unmarshal([]byte(output), &logData)
@@ -572,7 +572,7 @@ func TestLogReporter_EdgeCases(t *testing.T) {
 	})
 }
 
-// Benchmark tests for performance measurement
+// Benchmark tests for performance measurement.
 func BenchmarkLogReporter_ReportCounter(b *testing.B) {
 	logger, _, _ := createTestLogger()
 	reporter := NewLogReporter(logger).(*logReporter)

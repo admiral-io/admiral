@@ -22,7 +22,7 @@ func (c *Config) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	return nil
 }
 
-// NewConfig creates a logger config with sensible defaults
+// NewConfig creates a logger config with sensible defaults.
 func NewConfig() *Config {
 	return &Config{
 		Level:     zapcore.InfoLevel,
@@ -31,25 +31,25 @@ func NewConfig() *Config {
 	}
 }
 
-// WithLevel sets the log level
+// WithLevel sets the log level.
 func (c *Config) WithLevel(level zapcore.Level) *Config {
 	c.Level = level
 	return c
 }
 
-// WithPretty enables/disables pretty printing
+// WithPretty enables/disables pretty printing.
 func (c *Config) WithPretty(pretty bool) *Config {
 	c.Pretty = pretty
 	return c
 }
 
-// WithNamespace sets the namespace for field grouping
+// WithNamespace sets the namespace for field grouping.
 func (c *Config) WithNamespace(namespace string) *Config {
 	c.Namespace = namespace
 	return c
 }
 
-// Development returns a config suitable for development
+// Development returns a config suitable for development.
 func Development() *Config {
 	return &Config{
 		Level:     zapcore.DebugLevel,
@@ -58,7 +58,7 @@ func Development() *Config {
 	}
 }
 
-// Production returns a config suitable for production
+// Production returns a config suitable for production.
 func Production() *Config {
 	return &Config{
 		Level:     zapcore.InfoLevel,

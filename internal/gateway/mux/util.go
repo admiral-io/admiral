@@ -13,6 +13,6 @@ func isBrowser(h http.Header) bool {
 			return true
 		}
 	}
-	
+
 	return false
 }

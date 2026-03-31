@@ -20,34 +20,34 @@ import (
 	"go.admiral.io/admiral/internal/middleware"
 )
 
-// Test helper to create a logger with observer for log inspection
+// Test helper to create a logger with observer for log inspection.
 func createTestLogger() (*zap.Logger, *observer.ObservedLogs) {
 	core, logs := observer.New(zapcore.DebugLevel)
 	logger := zap.New(core)
 	return logger, logs
 }
 
-// Mock request structure for testing
+// Mock request structure for testing.
 type mockRequest struct {
 	Data string `json:"data"`
 }
 
-// Mock response structure for testing
+// Mock response structure for testing.
 type mockResponse struct {
 	Result string `json:"result"`
 }
 
-// Mock handler that returns success immediately
+// Mock handler that returns success immediately.
 func fastSuccessHandler(ctx context.Context, req interface{}) (interface{}, error) {
 	return &mockResponse{Result: "success"}, nil
 }
 
-// Mock handler that returns error immediately
+// Mock handler that returns error immediately.
 func fastErrorHandler(ctx context.Context, req interface{}) (interface{}, error) {
 	return nil, status.Error(codes.InvalidArgument, "test error")
 }
 
-// Mock handler that sleeps for specified duration
+// Mock handler that sleeps for specified duration.
 func slowHandler(duration time.Duration) grpc.UnaryHandler {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		timer := time.NewTimer(duration)
@@ -62,7 +62,7 @@ func slowHandler(duration time.Duration) grpc.UnaryHandler {
 	}
 }
 
-// Mock handler that respects context deadline
+// Mock handler that respects context deadline.
 func contextAwareHandler(duration time.Duration) grpc.UnaryHandler {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		deadline, hasDeadline := ctx.Deadline()
@@ -878,7 +878,7 @@ func TestConstants(t *testing.T) {
 	})
 }
 
-// Benchmark tests for performance measurement
+// Benchmark tests for performance measurement.
 func BenchmarkNew(b *testing.B) {
 	logger, _ := createTestLogger()
 	scope := tally.NewTestScope("benchmark", nil)

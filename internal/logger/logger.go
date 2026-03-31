@@ -5,12 +5,12 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
-// New creates a logger instance using the simple logger configuration
+// New creates a logger instance using the simple logger configuration.
 func New(cfg *Config, component string) (*zap.Logger, error) {
 	return NewWithCore(cfg, component, nil)
 }
 
-// NewFromLevel creates a logger with just a log level and component
+// NewFromLevel creates a logger with just a log level and component.
 func NewFromLevel(level zapcore.Level, component string) (*zap.Logger, error) {
 	cfg := &Config{
 		Level:     level,
@@ -20,13 +20,13 @@ func NewFromLevel(level zapcore.Level, component string) (*zap.Logger, error) {
 	return New(cfg, component)
 }
 
-// NewSimple creates a logger with sensible defaults (Info level, production mode)
+// NewSimple creates a logger with sensible defaults (Info level, production mode).
 func NewSimple(component string) (*zap.Logger, error) {
 	return NewFromLevel(zapcore.InfoLevel, component)
 }
 
 // NewWithCore creates a logger with optional custom core (primarily for testing)
-// This is the main logger creation function that all other functions delegate to
+// This is the main logger creation function that all other functions delegate to.
 func NewWithCore(cfg *Config, component string, customCore zapcore.Core) (*zap.Logger, error) {
 	var zapConfig zap.Config
 	var opts []zap.Option
@@ -67,7 +67,7 @@ func NewWithCore(cfg *Config, component string, customCore zapcore.Core) (*zap.L
 }
 
 // NewBootstrap creates a simple production logger for bootstrap operations
-// This is used during configuration loading when we don't yet have config
+// This is used during configuration loading when we don't yet have config.
 func NewBootstrap() *zap.Logger {
 	cfg := zap.NewProductionConfig()
 	cfg.DisableStacktrace = true
@@ -80,29 +80,28 @@ func NewBootstrap() *zap.Logger {
 }
 
 // NewDevelopment creates a development logger with sensible defaults
-// Useful for local development and debugging
+// Useful for local development and debugging.
 func NewDevelopment() (*zap.Logger, error) {
 	return zap.NewDevelopment(zap.AddStacktrace(zap.ErrorLevel))
 }
 
 // NewProduction creates a production logger with sensible defaults
-// Useful when you need a logger but don't have configuration
+// Useful when you need a logger but don't have configuration.
 func NewProduction() (*zap.Logger, error) {
 	return zap.NewProduction()
 }
 
 // NewNop creates a no-op logger that discards all logs
-// Useful for testing when you don't care about log output
+// Useful for testing when you don't care about log output.
 func NewNop() *zap.Logger {
 	return zap.NewNop()
 }
 
 // Must is a helper that wraps a logger creation function and panics on error
-// Useful for cases where you know the logger creation cannot fail
+// Useful for cases where you know the logger creation cannot fail.
 func Must(logger *zap.Logger, err error) *zap.Logger {
 	if err != nil {
 		panic(err)
 	}
 	return logger
 }
-

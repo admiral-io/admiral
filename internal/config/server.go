@@ -10,13 +10,13 @@ import (
 )
 
 type Server struct {
-	Listener             Listener   `yaml:"listener"`
-	Timeouts             Timeouts   `yaml:"timeouts"`
+	Listener             Listener       `yaml:"listener"`
+	Timeouts             Timeouts       `yaml:"timeouts"`
 	Logger               *logger.Config `yaml:"logger"`
-	AccessLog            *AccessLog `yaml:"access_log"`
-	Stats                *Stats     `yaml:"stats"`
-	EnablePprof          bool       `yaml:"enable_pprof"`
-	MaxResponseSizeBytes int        `yaml:"max_response_size_bytes"`
+	AccessLog            *AccessLog     `yaml:"access_log"`
+	Stats                *Stats         `yaml:"stats"`
+	EnablePprof          bool           `yaml:"enable_pprof"`
+	MaxResponseSizeBytes int            `yaml:"max_response_size_bytes"`
 }
 
 func (s *Server) SetDefaults() {

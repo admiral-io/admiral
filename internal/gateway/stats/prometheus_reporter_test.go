@@ -12,7 +12,7 @@ import (
 	tallyprom "github.com/uber-go/tally/v4/prometheus"
 )
 
-// Global test reporter to avoid route conflicts
+// Global test reporter to avoid route conflicts.
 var (
 	testReporter tallyprom.Reporter
 	testOnce     sync.Once
@@ -214,7 +214,7 @@ func TestPrometheusReporter_HTTPHandlerContent(t *testing.T) {
 	})
 }
 
-// Benchmark tests for performance measurement
+// Benchmark tests for performance measurement.
 func BenchmarkNewPrometheusReporter(b *testing.B) {
 	// Skip benchmark to avoid route conflicts
 	b.Skip("Skipping to avoid /metrics route conflicts")

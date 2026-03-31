@@ -12,6 +12,10 @@ import (
 
 	"github.com/uber-go/tally/v4"
 	tallyprom "github.com/uber-go/tally/v4/prometheus"
+	"go.uber.org/zap"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
+
 	"go.admiral.io/admiral/internal/config"
 	"go.admiral.io/admiral/internal/endpoint"
 	"go.admiral.io/admiral/internal/gateway/meta"
@@ -23,9 +27,6 @@ import (
 	"go.admiral.io/admiral/internal/middleware/errorintercept"
 	"go.admiral.io/admiral/internal/middleware/timeouts"
 	"go.admiral.io/admiral/internal/service"
-	"go.uber.org/zap"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 )
 
 type ComponentFactory struct {
@@ -39,7 +40,7 @@ func Run(cfg *config.Config, cf *ComponentFactory, assets http.FileSystem) { //n
 	if err != nil {
 		panic(err)
 	}
-	defer log.Sync()
+	defer func() { _ = log.Sync() }()
 
 	// Initialize metrics scope and optional Prometheus HTTP handler.
 	scopeOpts, metricsHandler := getStatsReporterConfiguration(cfg, log)
