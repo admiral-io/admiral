@@ -4,6 +4,8 @@ import (
 	"go.admiral.io/admiral/internal/endpoint"
 	"go.admiral.io/admiral/internal/endpoint/healthcheck"
 	"go.admiral.io/admiral/internal/middleware"
+	"go.admiral.io/admiral/internal/middleware/authn"
+	"go.admiral.io/admiral/internal/middleware/authz"
 	"go.admiral.io/admiral/internal/middleware/stats"
 	"go.admiral.io/admiral/internal/middleware/validate"
 	"go.admiral.io/admiral/internal/service"
@@ -15,8 +17,10 @@ var Services = service.Factory{
 }
 
 var Middleware = middleware.Factory{
-	validate.Name: validate.New,
-	stats.Name:    stats.New,
+	{Name: stats.Name, Factory: stats.New},
+	{Name: authn.Name, Factory: authn.New},
+	{Name: authz.Name, Factory: authz.New},
+	{Name: validate.Name, Factory: validate.New},
 }
 
 var Endpoints = endpoint.Factory{

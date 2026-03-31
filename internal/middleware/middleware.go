@@ -15,7 +15,12 @@ type Middleware interface {
 	UnaryInterceptor() grpc.UnaryServerInterceptor
 }
 
-type Factory map[string]func(*config.Config, *zap.Logger, tally.Scope) (Middleware, error)
+type OrderedFactoryEntry struct {
+	Name    string
+	Factory func(*config.Config, *zap.Logger, tally.Scope) (Middleware, error)
+}
+
+type Factory []OrderedFactoryEntry
 
 func SplitFullMethod(fullMethod string) (service string, method string, ok bool) {
 	s := strings.SplitN(fullMethod, "/", 3)

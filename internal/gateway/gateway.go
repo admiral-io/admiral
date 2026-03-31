@@ -98,12 +98,12 @@ func Run(cfg *config.Config, cf *ComponentFactory, assets http.FileSystem) { //n
 	}
 	interceptors = append(interceptors, timeoutInterceptor.UnaryInterceptor())
 
-	// Instantiate other configured middleware.
-	for name, factory := range cf.Middleware {
-		log := log.With(zap.String("middlewareName", name))
+	// Instantiate other configured middleware (order is preserved).
+	for _, entry := range cf.Middleware {
+		log := log.With(zap.String("middlewareName", entry.Name))
 		log.Info("registering middleware")
 
-		mid, err := factory(cfg, log, scope.SubScope(name))
+		mid, err := entry.Factory(cfg, log, scope.SubScope(entry.Name))
 		if err != nil {
 			log.Fatal("middleware instantiation failed", zap.Error(err))
 		}
