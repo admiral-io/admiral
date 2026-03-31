@@ -9,9 +9,6 @@ import (
 	"go.uber.org/zap"
 )
 
-// sharedOpts is set during command construction and read by subcommands.
-var sharedOpts *globalOpts
-
 type rootCmd struct {
 	cmd  *cobra.Command
 	exit func(int)
@@ -39,15 +36,12 @@ func (f *envFiles) Type() string {
 	return "envFiles"
 }
 
-// Execute initializes and runs the root command.
 func Execute(versionInfo goversion.Info, exitFunc func(int), args []string) {
 	newRootCmd(versionInfo, exitFunc).Execute(args)
 }
 
 func newRootCmd(versionInfo goversion.Info, exit func(int)) *rootCmd {
 	opts := &globalOpts{}
-	sharedOpts = opts
-
 	root := &rootCmd{
 		exit: exit,
 		opts: opts,
@@ -76,8 +70,8 @@ management, and Kubernetes deployment coordination through a unified interface.`
 	cmd.PersistentFlags().Var(&opts.envVarFiles, "env", "path to additional .env files to load")
 
 	cmd.AddCommand(
-		newMigrateCmd().Cmd,
-		//newStartCmd().Cmd,
+		newMigrateCmd(opts).cmd,
+		newStartCmd(opts).cmd,
 	)
 	root.cmd = cmd
 	return root

@@ -114,7 +114,6 @@ func New(cfg *config.Config, logger *zap.Logger, scope tally.Scope) (service.Ser
 	return &srv{sqlDB: sqlDB, gormDB: gormDB, logger: logger, scope: scope}, nil
 }
 
-// ConnString builds a libpq-compatible connection string from the database configuration.
 func ConnString(cfg *config.Database) (string, error) {
 	if cfg == nil {
 		return "", errors.New("no connection information")
@@ -127,7 +126,6 @@ func ConnString(cfg *config.Database) (string, error) {
 		return "", errors.New("database name is required")
 	}
 
-	// Base connection string
 	connection := fmt.Sprintf(
 		"host=%s port=%d dbname=%s user=%s password=%s connect_timeout=10 application_name=admiral",
 		cfg.Host, cfg.Port, cfg.DatabaseName, cfg.User, cfg.Password,

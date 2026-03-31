@@ -5,13 +5,14 @@ import (
 	"time"
 
 	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
+
+	"go.admiral.io/admiral/internal/logger"
 )
 
 type Server struct {
 	Listener             Listener   `yaml:"listener"`
 	Timeouts             Timeouts   `yaml:"timeouts"`
-	Logger               *Logger    `yaml:"logger"`
+	Logger               *logger.Config `yaml:"logger"`
 	AccessLog            *AccessLog `yaml:"access_log"`
 	Stats                *Stats     `yaml:"stats"`
 	EnablePprof          bool       `yaml:"enable_pprof"`
@@ -25,7 +26,7 @@ func (s *Server) SetDefaults() {
 	s.Listener.SetDefaults()
 
 	if s.Logger == nil {
-		s.Logger = &Logger{Level: zap.ErrorLevel}
+		s.Logger = &logger.Config{Level: zap.ErrorLevel}
 	}
 
 	if s.Stats == nil {
@@ -73,27 +74,6 @@ type TimeoutsEntry struct {
 	Service string        `yaml:"service"`
 	Method  string        `yaml:"method"`
 	Timeout time.Duration `yaml:"timeout"`
-}
-
-type Logger struct {
-	Level     zapcore.Level `yaml:"level"`
-	Namespace string        `yaml:"namespace"`
-	Pretty    bool          `yaml:"pretty"`
-}
-
-func (l *Logger) UnmarshalYAML(unmarshal func(interface{}) error) error {
-	// Define a type alias to avoid recursion
-	type rawLogger Logger
-	raw := rawLogger{
-		Level: zap.ErrorLevel, // Default to error level
-	}
-
-	if err := unmarshal(&raw); err != nil {
-		return err
-	}
-
-	*l = Logger(raw)
-	return nil
 }
 
 type AccessLog struct {

@@ -20,7 +20,7 @@ import (
 )
 
 type migrateCmd struct {
-	Cmd  *cobra.Command
+	cmd  *cobra.Command
 	opts migrateOpts
 }
 
@@ -39,7 +39,7 @@ type migrator struct {
 //go:embed migrations/*.sql
 var migrationsFS embed.FS
 
-func newMigrateCmd() *migrateCmd {
+func newMigrateCmd(globals *globalOpts) *migrateCmd {
 	mc := &migrateCmd{}
 
 	cmd := &cobra.Command{
@@ -73,7 +73,7 @@ last migration, or --reset to clear a dirty migration state.`,
 			}
 			defer func() { _ = logger.Sync() }()
 
-			cfg := config.Build(sharedOpts.configFile, sharedOpts.envVarFiles, sharedOpts.debug)
+			cfg := config.Build(globals.configFile, globals.envVarFiles, globals.debug)
 			m := &migrator{
 				log:    logger,
 				config: cfg,
@@ -96,7 +96,7 @@ last migration, or --reset to clear a dirty migration state.`,
 	cmd.Flags().BoolVar(&mc.opts.reset, "reset", false, "reset dirty migration state")
 	cmd.MarkFlagsMutuallyExclusive("down", "reset")
 
-	mc.Cmd = cmd
+	mc.cmd = cmd
 	return mc
 }
 
