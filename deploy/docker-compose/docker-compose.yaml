@@ -1,0 +1,231 @@
+name: admiral
+
+services:
+  postgres:
+    container_name: postgresql
+    build:
+      context: ./postgres
+      dockerfile: Dockerfile
+    environment:
+      POSTGRES_DB: admiral
+      POSTGRES_USER: admiral
+      POSTGRES_PASSWORD: shipitnow
+    command:
+      [
+        "postgres",
+        "-c",
+        "shared_preload_libraries=pg_cron,pg_partman_bgw",
+        "-c",
+        "cron.database_name=admiral",
+      ]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admiral -d admiral"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - admiral-network
+    ports:
+      - "5432:5432"
+    volumes:
+      - db:/var/lib/postgresql/data
+      - ./postgres/init.sh:/docker-entrypoint-initdb.d/init.sh:ro
+    restart: unless-stopped
+
+  keycloak:
+    container_name: keycloak
+    image: quay.io/keycloak/keycloak:24.0
+    environment:
+      KEYCLOAK_ADMIN: admiral
+      KEYCLOAK_ADMIN_PASSWORD: shipitnow
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres/keycloak
+      KC_DB_USERNAME: admiral
+      KC_DB_PASSWORD: shipitnow
+      KC_HEALTH_ENABLED: true
+      KC_METRICS_ENABLED: true
+      KC_HTTP_PORT: 9090
+      KC_HTTPS_PORT: 9443
+    command: ["start-dev", "--import-realm", "--features=preview"]
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "exec 3<>/dev/tcp/localhost/9090 && echo 'GET /health/ready HTTP/1.1\nHost: localhost\n\n' >&3 && timeout 1 cat <&3 | grep -q 'UP' || exit 1",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    networks:
+      - admiral-network
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./keycloak/admiral-realm.json:/opt/keycloak/data/import/admiral-realm.json:ro
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  keycloak-setup:
+    container_name: keycloak-setup
+    image: docker:24-cli
+    depends_on:
+      keycloak:
+        condition: service_healthy
+    volumes:
+      - ./keycloak/init-ssl-fix.sh:/init-ssl-fix.sh
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - admiral-network
+    command: ["sh", "/init-ssl-fix.sh"]
+    restart: "no"
+
+  minio:
+    container_name: minio
+    image: minio/minio:latest
+    environment:
+      MINIO_ROOT_USER: admiral
+      MINIO_ROOT_PASSWORD: shipitnow
+    command: ["server", "/data", "--console-address", ":9001"]
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "curl -f http://localhost:9001/minio/index.html || exit 1",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - admiral-network
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio:/data
+    restart: unless-stopped
+
+  minio-setup:
+    image: minio/mc:latest
+    container_name: minio-setup
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: ["/bin/bash", "/init.sh"]
+    volumes:
+      - ./minio/init.sh:/init.sh:ro
+    environment:
+      MINIO_ROOT_USER: admiral
+      MINIO_ROOT_PASSWORD: shipitnow
+    networks:
+      - admiral-network
+    restart: "no"
+
+  temporal:
+    container_name: temporal
+    image: temporalio/auto-setup:latest
+    environment:
+      DB: postgres12
+      DB_PORT: 5432
+      POSTGRES_USER: admiral
+      POSTGRES_PWD: shipitnow
+      POSTGRES_SEEDS: postgres
+      DYNAMIC_CONFIG_FILE_PATH: config/dynamicconfig/development-sql.yaml
+    healthcheck:
+      test: ["CMD-SHELL", "tctl --address temporal:7233 workflow list"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - admiral-network
+    ports:
+      - 7233:7233
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./temporal:/etc/temporal/config/dynamicconfig
+
+  temporal-setup:
+    container_name: temporal-setup
+    image: temporalio/admin-tools:latest
+    environment:
+      - TEMPORAL_CLI_ADDRESS=temporal:7233
+    entrypoint: >
+      bash -c "
+        sleep 10 &&
+        tctl --namespace admiral namespace register --description 'Admiral namespace' --retention 30 || true &&
+        echo 'Namespace admiral created or already exists'
+      "
+    depends_on:
+      temporal:
+        condition: service_healthy
+    networks:
+      - admiral-network
+    restart: "no"
+
+  temporal-ui:
+    container_name: temporal-ui
+    image: temporalio/ui:latest
+    environment:
+      - TEMPORAL_ADDRESS=temporal:7233
+      - TEMPORAL_CORS_ORIGINS=http://localhost:3000
+    depends_on:
+      temporal:
+        condition: service_healthy
+    networks:
+      - admiral-network
+    ports:
+      - 7070:8080
+
+  mailpit:
+    container_name: mailpit
+    image: axllent/mailpit:latest
+    environment:
+      MP_MAX_MESSAGES: 5000
+      MP_SMTP_AUTH_ACCEPT_ANY: 1
+      MP_SMTP_AUTH_ALLOW_INSECURE: 1
+    healthcheck:
+      test: /usr/bin/nc -v localhost 1025
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - admiral-network
+    ports:
+      - "8025:8025"
+      - "1025:1025"
+    restart: unless-stopped
+
+  migrate:
+    container_name: migrate
+    image: migrate/migrate:4
+    command:
+      [
+        "-path",
+        "/db/migrations",
+        "-database",
+        "postgres://admiral:shipitnow@postgres:5432/admiral?sslmode=disable",
+        "up",
+      ]
+    networks:
+      - admiral-network
+    volumes:
+      - ../../cmd/server/migrations:/db/migrations:ro
+    restart: no
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  db:
+    driver: local
+  minio:
+    driver: local
+
+networks:
+  admiral-network:
+    driver: bridge
+    name: admiral-network

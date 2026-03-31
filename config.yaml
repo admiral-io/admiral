@@ -1,0 +1,71 @@
+server:
+  listener:
+    address: 0.0.0.0
+    port: 8080
+  timeouts:
+    default: 15s
+  logger:
+    level: ${LOGGER_LEVEL}
+  access_log:
+    status_code_filters:
+      - 2 # Unknown
+      - 4 # DeadlineExceeded
+      - 12 # Unimplemented
+      - 14 # Unavailable
+  enable_pprof: true
+  stats:
+    flush_interval: 1s
+    go_runtime_stats:
+      collection_interval: 5s
+    reporter_type: prometheus
+endpoints:
+  manifest:
+    bucket_name: ${MANIFEST_BUCKET_NAME}
+  revision:
+    bucket_name: ${REVISION_BUCKET_NAME}
+services:
+  authn:
+    name: ${OAUTH2_NAME}
+    issuer: ${OAUTH2_ISSUER}
+    client_id: ${OAUTH2_CLIENT_ID}
+    client_secret: ${OAUTH2_CLIENT_SECRET}
+    scopes: ${OAUTH2_SCOPES}
+    redirect_url: ${OAUTH2_REDIRECT_URL}
+    signing_secret: ${OAUTH2_SIGNING_SECRET}
+    refresh_token_ttl: ${OAUTH2_REFRESH_TOKEN_TTL}
+  #    claim_mapping:
+  #      preferred_username: other_user_name
+  #      email: mail
+  #      groups: "cognito:groups"
+
+  database:
+    host: ${DATABASE_HOST}
+    port: ${DATABASE_PORT}
+    database_name: ${DATABASE_NAME}
+    user: ${DATABASE_USER}
+    password: ${DATABASE_PASSWORD}
+    ssl_mode: ${DATABASE_SSL_MODE}
+  object_storage:
+    type: ${STORAGE_TYPE}
+    s3:
+      endpoint: ${STORAGE_ENDPOINT}
+      region: ${STORAGE_REGION}
+      use_ssl: ${STORAGE_USE_SSL}
+      access_key: ${STORAGE_ACCESS_KEY}
+      secret_key: ${STORAGE_SECRET_KEY}
+    gcs:
+      credentials_json: ${GCS_CREDENTIALS_JSON}
+      project_id: ${GCS_PROJECT_ID}
+  session:
+    idle_timeout: ${SESSION_IDLE_TIMEOUT}
+    lifetime: ${SESSION_LIFETIME}
+    cookie:
+      name: ${SESSION_COOKIE_NAME}
+      domain: ${SESSION_COOKIE_DOMAIN}
+      http_only: ${SESSION_COOKIE_HTTP_ONLY}
+      same_site: ${SESSION_COOKIE_SAME_SITE}
+      secure: ${SESSION_COOKIE_SECURE}
+      persist: ${SESSION_COOKIE_PERSIST}
+  temporal:
+    host: ${TEMPORAL_HOST}
+    port: ${TEMPORAL_PORT}
