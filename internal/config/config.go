@@ -25,10 +25,10 @@ type Config struct {
 }
 
 type Services struct {
-	//Authn         *Authn         `yaml:"authn"`
+	Authn    *Authn    `yaml:"authn"`
 	Database *Database `yaml:"database"`
+	Session  *Session  `yaml:"session"`
 	//ObjectStorage *ObjectStorage `yaml:"object_storage"`
-	//Session       *Session       `yaml:"session"`
 	//Temporal      *Temporal      `yaml:"temporal"`
 }
 
@@ -124,18 +124,18 @@ func setDefaults(cfg *Config) *Config {
 	if cfg.Server == nil {
 		cfg.Server = &Server{}
 	}
-	//if cfg.Services.Session == nil {
-	//	cfg.Services.Session = &Session{}
-	//}
+	if cfg.Services.Session == nil {
+		cfg.Services.Session = &Session{}
+	}
 
 	configs := []Configurable{
 		cfg.Server,
 		//cfg.Endpoints,
+		cfg.Services.Authn,
 		cfg.Services.Database,
+		cfg.Services.Session,
 		//cfg.Services.Temporal,
 		//cfg.Services.ObjectStorage,
-		//cfg.Services.Authn,
-		//cfg.Services.Session,
 	}
 
 	for _, c := range configs {
@@ -161,10 +161,9 @@ func (c *Config) validate() error {
 		// Optional configs
 		{c.Server, "server", false},
 		//{c.Endpoints, "endpoints", false},
-		//{c.Services.Authn, "services.authn", false},
-		//{c.Services.Session, "services.session", false},
-		// Required configs
+		{c.Services.Authn, "services.authn", false},
 		{c.Services.Database, "services.database", true},
+		{c.Services.Session, "services.session", false},
 		//{c.Services.ObjectStorage, "services.object_storage", true},
 		//{c.Services.Temporal, "services.temporal", true},
 	}

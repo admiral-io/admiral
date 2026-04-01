@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/pprof"
+	"net/textproto"
 	"net/url"
+	"strconv"
 	"strings"
 
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
@@ -16,8 +18,11 @@ import (
 	"google.golang.org/grpc/reflection"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/proto"
 
 	"go.admiral.io/admiral/internal/config"
+	"go.admiral.io/admiral/internal/service"
+	"go.admiral.io/admiral/internal/service/session"
 )
 
 const (
@@ -38,11 +43,15 @@ type Route struct {
 }
 
 func New(unaryInterceptors []grpc.UnaryServerInterceptor, assets http.FileSystem, metricsHandler http.Handler, cfg config.Server) (*Mux, error) {
+	sessionService, err := service.GetService[session.Service]("service.session")
+	if err != nil {
+		return nil, fmt.Errorf("failed to get session service: %w", err)
+	}
 
 	grpcServer := grpc.NewServer(grpc.ChainUnaryInterceptor(unaryInterceptors...))
 
 	jsonGateway := runtime.NewServeMux(
-		//runtime.WithForwardResponseOption(newCustomResponseForwarder(sessionService)),
+		runtime.WithForwardResponseOption(newCustomResponseForwarder(sessionService)),
 		runtime.WithErrorHandler(customErrorHandler),
 		runtime.WithMarshalerOption(
 			runtime.MIMEWildcard,
@@ -54,7 +63,7 @@ func New(unaryInterceptors []grpc.UnaryServerInterceptor, assets http.FileSystem
 				UnmarshalOptions: protojson.UnmarshalOptions{},
 			},
 		),
-		//runtime.WithIncomingHeaderMatcher(customHeaderMatcher),
+		runtime.WithIncomingHeaderMatcher(customHeaderMatcher),
 	)
 
 	httpMux := http.NewServeMux()
@@ -75,7 +84,7 @@ func New(unaryInterceptors []grpc.UnaryServerInterceptor, assets http.FileSystem
 	mux := &Mux{
 		JSONGateway: jsonGateway,
 		GRPCServer:  grpcServer,
-		HTTPMux:     httpMux,
+		HTTPMux:     sessionService.HTTPMiddleware()(httpMux),
 	}
 	return mux, nil
 }
@@ -90,6 +99,52 @@ func (m *Mux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 func (m *Mux) EnableGRPCReflection() {
 	reflection.Register(m.GRPCServer)
+}
+
+func newCustomResponseForwarder(sess session.Service) func(context.Context, http.ResponseWriter, proto.Message) error {
+	return func(ctx context.Context, w http.ResponseWriter, resp proto.Message) error {
+		md, ok := runtime.ServerMetadataFromContext(ctx)
+		if !ok {
+			return nil
+		}
+
+		if tokens := md.HeaderMD.Get("Set-Access-Token"); len(tokens) > 0 {
+			sess.Put(ctx, "accessToken", tokens[0])
+		}
+
+		if tokens := md.HeaderMD.Get("Set-Refresh-Token"); len(tokens) > 0 {
+			sess.Put(ctx, "refreshToken", tokens[0])
+		}
+
+		// Redirect if it's the browser (non-XHR).
+		redirects := md.HeaderMD.Get("Location")
+		if len(redirects) > 0 && isBrowser(requestHeadersFromResponseWriter(w)) {
+			code := http.StatusFound
+			if st := md.HeaderMD.Get("Location-Status"); len(st) > 0 {
+				headerCodeOverride, err := strconv.Atoi(st[0])
+				if err != nil {
+					return err
+				}
+				code = headerCodeOverride
+			}
+
+			w.Header().Set("Location", redirects[0])
+			w.WriteHeader(code)
+		}
+
+		return nil
+	}
+}
+
+func customHeaderMatcher(key string) (string, bool) {
+	key = textproto.CanonicalMIMEHeaderKey(key)
+	if strings.HasPrefix(key, xHeader) {
+		if key != xForwardedFor && key != xForwardedHost {
+			return runtime.MetadataPrefix + key, true
+		}
+	}
+
+	return runtime.DefaultHeaderMatcher(key)
 }
 
 func customErrorHandler(ctx context.Context, mux *runtime.ServeMux, m runtime.Marshaler, w http.ResponseWriter, req *http.Request, err error) {

@@ -2,29 +2,35 @@ package gateway
 
 import (
 	"go.admiral.io/admiral/internal/endpoint"
-	"go.admiral.io/admiral/internal/endpoint/healthcheck"
+	authnep "go.admiral.io/admiral/internal/endpoint/authn"
+	healthcheckep "go.admiral.io/admiral/internal/endpoint/healthcheck"
 	"go.admiral.io/admiral/internal/middleware"
-	"go.admiral.io/admiral/internal/middleware/authn"
-	"go.admiral.io/admiral/internal/middleware/authz"
-	"go.admiral.io/admiral/internal/middleware/stats"
-	"go.admiral.io/admiral/internal/middleware/validate"
+	authnmw "go.admiral.io/admiral/internal/middleware/authn"
+	authzmw "go.admiral.io/admiral/internal/middleware/authz"
+	statsmw "go.admiral.io/admiral/internal/middleware/stats"
+	validatemw "go.admiral.io/admiral/internal/middleware/validate"
 	"go.admiral.io/admiral/internal/service"
-	"go.admiral.io/admiral/internal/service/database"
+	authnsvc "go.admiral.io/admiral/internal/service/authn"
+	databasesvc "go.admiral.io/admiral/internal/service/database"
+	sessionsvc "go.admiral.io/admiral/internal/service/session"
 )
 
 var Services = service.Factory{
-	{Name: database.Name, Factory: database.New},
+	{Name: databasesvc.Name, Factory: databasesvc.New},
+	{Name: sessionsvc.Name, Factory: sessionsvc.New},
+	{Name: authnsvc.Name, Factory: authnsvc.New},
 }
 
 var Middleware = middleware.Factory{
-	{Name: stats.Name, Factory: stats.New},
-	{Name: authn.Name, Factory: authn.New},
-	{Name: authz.Name, Factory: authz.New},
-	{Name: validate.Name, Factory: validate.New},
+	{Name: statsmw.Name, Factory: statsmw.New},
+	{Name: authnmw.Name, Factory: authnmw.New},
+	{Name: authzmw.Name, Factory: authzmw.New},
+	{Name: validatemw.Name, Factory: validatemw.New},
 }
 
 var Endpoints = endpoint.Factory{
-	healthcheck.Name: healthcheck.New,
+	authnep.Name:       authnep.New,
+	healthcheckep.Name: healthcheckep.New,
 }
 
 var CoreComponentFactory = &ComponentFactory{
