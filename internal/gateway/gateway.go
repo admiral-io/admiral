@@ -201,13 +201,18 @@ func Run(cfg *config.Config, cf *ComponentFactory, assets http.FileSystem) error
 		syscall.SIGTERM,
 	)
 
+	errCh := make(chan error, 1)
 	go func() {
 		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			log.Error("listener failed", zap.Error(err))
+			errCh <- err
 		}
 	}()
 
-	<-sc
+	select {
+	case <-sc:
+	case err := <-errCh:
+		return fmt.Errorf("listener failed: %w", err)
+	}
 
 	signal.Stop(sc)
 
