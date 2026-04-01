@@ -7,11 +7,11 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"go.admiral.io/admiral/internal/model"
 	"golang.org/x/oauth2"
 	"gorm.io/gorm"
 
 	"go.admiral.io/admiral/internal/config"
+	"go.admiral.io/admiral/internal/model"
 )
 
 type store struct {

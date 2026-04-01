@@ -64,7 +64,7 @@ type mockResponseWriter struct {
 	request *http.Request
 }
 
-// Mock ResponseWriter that implements the getRequest interface
+// Mock ResponseWriter that implements the getRequest interface.
 type mockResponseWriterWithGetRequest struct {
 	http.ResponseWriter
 	req *http.Request
@@ -309,7 +309,7 @@ func TestGetCookieValue_AdditionalEdgeCases(t *testing.T) {
 	})
 }
 
-// Benchmark tests for performance-critical functions
+// Benchmark tests for performance-critical functions.
 func BenchmarkIsBrowser(b *testing.B) {
 	header := http.Header{
 		"Accept": []string{"text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"},

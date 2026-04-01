@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"github.com/uber-go/tally/v4"
-	"go.admiral.io/admiral/internal/gateway/mux"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -15,6 +14,7 @@ import (
 	"google.golang.org/grpc/status"
 
 	"go.admiral.io/admiral/internal/config"
+	"go.admiral.io/admiral/internal/gateway/mux"
 	"go.admiral.io/admiral/internal/middleware"
 	"go.admiral.io/admiral/internal/service"
 	"go.admiral.io/admiral/internal/service/authn"

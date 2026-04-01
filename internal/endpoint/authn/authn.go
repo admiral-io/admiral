@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/uber-go/tally/v4"
-	"go.admiral.io/admiral/internal/gateway/mux"
 	"go.uber.org/zap"
 	"golang.org/x/oauth2"
 	"google.golang.org/grpc"
@@ -14,6 +13,7 @@ import (
 	"go.admiral.io/admiral/internal/config"
 	"go.admiral.io/admiral/internal/endpoint"
 	"go.admiral.io/admiral/internal/gateway/log"
+	"go.admiral.io/admiral/internal/gateway/mux"
 	"go.admiral.io/admiral/internal/service"
 	"go.admiral.io/admiral/internal/service/authn"
 	"go.admiral.io/admiral/internal/service/session"
