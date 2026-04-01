@@ -166,7 +166,7 @@ func Run(cfg *config.Config, cf *ComponentFactory, assets http.FileSystem) { //n
 	rpcMux.EnableGRPCReflection()
 
 	// Save metadata on what RPCs being served for fast-lookup by internal services.
-	if err := meta.GenerateGRPCMetadata(rpcMux.GRPCServer); err != nil {
+	if err := meta.ResolveMethodOptions(rpcMux.GRPCServer); err != nil {
 		log.Fatal("reflection on grpc server failed", zap.Error(err))
 	}
 

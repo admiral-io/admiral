@@ -27,3 +27,14 @@ var AllScopes = []string{
 	"token:read", "token:write",
 	"runner:exec",
 }
+
+var SessionScopes = []string{
+	"app:*",
+	"env:*",
+	"var:*",
+	"cluster:*",
+	"connection:*",
+	"state:*",
+	"token:*",
+	"runner:*",
+}

@@ -447,7 +447,7 @@ func (p *OIDCProvider) createInternalClaims(subject string, oidcClaims *Claims, 
 		FamilyName:      oidcClaims.FamilyName,
 		Picture:         oidcClaims.Picture,
 		Groups:          make([]string, len(oidcClaims.Groups)),
-		Scopes:          AllScopes,
+		Scopes:          SessionScopes,
 	}
 
 	copy(tokenClaims.Groups, oidcClaims.Groups)

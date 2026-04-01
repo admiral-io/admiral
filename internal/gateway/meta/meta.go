@@ -2,45 +2,80 @@ package meta
 
 import (
 	"fmt"
+	"sync"
 
-	"github.com/jhump/protoreflect/desc"
-	"github.com/jhump/protoreflect/grpcreflect"
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/reflect/protodesc"
+	"google.golang.org/protobuf/reflect/protoreflect"
+	"google.golang.org/protobuf/reflect/protoregistry"
+	"google.golang.org/protobuf/types/descriptorpb"
 	"google.golang.org/protobuf/types/known/anypb"
 )
 
 var (
-	methodDescriptors map[string]*desc.MethodDescriptor
+	mu              sync.RWMutex
+	methodOptions   map[string]*descriptorpb.MethodOptions
+	methodsResolved bool
 )
 
-func APIBody(body interface{}) (*anypb.Any, error) {
-	m, ok := body.(proto.Message)
-	if !ok {
-		// body is not the model/value we want to process
-		return nil, nil
-	}
+func ResolveMethodOptions(server *grpc.Server) error {
+	mu.Lock()
+	defer mu.Unlock()
 
-	// Deep copy before field redaction so we do not unintentionally remove fields
-	// from the original object that were passed by reference
-	m = proto.Clone(m)
-	return anypb.New(m)
-}
+	opts := make(map[string]*descriptorpb.MethodOptions)
 
-func GenerateGRPCMetadata(server *grpc.Server) error {
-	serviceDescriptors, err := grpcreflect.LoadServiceDescriptors(server)
-	if err != nil {
-		return err
-	}
+	for name := range server.GetServiceInfo() {
+		sd, err := resolveServiceDescriptor(protoreflect.FullName(name))
+		if err != nil {
+			return fmt.Errorf("failed to resolve service %s: %w", name, err)
+		}
 
-	mds := make(map[string]*desc.MethodDescriptor)
-	for _, sd := range serviceDescriptors {
-		for _, md := range sd.GetMethods() {
-			methodName := fmt.Sprintf("/%s/%s", sd.GetFullyQualifiedName(), md.GetName())
-			mds[methodName] = md
+		methods := sd.Methods()
+		for i := range methods.Len() {
+			md := methods.Get(i)
+			fullMethod := fmt.Sprintf("/%s/%s", sd.FullName(), md.Name())
+			opts[fullMethod] = protodesc.ToMethodDescriptorProto(md).GetOptions()
 		}
 	}
 
-	methodDescriptors = mds
+	methodOptions = opts
+	methodsResolved = true
 	return nil
+}
+
+func GetMethodOptions(fullMethod string) *descriptorpb.MethodOptions {
+	mu.RLock()
+	defer mu.RUnlock()
+	return methodOptions[fullMethod]
+}
+
+func MethodsResolved() bool {
+	mu.RLock()
+	defer mu.RUnlock()
+	return methodsResolved
+}
+
+func resolveServiceDescriptor(name protoreflect.FullName) (protoreflect.ServiceDescriptor, error) {
+	desc, err := protoregistry.GlobalFiles.FindDescriptorByName(name)
+	if err != nil {
+		return nil, err
+	}
+
+	sd, ok := desc.(protoreflect.ServiceDescriptor)
+	if !ok {
+		return nil, fmt.Errorf("%s is not a service descriptor", name)
+	}
+
+	return sd, nil
+}
+
+func APIBody(body any) (*anypb.Any, error) {
+	m, ok := body.(proto.Message)
+	if !ok {
+		return nil, nil
+	}
+
+	m = proto.Clone(m)
+	return anypb.New(m)
 }
