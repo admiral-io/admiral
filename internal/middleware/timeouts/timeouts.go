@@ -37,7 +37,7 @@ func New(cfg *config.Timeouts, logger *zap.Logger, scope tally.Scope) (middlewar
 	}
 
 	return &mid{
-		logger:         logger.Named("timeouts"),
+		logger:         logger.Named(Name),
 		scope:          scope.SubScope("timeouts"),
 		defaultTimeout: defaultTimeout,
 		overrides:      overrides,

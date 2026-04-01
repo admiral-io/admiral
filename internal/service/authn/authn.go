@@ -12,6 +12,7 @@ import (
 	"go.admiral.io/admiral/internal/config"
 	"go.admiral.io/admiral/internal/service"
 	"go.admiral.io/admiral/internal/service/database"
+	"go.admiral.io/admiral/internal/store"
 )
 
 const Name = "service.authn"
@@ -42,16 +43,21 @@ type Issuer interface {
 	RevokeAllTokens(ctx context.Context, subject string) (int64, error)
 }
 
-func New(cfg *config.Config, logger *zap.Logger, scope tally.Scope) (service.Service, error) {
+func New(cfg *config.Config, logger *zap.Logger, _ tally.Scope) (service.Service, error) {
 	db, err := service.GetService[database.Service]("service.database")
 	if err != nil {
 		return nil, err
 	}
 
-	store, err := newStore(cfg, db.GormDB())
+	tokens, err := store.NewAuthnTokenStore(db.GormDB())
 	if err != nil {
 		return nil, err
 	}
 
-	return NewOIDCProvider(cfg, logger, store)
+	users, err := store.NewUserStore(db.GormDB())
+	if err != nil {
+		return nil, err
+	}
+
+	return NewOIDCProvider(cfg, logger, tokens, users)
 }

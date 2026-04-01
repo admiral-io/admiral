@@ -34,7 +34,7 @@ func New(_ *config.Config, log *zap.Logger, scope tally.Scope) (endpoint.Endpoin
 
 	return &api{
 		provider: authnService,
-		logger:   log.Named("authn"),
+		logger:   log.Named(Name),
 		scope:    scope.SubScope("authn"),
 	}, nil
 }

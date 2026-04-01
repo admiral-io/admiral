@@ -49,7 +49,7 @@ func New(cfg *config.Config, logger *zap.Logger, _ tally.Scope) (middleware.Midd
 		issuer:            authnService,
 		session:           sessionService,
 		sessionRefreshTTL: cfg.Services.Authn.SessionRefreshTTL,
-		logger:            logger.Named("middleware.authn"),
+		logger:            logger.Named(Name),
 	}, nil
 }
 

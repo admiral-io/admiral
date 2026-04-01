@@ -19,6 +19,7 @@ import (
 
 	"go.admiral.io/admiral/internal/config"
 	"go.admiral.io/admiral/internal/model"
+	"go.admiral.io/admiral/internal/store"
 )
 
 const admiralProviderName = "admiral"
@@ -32,11 +33,12 @@ type OIDCProvider struct {
 	signingKey        string
 	subjectClaim      string
 	sessionRefreshTTL time.Duration
-	store             *store
+	tokenStore *store.AuthnTokenStore
+	userStore  *store.UserStore
 	logger            *zap.Logger
 }
 
-func NewOIDCProvider(cfg *config.Config, logger *zap.Logger, store *store) (Service, error) {
+func NewOIDCProvider(cfg *config.Config, logger *zap.Logger, tokens *store.AuthnTokenStore, users *store.UserStore) (Service, error) {
 	httpClient := &http.Client{
 		Transport: &http.Transport{
 			TLSClientConfig: &tls.Config{
@@ -73,7 +75,8 @@ func NewOIDCProvider(cfg *config.Config, logger *zap.Logger, store *store) (Serv
 		signingKey:        cfg.Services.Authn.SigningSecret,
 		subjectClaim:      cfg.Services.Authn.SubjectClaim,
 		sessionRefreshTTL: cfg.Services.Authn.SessionRefreshTTL,
-		store:             store,
+		tokenStore: tokens,
+		userStore:  users,
 		logger:            logger,
 	}, nil
 }
@@ -154,7 +157,7 @@ func (p *OIDCProvider) Exchange(ctx context.Context, code string) (*oauth2.Token
 		return nil, fmt.Errorf("failed to extract claims from token: %w", err)
 	}
 
-	authenticatedUser, err := p.store.upsertUserFromClaims(ctx, oidcClaims)
+	authenticatedUser, err := p.userStore.UpsertByProviderSubject(ctx, oidcClaims.ExternalSubject, claimsToUserInfo(oidcClaims))
 	if err != nil {
 		return nil, fmt.Errorf("failed to sync user: %w", err)
 	}
@@ -164,7 +167,7 @@ func (p *OIDCProvider) Exchange(ctx context.Context, code string) (*oauth2.Token
 		return nil, fmt.Errorf("failed to parse token ID: %w", err)
 	}
 
-	externalToken, err := p.store.save(ctx, externalTokenId, nil, oidcClaims.Subject, p.oidcProviderName, model.AuthnTokenKindExternal, oidcToken)
+	externalToken, err := p.tokenStore.Save(ctx, externalTokenId, nil, oidcClaims.Subject, p.oidcProviderName, model.AuthnTokenKindExternal, oidcToken)
 	if err != nil {
 		return nil, fmt.Errorf("failed to store provider token: %w", err)
 	}
@@ -180,7 +183,7 @@ func (p *OIDCProvider) Exchange(ctx context.Context, code string) (*oauth2.Token
 		return nil, fmt.Errorf("failed to parse token ID: %w", err)
 	}
 
-	_, err = p.store.save(ctx, internalTokenId, &externalToken.Id, authenticatedUser.Id.String(), admiralProviderName, model.AuthnTokenKindUser, internalToken)
+	_, err = p.tokenStore.Save(ctx, internalTokenId, &externalToken.Id, authenticatedUser.Id.String(), admiralProviderName, model.AuthnTokenKindUser, internalToken)
 	if err != nil {
 		return nil, fmt.Errorf("failed to store internal token: %w", err)
 	}
@@ -199,7 +202,7 @@ func (p *OIDCProvider) Verify(ctx context.Context, rawToken string) (*Claims, er
 		return nil, fmt.Errorf("failed to parse token ID: %w", err)
 	}
 
-	storedAuthnToken, err := p.store.get(ctx, tokenId)
+	storedAuthnToken, err := p.tokenStore.Get(ctx, tokenId)
 	if err != nil {
 		return nil, fmt.Errorf("failed to retrieve token: %w", err)
 	}
@@ -262,7 +265,7 @@ func (p *OIDCProvider) CreateToken(ctx context.Context, kind TokenKind, subject 
 		return nil, fmt.Errorf("failed to issue token: %w", err)
 	}
 
-	_, err = p.store.save(ctx, tokenId, nil, subject, admiralProviderName, dbKind, token)
+	_, err = p.tokenStore.Save(ctx, tokenId, nil, subject, admiralProviderName, dbKind, token)
 	if err != nil {
 		return nil, fmt.Errorf("failed to store token: %w", err)
 	}
@@ -271,7 +274,7 @@ func (p *OIDCProvider) CreateToken(ctx context.Context, kind TokenKind, subject 
 }
 
 func (p *OIDCProvider) RefreshToken(ctx context.Context, tokenID uuid.UUID) (*oauth2.Token, error) {
-	aat, err := p.store.get(ctx, tokenID)
+	aat, err := p.tokenStore.Get(ctx, tokenID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get stored token: %w", err)
 	}
@@ -281,7 +284,7 @@ func (p *OIDCProvider) RefreshToken(ctx context.Context, tokenID uuid.UUID) (*oa
 	}
 
 	// Follow parent_id to the external IdP token.
-	externalToken, err := p.store.get(ctx, *aat.ParentID)
+	externalToken, err := p.tokenStore.Get(ctx, *aat.ParentID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get external token: %w", err)
 	}
@@ -303,12 +306,12 @@ func (p *OIDCProvider) RefreshToken(ctx context.Context, tokenID uuid.UUID) (*oa
 			return nil, fmt.Errorf("failed to extract claims from refreshed token: %w", err)
 		}
 
-		_, err = p.store.upsertUserFromClaims(ctx, oidcClaims)
+		_, err = p.userStore.UpsertByProviderSubject(ctx, oidcClaims.ExternalSubject, claimsToUserInfo(oidcClaims))
 		if err != nil {
 			return nil, fmt.Errorf("failed to sync user: %w", err)
 		}
 
-		externalToken, err = p.store.save(ctx, providerTokenId, nil, oidcClaims.Subject, p.oidcProviderName, model.AuthnTokenKindExternal, oidcToken)
+		externalToken, err = p.tokenStore.Save(ctx, providerTokenId, nil, oidcClaims.Subject, p.oidcProviderName, model.AuthnTokenKindExternal, oidcToken)
 		if err != nil {
 			return nil, fmt.Errorf("failed to store refreshed external token: %w", err)
 		}
@@ -332,13 +335,13 @@ func (p *OIDCProvider) RefreshToken(ctx context.Context, tokenID uuid.UUID) (*oa
 		return nil, fmt.Errorf("failed to issue token: %w", err)
 	}
 
-	_, err = p.store.save(ctx, internalTokenId, &providerTokenId, aat.Subject, admiralProviderName, model.AuthnTokenKindUser, internalToken)
+	_, err = p.tokenStore.Save(ctx, internalTokenId, &providerTokenId, aat.Subject, admiralProviderName, model.AuthnTokenKindUser, internalToken)
 	if err != nil {
 		return nil, fmt.Errorf("failed to store refreshed internal token: %w", err)
 	}
 
 	// Revoke the old internal token.
-	_ = p.store.delete(ctx, tokenID)
+	_ = p.tokenStore.Delete(ctx, tokenID)
 
 	return internalToken, nil
 }
@@ -354,11 +357,11 @@ func (p *OIDCProvider) RevokeToken(ctx context.Context, token *oauth2.Token) err
 		return fmt.Errorf("failed to parse token ID: %w", err)
 	}
 
-	return p.store.delete(ctx, jti)
+	return p.tokenStore.Delete(ctx, jti)
 }
 
 func (p *OIDCProvider) RevokeAllTokens(ctx context.Context, subject string) (int64, error) {
-	return p.store.deleteBySubject(ctx, subject)
+	return p.tokenStore.DeleteBySubject(ctx, subject)
 }
 
 func (p *OIDCProvider) issueToken(claims *Claims) (*oauth2.Token, error) {
@@ -491,4 +494,15 @@ func (p *OIDCProvider) createInternalClaims(subject string, oidcClaims *Claims, 
 	copy(tokenClaims.Groups, oidcClaims.Groups)
 
 	return &tokenClaims
+}
+
+func claimsToUserInfo(claims *Claims) model.UserInfo {
+	return model.UserInfo{
+		Email:         claims.Email,
+		EmailVerified: claims.EmailVerified,
+		Name:          claims.Name,
+		GivenName:     claims.GivenName,
+		FamilyName:    claims.FamilyName,
+		PictureUrl:    claims.Picture,
+	}
 }

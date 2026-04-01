@@ -27,7 +27,7 @@ type mid struct {
 
 func New(_ *config.Config, logger *zap.Logger, _ tally.Scope) (middleware.Middleware, error) {
 	return &mid{
-		logger: logger.Named("middleware.authz"),
+		logger: logger.Named(Name),
 	}, nil
 }
 

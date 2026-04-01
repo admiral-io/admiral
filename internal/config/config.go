@@ -9,7 +9,6 @@ import (
 
 	"github.com/go-playground/validator/v10"
 	"github.com/joho/godotenv"
-	"go.uber.org/zap"
 	"gopkg.in/yaml.v3"
 )
 
@@ -25,47 +24,37 @@ type Config struct {
 }
 
 type Services struct {
-	Authn    *Authn    `yaml:"authn"`
-	Database *Database `yaml:"database"`
-	Session  *Session  `yaml:"session"`
-	//ObjectStorage *ObjectStorage `yaml:"object_storage"`
+	Authn         *Authn         `yaml:"authn"`
+	Database      *Database      `yaml:"database"`
+	Session       *Session       `yaml:"session"`
+	ObjectStorage *ObjectStorage `yaml:"object_storage"`
 	//Temporal      *Temporal      `yaml:"temporal"`
 }
 
-func Build(file string, envFiles []string, debug bool) *Config {
-	tmpLogger := newTmpLogger()
-
-	// Load environment variables from .env files.
+func Build(file string, envFiles []string, debug bool) (*Config, error) {
 	if err := loadEnv(envFiles); err != nil {
-		tmpLogger.Fatal("Failed to load environment variables", zap.Error(err))
+		return nil, fmt.Errorf("failed to load environment variables: %w", err)
 	}
 
-	// Parse the configuration file.
 	cfg, err := parseConfig(file, debug)
 	if err != nil {
-		tmpLogger.Fatal("Failed to load environment variables", zap.Error(err))
+		return nil, fmt.Errorf("failed to parse configuration: %w", err)
 	}
 
-	return cfg
+	return cfg, nil
 }
 
 func loadEnv(envFiles []string) error {
 	// Order is important as godotenv will NOT overwrite existing environment variables.
 	for _, filename := range envFiles {
-		// Use a temporary logger to parse the environment files
-		tmpLogger := newTmpLogger().With(zap.String("file", filename))
-
 		p, err := filepath.Abs(filename)
 		if err != nil {
-			tmpLogger.Error("failed to get absolute path for .env file", zap.Error(err))
-			return err
+			return fmt.Errorf("failed to get absolute path for %s: %w", filename, err)
 		}
 
-		// Load the environment variables from the .env file.
 		if err := godotenv.Load(p); err != nil {
-			// Log a warning if the .env file is not found or cannot be loaded.
-			tmpLogger.Warn("Could not load .env file", zap.Error(err))
-			continue // Continue loading other files even if one fails.
+			// Non-fatal: continue loading other files even if one fails.
+			continue
 		}
 	}
 
@@ -73,48 +62,38 @@ func loadEnv(envFiles []string) error {
 }
 
 func parseConfig(file string, debug bool) (*Config, error) {
-	// Use a temporary logger to parse the configuration and output.
-	tmpLogger := newTmpLogger().With(zap.String("file", file))
-
-	// Read the configuration file.
 	contents, err := os.ReadFile(file) //nolint:gosec
 	if err != nil {
-		tmpLogger.Error("failed to read configuration file", zap.Error(err))
-		return nil, err
+		return nil, fmt.Errorf("failed to read configuration file: %w", err)
 	}
 
 	// Replace environment variables in the configuration content.
 	expandedContents := []byte(os.ExpandEnv(string(contents)))
 
-	// Unmarshal the YAML configuration into the config struct.
 	cfg := &Config{}
 	if err = yaml.Unmarshal(expandedContents, cfg); err != nil {
-		tmpLogger.Error("failed to parse configuration file", zap.Error(err))
-		return nil, err
+		return nil, fmt.Errorf("failed to parse configuration file: %w", err)
 	}
 
 	// If a debug flag is set, print the configuration and exit.
 	if debug {
 		b, err := json.MarshalIndent(cfg, "", "  ")
 		if err != nil {
-			tmpLogger.Fatal("failed to cast configuration file to json", zap.Error(err))
+			return nil, fmt.Errorf("failed to marshal configuration to JSON: %w", err)
 		}
 		fmt.Print(string(b))
 		os.Exit(0)
 	}
 
-	// Set default values in the configuration.
 	cfg = setDefaults(cfg)
 
-	// Validate the configuration
 	validate := validator.New()
 	if err := validate.Struct(cfg); err != nil {
-		tmpLogger.Fatal("struct tag validation failed", zap.Error(err))
-		return nil, err
+		return nil, fmt.Errorf("struct tag validation failed: %w", err)
 	}
+
 	if err := cfg.validate(); err != nil {
-		tmpLogger.Fatal("custom configuration validation failed", zap.Error(err))
-		return nil, err
+		return nil, fmt.Errorf("configuration validation failed: %w", err)
 	}
 
 	return cfg, nil
@@ -134,8 +113,8 @@ func setDefaults(cfg *Config) *Config {
 		cfg.Services.Authn,
 		cfg.Services.Database,
 		cfg.Services.Session,
+		cfg.Services.ObjectStorage,
 		//cfg.Services.Temporal,
-		//cfg.Services.ObjectStorage,
 	}
 
 	for _, c := range configs {
@@ -164,7 +143,7 @@ func (c *Config) validate() error {
 		{c.Services.Authn, "services.authn", false},
 		{c.Services.Database, "services.database", true},
 		{c.Services.Session, "services.session", false},
-		//{c.Services.ObjectStorage, "services.object_storage", true},
+		{c.Services.ObjectStorage, "services.object_storage", true},
 		//{c.Services.Temporal, "services.temporal", true},
 	}
 

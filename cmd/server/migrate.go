@@ -73,7 +73,10 @@ last migration, or --reset to clear a dirty migration state.`,
 			}
 			defer func() { _ = logger.Sync() }()
 
-			cfg := config.Build(globals.configFile, globals.envVarFiles, globals.debug)
+			cfg, err := config.Build(globals.configFile, globals.envVarFiles, globals.debug)
+			if err != nil {
+				return err
+			}
 			m := &migrator{
 				log:    logger,
 				config: cfg,

@@ -34,7 +34,7 @@ func New(config *config.AccessLog, logger *zap.Logger, scope tally.Scope) (middl
 	}
 
 	return &mid{
-		logger:      logger.Named("accesslog"),
+		logger:      logger.Named(Name),
 		scope:       scope.SubScope("accesslog"),
 		statusCodes: statusCodes,
 	}, nil

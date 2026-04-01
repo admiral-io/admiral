@@ -16,7 +16,7 @@ const Name = "middleware.stats"
 
 func New(_ *config.Config, logger *zap.Logger, scope tally.Scope) (middleware.Middleware, error) {
 	return &mid{
-		logger: logger.Named("stats"),
+		logger: logger.Named(Name),
 		scope:  scope.SubScope("stats"),
 	}, nil
 }

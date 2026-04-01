@@ -20,7 +20,7 @@ type api struct {
 
 func New(_ *config.Config, log *zap.Logger, scope tally.Scope) (endpoint.Endpoint, error) {
 	return &api{
-		logger: log.Named("healthcheck"),
+		logger: log.Named(Name),
 		scope:  scope.SubScope("healthcheck"),
 	}, nil
 }

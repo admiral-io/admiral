@@ -61,10 +61,11 @@ func Get[T any](svc Service, ctx context.Context, key string) (T, bool) {
 }
 
 type srv struct {
-	sm *scs.SessionManager
+	sm     *scs.SessionManager
+	logger *zap.Logger
 }
 
-func New(cfg *config.Config, _ *zap.Logger, _ tally.Scope) (service.Service, error) {
+func New(cfg *config.Config, logger *zap.Logger, _ tally.Scope) (service.Service, error) {
 	dbService, err := service.GetService[database.Service](database.Name)
 	if err != nil {
 		return nil, err
@@ -79,7 +80,7 @@ func New(cfg *config.Config, _ *zap.Logger, _ tally.Scope) (service.Service, err
 	}
 	sm.Store = store
 
-	return &srv{sm: sm}, nil
+	return &srv{sm: sm, logger: logger.Named(Name)}, nil
 }
 
 func configure(cfg *config.Config, sm *scs.SessionManager) {

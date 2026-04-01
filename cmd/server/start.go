@@ -56,9 +56,12 @@ configured identity provider, and optional storage backends.`,
 
 			return nil
 		},
-		Run: func(cmd *cobra.Command, args []string) {
-			cfg := config.Build(globals.configFile, globals.envVarFiles, globals.debug)
-			gateway.Run(cfg, gateway.CoreComponentFactory, assets.VirtualFS)
+		RunE: func(cmd *cobra.Command, args []string) error {
+			cfg, err := config.Build(globals.configFile, globals.envVarFiles, globals.debug)
+			if err != nil {
+				return err
+			}
+			return gateway.Run(cfg, gateway.CoreComponentFactory, assets.VirtualFS)
 		},
 	}
 

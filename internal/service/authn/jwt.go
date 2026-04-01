@@ -49,19 +49,13 @@ func ParseTokenWithoutValidation(rawToken string) (*Claims, error) {
 	parser := jwt.NewParser(jwt.WithoutClaimsValidation())
 	claims := &Claims{}
 
-	token, _, err := parser.ParseUnverified(rawToken, claims)
+	_, _, err := parser.ParseUnverified(rawToken, claims)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse token: %w", err)
 	}
 
 	if err := claims.Validate(); err != nil {
 		return nil, fmt.Errorf("invalid claims: %w", err)
-	}
-
-	if claims.RegisteredClaims == nil {
-		if tokenClaims, ok := token.Claims.(*Claims); ok {
-			claims = tokenClaims
-		}
 	}
 
 	return claims, nil

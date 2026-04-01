@@ -22,7 +22,7 @@ func New(_ *config.Config, logger *zap.Logger, scope tally.Scope) (middleware.Mi
 	}
 
 	return &mid{
-		logger:    logger.Named("validate"),
+		logger:    logger.Named(Name),
 		scope:     scope.SubScope("validate"),
 		validator: validator,
 	}, nil

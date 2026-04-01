@@ -35,10 +35,10 @@ type ComponentFactory struct {
 	Endpoints  endpoint.Factory
 }
 
-func Run(cfg *config.Config, cf *ComponentFactory, assets http.FileSystem) { //nolint:revive
+func Run(cfg *config.Config, cf *ComponentFactory, assets http.FileSystem) error { //nolint:revive
 	log, err := logger.New(cfg.Server.Logger, "server")
 	if err != nil {
-		panic(err)
+		return fmt.Errorf("failed to initialize logger: %w", err)
 	}
 	defer func() { _ = log.Sync() }()
 
@@ -58,7 +58,7 @@ func Run(cfg *config.Config, cf *ComponentFactory, assets http.FileSystem) { //n
 	// Create the error interceptor so services can register error interceptors if desired.
 	errorInterceptMiddleware, err := errorintercept.NewMiddleware(nil, log, initScope)
 	if err != nil {
-		log.Fatal("could not create error interceptor middleware", zap.Error(err))
+		return fmt.Errorf("could not create error interceptor middleware: %w", err)
 	}
 
 	// Instantiate and register services.
@@ -68,7 +68,7 @@ func Run(cfg *config.Config, cf *ComponentFactory, assets http.FileSystem) { //n
 
 		svc, err := entry.Factory(cfg, log, scope.SubScope(entry.Name))
 		if err != nil {
-			log.Fatal("service instantiation failed", zap.Error(err))
+			return fmt.Errorf("service %s instantiation failed: %w", entry.Name, err)
 		}
 		service.Registry[entry.Name] = svc
 
@@ -86,7 +86,7 @@ func Run(cfg *config.Config, cf *ComponentFactory, assets http.FileSystem) { //n
 	if cfg.Server.AccessLog != nil {
 		a, err := accesslog.New(cfg.Server.AccessLog, log, scope)
 		if err != nil {
-			log.Fatal("could not create accesslog interceptor", zap.Error(err))
+			return fmt.Errorf("could not create accesslog interceptor: %w", err)
 		}
 		interceptors = append(interceptors, a.UnaryInterceptor())
 	}
@@ -94,7 +94,7 @@ func Run(cfg *config.Config, cf *ComponentFactory, assets http.FileSystem) { //n
 	// Create the timeout interceptor.
 	timeoutInterceptor, err := timeouts.New(&cfg.Server.Timeouts, log, scope)
 	if err != nil {
-		log.Fatal("could not create timeout interceptor", zap.Error(err))
+		return fmt.Errorf("could not create timeout interceptor: %w", err)
 	}
 	interceptors = append(interceptors, timeoutInterceptor.UnaryInterceptor())
 
@@ -105,7 +105,7 @@ func Run(cfg *config.Config, cf *ComponentFactory, assets http.FileSystem) { //n
 
 		mid, err := entry.Factory(cfg, log, scope.SubScope(entry.Name))
 		if err != nil {
-			log.Fatal("middleware instantiation failed", zap.Error(err))
+			return fmt.Errorf("middleware %s instantiation failed: %w", entry.Name, err)
 		}
 
 		interceptors = append(interceptors, mid.UnaryInterceptor())
@@ -114,7 +114,7 @@ func Run(cfg *config.Config, cf *ComponentFactory, assets http.FileSystem) { //n
 	// Instantiate and register modules listed in the configuration.
 	rpcMux, err := mux.New(interceptors, assets, metricsHandler, *cfg.Server)
 	if err != nil {
-		panic(err)
+		return fmt.Errorf("failed to create mux: %w", err)
 	}
 	ctx := context.TODO()
 
@@ -127,7 +127,7 @@ func Run(cfg *config.Config, cf *ComponentFactory, assets http.FileSystem) { //n
 	}
 	conn, err := grpc.NewClient(fmt.Sprintf("%s:%d", cfg.Server.Listener.Address, cfg.Server.Listener.Port), opts...)
 	if err != nil {
-		log.Fatal("failed to bring up gRPC transport for grpc-gateway handlers", zap.Error(err))
+		return fmt.Errorf("failed to create gRPC client connection: %w", err)
 	}
 	defer func() {
 		if err != nil {
@@ -154,11 +154,11 @@ func Run(cfg *config.Config, cf *ComponentFactory, assets http.FileSystem) { //n
 
 		h, err := factory(cfg, log, scope.SubScope(name))
 		if err != nil {
-			log.Fatal("endpoint instantiation failed", zap.Error(err))
+			return fmt.Errorf("endpoint %s instantiation failed: %w", name, err)
 		}
 
 		if err := h.Register(reg); err != nil {
-			log.Fatal("registration to gateway failed", zap.Error(err))
+			return fmt.Errorf("endpoint %s registration failed: %w", name, err)
 		}
 	}
 
@@ -167,7 +167,7 @@ func Run(cfg *config.Config, cf *ComponentFactory, assets http.FileSystem) { //n
 
 	// Save metadata on what RPCs being served for fast-lookup by internal services.
 	if err := meta.ResolveMethodOptions(rpcMux.GRPCServer); err != nil {
-		log.Fatal("reflection on grpc server failed", zap.Error(err))
+		return fmt.Errorf("failed to resolve method options: %w", err)
 	}
 
 	addr := fmt.Sprintf("%s:%d", cfg.Server.Listener.Address, cfg.Server.Listener.Port)
@@ -202,9 +202,8 @@ func Run(cfg *config.Config, cf *ComponentFactory, assets http.FileSystem) { //n
 	)
 
 	go func() {
-		err = srv.ListenAndServe()
-		if !errors.Is(err, http.ErrServerClosed) {
-			log.Fatal("error bringing up listener", zap.Error(err))
+		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			log.Error("listener failed", zap.Error(err))
 		}
 	}()
 
@@ -216,10 +215,11 @@ func Run(cfg *config.Config, cf *ComponentFactory, assets http.FileSystem) { //n
 	defer cancel()
 
 	if err = srv.Shutdown(ctxShutDown); err != nil {
-		log.Fatal("server shutdown failed", zap.Error(err))
+		return fmt.Errorf("server shutdown failed: %w", err)
 	}
 
 	log.Debug("server shutdown gracefully")
+	return nil
 }
 
 func computeMaximumTimeout(cfg *config.Timeouts) time.Duration {
@@ -266,7 +266,8 @@ func getStatsReporterConfiguration(cfg *config.Config, logger *zap.Logger) (tall
 	case config.ReporterTypePrometheus:
 		reporter, err := stats.NewPrometheusReporter()
 		if err != nil {
-			logger.Fatal("error creating prometheus reporter", zap.Error(err))
+			logger.Error("error creating prometheus reporter, falling back to null", zap.Error(err))
+			return tally.ScopeOptions{Reporter: tally.NullStatsReporter}, nil
 		}
 		scopeOpts = tally.ScopeOptions{
 			CachedReporter:  reporter,

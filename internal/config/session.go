@@ -53,6 +53,10 @@ func (s *Session) Validate() error {
 		return nil
 	}
 
+	if s.IdleTimeout > 0 && s.Lifetime > 0 && s.IdleTimeout >= s.Lifetime {
+		return fmt.Errorf("idle_timeout (%s) must be less than lifetime (%s)", s.IdleTimeout, s.Lifetime)
+	}
+
 	return s.Cookie.SameSite.Validate()
 }
 
