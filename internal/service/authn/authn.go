@@ -39,6 +39,7 @@ type Issuer interface {
 	CreateToken(ctx context.Context, kind TokenKind, subject string, scopes []string, expiry *time.Duration) (*oauth2.Token, error)
 	RefreshToken(ctx context.Context, tokenID uuid.UUID) (*oauth2.Token, error)
 	RevokeToken(ctx context.Context, token *oauth2.Token) error
+	RevokeAllTokens(ctx context.Context, subject string) (int64, error)
 }
 
 func New(cfg *config.Config, logger *zap.Logger, scope tally.Scope) (service.Service, error) {

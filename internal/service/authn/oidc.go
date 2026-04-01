@@ -30,6 +30,7 @@ type OIDCProvider struct {
 	oidcProvider      *oidc.Provider
 	oidcVerifier      *oidc.IDTokenVerifier
 	signingKey        string
+	subjectClaim      string
 	sessionRefreshTTL time.Duration
 	store             *store
 	logger            *zap.Logger
@@ -70,6 +71,7 @@ func NewOIDCProvider(cfg *config.Config, logger *zap.Logger, store *store) (Serv
 		oidcProvider:      oidcProvider,
 		oidcVerifier:      oidcVerifier,
 		signingKey:        cfg.Services.Authn.SigningSecret,
+		subjectClaim:      cfg.Services.Authn.SubjectClaim,
 		sessionRefreshTTL: cfg.Services.Authn.SessionRefreshTTL,
 		store:             store,
 		logger:            logger,
@@ -355,6 +357,10 @@ func (p *OIDCProvider) RevokeToken(ctx context.Context, token *oauth2.Token) err
 	return p.store.delete(ctx, jti)
 }
 
+func (p *OIDCProvider) RevokeAllTokens(ctx context.Context, subject string) (int64, error) {
+	return p.store.deleteBySubject(ctx, subject)
+}
+
 func (p *OIDCProvider) issueToken(claims *Claims) (*oauth2.Token, error) {
 	accessToken, err := jwt.NewWithClaims(jwt.SigningMethodHS256, claims).SignedString([]byte(p.signingKey))
 	if err != nil {
@@ -401,15 +407,21 @@ func (p *OIDCProvider) claimsFromOIDCToken(ctx context.Context, id uuid.UUID, to
 		return nil, errors.New("required field 'email' missing from OIDC claims")
 	}
 
+	// Extract the provider subject using the configured claim.
+	providerSubject, err := p.extractSubjectClaim(idToken)
+	if err != nil {
+		return nil, err
+	}
+
 	claims := &Claims{
 		RegisteredClaims: &jwt.RegisteredClaims{
 			ID:        id.String(),
-			Subject:   oidcClaims.Subject,
+			Subject:   providerSubject,
 			ExpiresAt: oidcClaims.ExpiresAt,
 			IssuedAt:  oidcClaims.IssuedAt,
 			Issuer:    oidcClaims.Issuer,
 		},
-		ExternalSubject: oidcClaims.Subject,
+		ExternalSubject: providerSubject,
 		Email:           oidcClaims.Email,
 		EmailVerified:   oidcClaims.EmailVerified,
 		Name:            oidcClaims.Name,
@@ -420,6 +432,33 @@ func (p *OIDCProvider) claimsFromOIDCToken(ctx context.Context, id uuid.UUID, to
 	}
 
 	return claims, nil
+}
+
+func (p *OIDCProvider) extractSubjectClaim(idToken *oidc.IDToken) (string, error) {
+	if p.subjectClaim == "sub" {
+		return idToken.Subject, nil
+	}
+
+	var rawClaims map[string]any
+	if err := idToken.Claims(&rawClaims); err != nil {
+		return "", fmt.Errorf("failed to parse raw ID token claims: %w", err)
+	}
+
+	val, ok := rawClaims[p.subjectClaim]
+	if !ok {
+		return "", fmt.Errorf("configured subject_claim %q not found in ID token", p.subjectClaim)
+	}
+
+	subject, ok := val.(string)
+	if !ok {
+		return "", fmt.Errorf("subject_claim %q is not a string in ID token", p.subjectClaim)
+	}
+
+	if subject == "" {
+		return "", fmt.Errorf("subject_claim %q is empty in ID token", p.subjectClaim)
+	}
+
+	return subject, nil
 }
 
 func (p *OIDCProvider) createInternalClaims(subject string, oidcClaims *Claims, expiry time.Time) *Claims {

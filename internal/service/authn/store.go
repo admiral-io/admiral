@@ -161,6 +161,27 @@ func (s *store) delete(ctx context.Context, id uuid.UUID) error {
 	return nil
 }
 
+func (s *store) deleteBySubject(ctx context.Context, subject string) (int64, error) {
+	if subject == "" {
+		return 0, errors.New("subject cannot be empty")
+	}
+
+	now := time.Now()
+	result := s.database.WithContext(ctx).
+		Model(&model.AuthnToken{}).
+		Where("subject = ? AND deleted_at IS NULL", subject).
+		Updates(map[string]any{
+			"status":     model.AuthnTokenStatusRevoked,
+			"deleted_at": now,
+			"updated_at": now,
+		})
+	if result.Error != nil {
+		return 0, fmt.Errorf("failed to revoke tokens for subject %s: %w", subject, result.Error)
+	}
+
+	return result.RowsAffected, nil
+}
+
 func (s *store) upsertUserFromClaims(ctx context.Context, claims *Claims) (*model.User, error) {
 	if claims == nil || claims.Subject == "" {
 		return nil, errors.New("invalid claims: nil, or missing subject")

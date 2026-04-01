@@ -24,27 +24,35 @@ func (d *Database) SetDefaults() {
 	if d == nil {
 		return
 	}
+
 	if d.Port == 0 {
 		d.Port = 5432
 	}
-	if d.SSLMode == SSLModeUnspecified {
-		d.SSLMode = SSLModeRequire
-	}
+
 	if d.DatabaseName == "" {
 		d.DatabaseName = "admiral"
 	}
+
+	if d.SSLMode == SSLModeUnspecified {
+		d.SSLMode = SSLModeRequire
+	}
+
 	if d.MaxOpenConns == 0 {
 		d.MaxOpenConns = 100
 	}
+
 	if d.MaxIdleConns == 0 {
 		d.MaxIdleConns = 10
 	}
+
 	if d.ConnMaxLifetime == 0 {
 		d.ConnMaxLifetime = 30 * time.Minute
 	}
+
 	if d.ConnMaxIdleTime == 0 {
 		d.ConnMaxIdleTime = 5 * time.Minute
 	}
+
 	if d.ConnectionTimeout == 0 {
 		d.ConnectionTimeout = 5 * time.Second
 	}
@@ -54,12 +62,15 @@ func (d *Database) Validate() error {
 	if d == nil {
 		return nil
 	}
+
 	if d.Host == "" {
 		return fmt.Errorf("host is required")
 	}
+
 	if d.User == "" {
 		return fmt.Errorf("user is required")
 	}
+
 	if d.Password == "" {
 		return fmt.Errorf("password is required")
 	}
@@ -103,26 +114,30 @@ func (s *SSLMode) String() string {
 	if s == nil {
 		return sslModeName[SSLModeUnspecified]
 	}
+
 	if name, ok := sslModeName[*s]; ok {
 		return name
 	}
+
 	return sslModeName[SSLModeUnspecified]
 }
 
-func (s *SSLMode) MarshalYAML() (interface{}, error) {
+func (s *SSLMode) MarshalYAML() (any, error) {
 	return s.String(), nil
 }
 
-func (s *SSLMode) UnmarshalYAML(unmarshal func(interface{}) error) error {
+func (s *SSLMode) UnmarshalYAML(unmarshal func(any) error) error {
 	var str string
 	if err := unmarshal(&str); err != nil {
 		return err
 	}
+
 	str = strings.ToLower(str)
 	if val, ok := sslModeValue[str]; ok {
 		*s = val
 		return nil
 	}
+
 	return fmt.Errorf("invalid SSLMode: %q", str)
 }
 
@@ -130,8 +145,10 @@ func (s *SSLMode) Validate() error {
 	if s == nil {
 		return fmt.Errorf("SSLMode is nil")
 	}
+
 	if _, ok := sslModeName[*s]; !ok {
 		return fmt.Errorf("invalid SSLMode: %d", *s)
 	}
+
 	return nil
 }

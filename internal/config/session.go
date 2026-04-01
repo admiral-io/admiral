@@ -11,13 +11,49 @@ type Session struct {
 	Cookie      Cookie        `yaml:"cookie"`
 }
 
-type Cookie struct {
-	Name     string       `yaml:"name"`
-	Domain   string       `yaml:"domain"`
-	HttpOnly *bool        `yaml:"http_only"`
-	SameSite SameSiteMode `yaml:"same_site"`
-	Secure   *bool        `yaml:"secure"`
-	Persist  *bool        `yaml:"persist"`
+func (s *Session) SetDefaults() {
+	if s == nil {
+		return
+	}
+
+	if s.IdleTimeout == 0 {
+		s.IdleTimeout = 20 * time.Minute
+	}
+
+	if s.Lifetime == 0 {
+		s.Lifetime = 24 * time.Hour
+	}
+
+	if s.Cookie.Name == "" {
+		s.Cookie.Name = "session"
+	}
+
+	if s.Cookie.SameSite == "" {
+		s.Cookie.SameSite = SessionSameSiteLax
+	}
+
+	if s.Cookie.HttpOnly == nil {
+		httpOnly := true
+		s.Cookie.HttpOnly = &httpOnly
+	}
+
+	if s.Cookie.Secure == nil {
+		secure := true
+		s.Cookie.Secure = &secure
+	}
+
+	if s.Cookie.Persist == nil {
+		persist := true
+		s.Cookie.Persist = &persist
+	}
+}
+
+func (s *Session) Validate() error {
+	if s == nil {
+		return nil
+	}
+
+	return s.Cookie.SameSite.Validate()
 }
 
 type SameSiteMode string
@@ -39,39 +75,11 @@ func (s SameSiteMode) Validate() error {
 	}
 }
 
-func (s *Session) SetDefaults() {
-	if s == nil {
-		return
-	}
-	if s.IdleTimeout == 0 {
-		s.IdleTimeout = 20 * time.Minute
-	}
-	if s.Lifetime == 0 {
-		s.Lifetime = 24 * time.Hour
-	}
-	if s.Cookie.Name == "" {
-		s.Cookie.Name = "session"
-	}
-	if s.Cookie.SameSite == "" {
-		s.Cookie.SameSite = SessionSameSiteLax
-	}
-	if s.Cookie.HttpOnly == nil {
-		httpOnly := true
-		s.Cookie.HttpOnly = &httpOnly
-	}
-	if s.Cookie.Secure == nil {
-		secure := true
-		s.Cookie.Secure = &secure
-	}
-	if s.Cookie.Persist == nil {
-		persist := true
-		s.Cookie.Persist = &persist
-	}
-}
-
-func (s *Session) Validate() error {
-	if s == nil {
-		return nil
-	}
-	return s.Cookie.SameSite.Validate()
+type Cookie struct {
+	Name     string       `yaml:"name"`
+	Domain   string       `yaml:"domain"`
+	HttpOnly *bool        `yaml:"http_only"`
+	SameSite SameSiteMode `yaml:"same_site"`
+	Secure   *bool        `yaml:"secure"`
+	Persist  *bool        `yaml:"persist"`
 }
