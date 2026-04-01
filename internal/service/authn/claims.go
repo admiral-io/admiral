@@ -2,11 +2,30 @@ package authn
 
 import (
 	"errors"
+	"fmt"
+	"strings"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 )
+
+type ClaimsKind string
+
+const (
+	ClaimsKindSession ClaimsKind = "session"
+	ClaimsKindPAT     ClaimsKind = "pat"
+	ClaimsKindAGT     ClaimsKind = "agt"
+)
+
+func ValidClaimsKind(k string) bool {
+	switch ClaimsKind(k) {
+	case ClaimsKindSession, ClaimsKindPAT, ClaimsKindAGT:
+		return true
+	default:
+		return false
+	}
+}
 
 type stateClaims struct {
 	*jwt.RegisteredClaims
@@ -14,7 +33,11 @@ type stateClaims struct {
 }
 
 func (c *stateClaims) Validate() error {
-	if c.RedirectURL == "" {
+	if c.RegisteredClaims == nil {
+		return errors.New("validation failed: registered claims are required")
+	}
+
+	if strings.TrimSpace(c.RedirectURL) == "" {
 		return errors.New("validation failed: redirect URL claim is required")
 	}
 
@@ -43,17 +66,23 @@ type Claims struct {
 }
 
 func (c Claims) Validate() error {
+	if c.RegisteredClaims == nil {
+		return errors.New("validation failed: registered claims are required")
+	}
+
 	var missing []string
 
 	if _, err := uuid.Parse(c.Subject); err != nil {
-		missing = append(missing, "subject (UUID)")
+		missing = append(missing, "subject (valid UUID required)")
 	}
-	//if _, err := ParseTokenKind(c.Kind); err != nil {
-	//	missing = append(missing, "kind ("+err.Error()+")")
-	//}
 
-	// Keep the original behavior - populate the missing slice but don't return errors
-	// This fixes the ineffassign lint warning while maintaining test compatibility
-	_ = missing
+	if c.Kind != "" && !ValidClaimsKind(c.Kind) {
+		missing = append(missing, fmt.Sprintf("kind (got %q, must be one of: session, pat, agt)", c.Kind))
+	}
+
+	if len(missing) > 0 {
+		return fmt.Errorf("validation failed: invalid claims: %s", strings.Join(missing, ", "))
+	}
+
 	return nil
 }

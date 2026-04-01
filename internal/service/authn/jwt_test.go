@@ -23,7 +23,7 @@ func TestParseTokenClaims(t *testing.T) {
 				IssuedAt:  jwt.NewNumericDate(time.Now()),
 				ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour)),
 			},
-			Kind:  "user",
+			Kind:  "session",
 			Email: "test@example.com",
 		}
 
@@ -65,7 +65,7 @@ func TestParseTokenClaims(t *testing.T) {
 				ID:      uuid.New().String(),
 				Subject: uuid.New().String(),
 			},
-			Kind: "user",
+			Kind: "session",
 		}
 		token := jwt.NewWithClaims(jwt.SigningMethodHS512, claims)
 		tokenString, err := token.SignedString([]byte(signingKey))
@@ -90,7 +90,7 @@ func TestParseTokenWithoutValidation(t *testing.T) {
 				IssuedAt:  jwt.NewNumericDate(time.Now()),
 				ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour)),
 			},
-			Kind:  "cluster",
+			Kind:  "agt",
 			Email: "test@example.com",
 		}
 
@@ -114,7 +114,7 @@ func TestParseTokenWithoutValidation(t *testing.T) {
 				ID:      uuid.New().String(),
 				Subject: uuid.New().String(),
 			},
-			Kind: "cluster",
+			Kind: "agt",
 		}
 
 		token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
@@ -148,7 +148,7 @@ func TestParseTokenWithoutValidation(t *testing.T) {
 				ID:      uuid.New().String(),
 				Subject: "not-a-uuid",
 			},
-			Kind: "cluster",
+			Kind: "agt",
 		}
 
 		token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
@@ -156,6 +156,6 @@ func TestParseTokenWithoutValidation(t *testing.T) {
 		require.NoError(t, err)
 
 		_, err = ParseTokenWithoutValidation(tokenString)
-		assert.NoError(t, err) // Note: Validate() doesn't return errors currently
+		assert.Error(t, err)
 	})
 }

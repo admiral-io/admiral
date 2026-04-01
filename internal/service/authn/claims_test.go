@@ -91,7 +91,8 @@ func TestStateClaims_Validate(t *testing.T) {
 				RegisteredClaims: nil,
 				RedirectURL:      "https://example.com/callback",
 			},
-			expectError: true, // This will panic and be caught by the test framework
+			expectError: true,
+			errorMsg:    "validation failed: registered claims are required",
 		},
 		{
 			name: "empty redirect URL with whitespace",
@@ -101,29 +102,21 @@ func TestStateClaims_Validate(t *testing.T) {
 				},
 				RedirectURL: "   ",
 			},
-			expectError: false, // Note: current implementation only checks for empty string, not whitespace
+			expectError: true,
+			errorMsg:    "validation failed: redirect URL claim is required",
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			// Handle potential panic for nil RegisteredClaims
-			if tc.name == "nil RegisteredClaims" {
-				defer func() {
-					if r := recover(); r != nil {
-						assert.True(t, tc.expectError, "Expected panic for nil RegisteredClaims")
-					}
-				}()
-			}
-
 			err := tc.claims.Validate()
 
-			if tc.expectError && tc.name != "nil RegisteredClaims" {
+			if tc.expectError {
 				assert.Error(t, err)
 				if tc.errorMsg != "" {
 					assert.Equal(t, tc.errorMsg, err.Error())
 				}
-			} else if !tc.expectError {
+			} else {
 				assert.NoError(t, err)
 			}
 		})
@@ -140,12 +133,12 @@ func TestClaims_Validate(t *testing.T) {
 		errorMsg    string
 	}{
 		{
-			name: "valid claims with user kind",
+			name: "valid claims with session kind",
 			claims: Claims{
 				RegisteredClaims: &jwt.RegisteredClaims{
 					Subject: validUUID,
 				},
-				Kind:            "user",
+				Kind:            "session",
 				Email:           "test@example.com",
 				EmailVerified:   true,
 				Name:            "John Doe",
@@ -158,12 +151,12 @@ func TestClaims_Validate(t *testing.T) {
 			expectError: false,
 		},
 		{
-			name: "valid claims with cluster kind",
+			name: "valid claims with agt kind",
 			claims: Claims{
 				RegisteredClaims: &jwt.RegisteredClaims{
 					Subject: validUUID,
 				},
-				Kind:            "cluster",
+				Kind:            "agt",
 				ExternalSubject: "cluster-456",
 			},
 			expectError: false,
@@ -174,7 +167,7 @@ func TestClaims_Validate(t *testing.T) {
 				RegisteredClaims: &jwt.RegisteredClaims{
 					Subject: validUUID,
 				},
-				Kind: "user",
+				Kind: "pat",
 			},
 			expectError: false,
 		},
@@ -184,9 +177,9 @@ func TestClaims_Validate(t *testing.T) {
 				RegisteredClaims: &jwt.RegisteredClaims{
 					Subject: "invalid-uuid",
 				},
-				Kind: "user",
+				Kind: "session",
 			},
-			expectError: false, // Note: current implementation doesn't return error for invalid UUID
+			expectError: true,
 		},
 		{
 			name: "invalid kind",
@@ -196,7 +189,7 @@ func TestClaims_Validate(t *testing.T) {
 				},
 				Kind: "invalid-kind",
 			},
-			expectError: false, // Note: current implementation doesn't return error for invalid kind
+			expectError: true,
 		},
 		{
 			name: "empty subject",
@@ -204,17 +197,17 @@ func TestClaims_Validate(t *testing.T) {
 				RegisteredClaims: &jwt.RegisteredClaims{
 					Subject: "",
 				},
-				Kind: "user",
+				Kind: "session",
 			},
-			expectError: false, // Note: current implementation doesn't return error for empty subject
+			expectError: true,
 		},
 		{
 			name: "nil RegisteredClaims",
 			claims: Claims{
 				RegisteredClaims: nil,
-				Kind:             "user",
+				Kind:             "session",
 			},
-			expectError: false, // Note: this will panic in current implementation
+			expectError: true,
 		},
 		{
 			name: "empty kind",
@@ -224,7 +217,7 @@ func TestClaims_Validate(t *testing.T) {
 				},
 				Kind: "",
 			},
-			expectError: false, // Note: current implementation doesn't return error for empty kind
+			expectError: false, // empty kind is allowed for backwards compatibility
 		},
 		{
 			name: "claims with all optional fields",
@@ -239,7 +232,7 @@ func TestClaims_Validate(t *testing.T) {
 					ID:        "test-jti",
 				},
 				ExternalSubject: "ext-sub-123",
-				Kind:            "user",
+				Kind:            "session",
 				Email:           "user@example.com",
 				EmailVerified:   false,
 				Name:            "Test User",
@@ -254,26 +247,14 @@ func TestClaims_Validate(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			// Handle potential panic for nil RegisteredClaims
-			if tc.name == "nil RegisteredClaims" {
-				defer func() {
-					if r := recover(); r != nil {
-						// Panic is expected for this case
-						assert.True(t, true, "Expected panic for nil RegisteredClaims")
-					} else {
-						t.Error("Expected panic for nil RegisteredClaims, but none occurred")
-					}
-				}()
-			}
-
 			err := tc.claims.Validate()
 
-			if tc.expectError && tc.name != "nil RegisteredClaims" {
+			if tc.expectError {
 				assert.Error(t, err)
 				if tc.errorMsg != "" {
 					assert.Equal(t, tc.errorMsg, err.Error())
 				}
-			} else if !tc.expectError {
+			} else {
 				assert.NoError(t, err)
 			}
 		})
@@ -328,11 +309,11 @@ func TestClaims_EdgeCases(t *testing.T) {
 					RegisteredClaims: &jwt.RegisteredClaims{
 						Subject: tc.subject,
 					},
-					Kind: "user",
+					Kind: "session",
 				}
 
 				err := claims.Validate()
-				assert.NoError(t, err) // Current implementation always returns nil
+				assert.NoError(t, err)
 			})
 		}
 	})
@@ -341,15 +322,19 @@ func TestClaims_EdgeCases(t *testing.T) {
 		validUUID := uuid.New().String()
 
 		testCases := []struct {
-			name string
-			kind string
+			name        string
+			kind        string
+			expectError bool
 		}{
-			{"valid user kind", "user"},
-			{"valid cluster kind", "cluster"},
-			{"invalid kind", "invalid"},
-			{"empty kind", ""},
-			{"kind with spaces", " user "},
-			{"uppercase kind", "USER"},
+			{"valid session kind", "session", false},
+			{"valid pat kind", "pat", false},
+			{"valid agt kind", "agt", false},
+			{"empty kind (allowed)", "", false},
+			{"invalid kind", "invalid", true},
+			{"old db kind user", "user", true},
+			{"old db kind cluster", "cluster", true},
+			{"kind with spaces", " session ", true},
+			{"uppercase kind", "SESSION", true},
 		}
 
 		for _, tc := range testCases {
@@ -362,7 +347,11 @@ func TestClaims_EdgeCases(t *testing.T) {
 				}
 
 				err := claims.Validate()
-				assert.NoError(t, err) // Current implementation always returns nil
+				if tc.expectError {
+					assert.Error(t, err)
+				} else {
+					assert.NoError(t, err)
+				}
 			})
 		}
 	})
@@ -377,7 +366,7 @@ func TestClaims_JSONTags(t *testing.T) {
 				Subject: uuid.New().String(),
 			},
 			ExternalSubject: "external-123",
-			Kind:            "user",
+			Kind:            "session",
 			Email:           "test@example.com",
 			EmailVerified:   true,
 			Name:            "John Doe",
@@ -391,7 +380,7 @@ func TestClaims_JSONTags(t *testing.T) {
 		// For now, we just verify the struct can be created
 		assert.NotNil(t, original)
 		assert.Equal(t, "external-123", original.ExternalSubject)
-		assert.Equal(t, "user", original.Kind)
+		assert.Equal(t, "session", original.Kind)
 		assert.Equal(t, "test@example.com", original.Email)
 		assert.True(t, original.EmailVerified)
 		assert.Equal(t, "John Doe", original.Name)
@@ -441,7 +430,7 @@ func TestClaims_Construction(t *testing.T) {
 				Issuer:  "test-issuer",
 			},
 			ExternalSubject: "external-123",
-			Kind:            "user",
+			Kind:            "session",
 			Email:           "test@example.com",
 			EmailVerified:   true,
 			Name:            "Test User",
@@ -455,7 +444,7 @@ func TestClaims_Construction(t *testing.T) {
 		assert.NotNil(t, claims.RegisteredClaims)
 		assert.Equal(t, validUUID, claims.Subject)
 		assert.Equal(t, "external-123", claims.ExternalSubject)
-		assert.Equal(t, "user", claims.Kind)
+		assert.Equal(t, "session", claims.Kind)
 		assert.Equal(t, "test@example.com", claims.Email)
 		assert.True(t, claims.EmailVerified)
 		assert.Equal(t, "Test User", claims.Name)
