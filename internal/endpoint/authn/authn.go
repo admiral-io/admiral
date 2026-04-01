@@ -60,7 +60,7 @@ func (a *api) Login(ctx context.Context, req *authnv1.LoginRequest) (*authnv1.Lo
 	}
 
 	return &authnv1.LoginResponse{
-		Return: &authnv1.LoginResponse_AuthUrl{AuthUrl: authURL},
+		AuthUrl: authURL,
 	}, nil
 }
 
