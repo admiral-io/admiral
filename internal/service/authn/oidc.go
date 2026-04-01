@@ -2,6 +2,7 @@ package authn
 
 import (
 	"context"
+	"crypto/subtle"
 	"crypto/tls"
 	"errors"
 	"fmt"
@@ -13,10 +14,11 @@ import (
 	"github.com/coreos/go-oidc/v3/oidc"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
-	"go.admiral.io/admiral/internal/config"
-	"go.admiral.io/admiral/internal/model"
 	"go.uber.org/zap"
 	"golang.org/x/oauth2"
+
+	"go.admiral.io/admiral/internal/config"
+	"go.admiral.io/admiral/internal/model"
 )
 
 const admiralProviderName = "admiral"
@@ -202,7 +204,7 @@ func (p *OIDCProvider) Verify(ctx context.Context, rawToken string) (*Claims, er
 		return nil, fmt.Errorf("failed to retrieve token: %w", err)
 	}
 
-	if string(storedAuthnToken.AccessToken) != rawToken {
+	if subtle.ConstantTimeCompare(storedAuthnToken.AccessToken, []byte(rawToken)) != 1 {
 		return nil, errors.New("token mismatch: provided token doesn't match stored authn token")
 	}
 
@@ -483,13 +485,13 @@ func (p *OIDCProvider) claimsFromOIDCToken(ctx context.Context, id uuid.UUID, to
 			Issuer:    oidcClaims.Issuer,
 		},
 		ExternalSubject: oidcClaims.Subject,
-		Email:         oidcClaims.Email,
-		EmailVerified: oidcClaims.EmailVerified,
-		Name:          oidcClaims.Name,
-		GivenName:     oidcClaims.GivenName,
-		FamilyName:    oidcClaims.FamilyName,
-		Picture:       oidcClaims.Picture,
-		Groups:        oidcClaims.Groups,
+		Email:           oidcClaims.Email,
+		EmailVerified:   oidcClaims.EmailVerified,
+		Name:            oidcClaims.Name,
+		GivenName:       oidcClaims.GivenName,
+		FamilyName:      oidcClaims.FamilyName,
+		Picture:         oidcClaims.Picture,
+		Groups:          oidcClaims.Groups,
 	}
 
 	return claims, nil

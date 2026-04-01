@@ -128,8 +128,8 @@ func (a *Authn) Validate() error {
 	if a.ClientSecret == "" {
 		return fmt.Errorf("client_secret is required")
 	}
-	if a.SigningSecret == "" {
-		return fmt.Errorf("signing_secret is required")
+	if len(a.SigningSecret) < 32 {
+		return fmt.Errorf("signing_secret must be at least 32 bytes (got %d)", len(a.SigningSecret))
 	}
 	if a.RedirectURL == "" {
 		return fmt.Errorf("redirect_url is required")
