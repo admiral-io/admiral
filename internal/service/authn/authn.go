@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/uber-go/tally/v4"
 	"go.uber.org/zap"
 	"golang.org/x/oauth2"
@@ -36,7 +37,7 @@ type Provider interface {
 
 type Issuer interface {
 	CreateToken(ctx context.Context, kind TokenKind, subject string, scopes []string, expiry *time.Duration) (*oauth2.Token, error)
-	RefreshToken(ctx context.Context, token *oauth2.Token) (*oauth2.Token, error)
+	RefreshToken(ctx context.Context, tokenID uuid.UUID) (*oauth2.Token, error)
 	RevokeToken(ctx context.Context, token *oauth2.Token) error
 }
 

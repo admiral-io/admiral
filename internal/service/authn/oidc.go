@@ -24,15 +24,15 @@ import (
 const admiralProviderName = "admiral"
 
 type OIDCProvider struct {
-	httpClient       *http.Client
-	oauth2           *oauth2.Config
-	oidcProviderName string
-	oidcProvider     *oidc.Provider
-	oidcVerifier     *oidc.IDTokenVerifier
-	signingKey       string
-	refreshTokenTTL  time.Duration
-	store            *store
-	logger           *zap.Logger
+	httpClient        *http.Client
+	oauth2            *oauth2.Config
+	oidcProviderName  string
+	oidcProvider      *oidc.Provider
+	oidcVerifier      *oidc.IDTokenVerifier
+	signingKey        string
+	sessionRefreshTTL time.Duration
+	store             *store
+	logger            *zap.Logger
 }
 
 func NewOIDCProvider(cfg *config.Config, logger *zap.Logger, store *store) (Service, error) {
@@ -64,15 +64,15 @@ func NewOIDCProvider(cfg *config.Config, logger *zap.Logger, store *store) (Serv
 	}
 
 	return &OIDCProvider{
-		httpClient:       httpClient,
-		oauth2:           oauthConfig,
-		oidcProviderName: cfg.Services.Authn.Issuer,
-		oidcProvider:     oidcProvider,
-		oidcVerifier:     oidcVerifier,
-		signingKey:       cfg.Services.Authn.SigningSecret,
-		refreshTokenTTL:  cfg.Services.Authn.RefreshTokenTTL,
-		store:            store,
-		logger:           logger,
+		httpClient:        httpClient,
+		oauth2:            oauthConfig,
+		oidcProviderName:  cfg.Services.Authn.Issuer,
+		oidcProvider:      oidcProvider,
+		oidcVerifier:      oidcVerifier,
+		signingKey:        cfg.Services.Authn.SigningSecret,
+		sessionRefreshTTL: cfg.Services.Authn.SessionRefreshTTL,
+		store:             store,
+		logger:            logger,
 	}, nil
 }
 
@@ -168,9 +168,8 @@ func (p *OIDCProvider) Exchange(ctx context.Context, code string) (*oauth2.Token
 		return nil, fmt.Errorf("failed to store provider token: %w", err)
 	}
 
-	// Transform external OIDC provider claims into Admiral's internal token
-	internalClaims := p.createInternalClaims(authenticatedUser.Id.String(), oidcClaims)
-	internalToken, err := p.issueToken(internalClaims, true)
+	internalClaims := p.createInternalClaims(authenticatedUser.Id.String(), oidcClaims, externalToken.ExpiresAt)
+	internalToken, err := p.issueToken(internalClaims)
 	if err != nil {
 		return nil, fmt.Errorf("failed to issue token: %w", err)
 	}
@@ -257,7 +256,7 @@ func (p *OIDCProvider) CreateToken(ctx context.Context, kind TokenKind, subject 
 		Scopes: scopes,
 	}
 
-	token, err := p.issueToken(claims, false)
+	token, err := p.issueToken(claims)
 	if err != nil {
 		return nil, fmt.Errorf("failed to issue token: %w", err)
 	}
@@ -270,131 +269,75 @@ func (p *OIDCProvider) CreateToken(ctx context.Context, kind TokenKind, subject 
 	return token, nil
 }
 
-func (p *OIDCProvider) RefreshToken(ctx context.Context, token *oauth2.Token) (*oauth2.Token, error) {
-	refreshClaims, err := p.parseTokenClaims(token.RefreshToken)
-	if err != nil {
-		return nil, err
-	}
-
-	refreshTokenId, err := uuid.Parse(refreshClaims.ID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse refresh token ID: %w", err)
-	}
-
-	aat, err := p.store.get(ctx, refreshTokenId)
+func (p *OIDCProvider) RefreshToken(ctx context.Context, tokenID uuid.UUID) (*oauth2.Token, error) {
+	aat, err := p.store.get(ctx, tokenID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get stored token: %w", err)
 	}
 
-	if string(aat.RefreshToken) != token.RefreshToken {
-		_ = p.store.delete(ctx, refreshTokenId)
-		return nil, errors.New("refresh token did not match")
+	if aat.ParentID == nil {
+		return nil, errors.New("token has no parent — only session tokens can be refreshed")
 	}
 
-	if time.Since(aat.CreatedAt) > 12*time.Hour {
-		_ = p.store.delete(ctx, refreshTokenId)
-		return nil, errors.New("token is too old to refresh, maximum age exceeded")
+	// Follow parent_id to the external IdP token.
+	externalToken, err := p.store.get(ctx, *aat.ParentID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get external token: %w", err)
 	}
 
-	var internalClaims *Claims
-	var providerTokenId *uuid.UUID
+	providerTokenId := externalToken.Id
 
-	if aat.ParentID != nil {
-		p.logger.Info("populate token claims from parent token", zap.String("parent_id", aat.ParentID.String()))
+	// Attempt upstream IdP refresh if the external token is expired.
+	if pt := externalToken.ToOAuth2Token(); !pt.Valid() {
+		p.logger.Info("refreshing upstream IdP token", zap.String("id", providerTokenId.String()))
 
-		pat, err := p.store.get(ctx, *aat.ParentID)
+		httpCtx := context.WithValue(ctx, oauth2.HTTPClient, p.httpClient)
+		oidcToken, err := p.oauth2.TokenSource(httpCtx, pt).Token()
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("upstream IdP refresh failed: %w", err)
 		}
 
-		providerTokenId = &pat.Id
-
-		if pt := pat.ToOAuth2Token(); !pt.Valid() {
-			p.logger.Info("updating provider token", zap.String("id", providerTokenId.String()))
-
-			httpCtx := context.WithValue(ctx, oauth2.HTTPClient, p.httpClient)
-			oidcToken, err := p.oauth2.TokenSource(httpCtx, pt).Token()
-			if err != nil {
-				return nil, err
-			}
-
-			oidcClaims, err := p.claimsFromOIDCToken(ctx, *providerTokenId, oidcToken)
-			if err != nil {
-				return nil, fmt.Errorf("failed to extract claims from token: %w", err)
-			}
-
-			_, err = p.store.upsertUserFromClaims(ctx, oidcClaims)
-			if err != nil {
-				return nil, fmt.Errorf("failed to sync user: %w", err)
-			}
-
-			externalTokenId, err := uuid.Parse(oidcClaims.ID)
-			if err != nil {
-				return nil, fmt.Errorf("failed to parse token ID: %w", err)
-			}
-
-			pat, err = p.store.save(ctx, externalTokenId, nil, oidcClaims.Subject, p.oidcProviderName, model.AuthnTokenKindExternal, oidcToken)
-			if err != nil {
-				return nil, fmt.Errorf("failed to store provider token: %w", err)
-			}
-		}
-
-		oidcClaims, err := p.claimsFromOIDCToken(ctx, *providerTokenId, pat.ToOAuth2Token())
+		oidcClaims, err := p.claimsFromOIDCToken(ctx, providerTokenId, oidcToken)
 		if err != nil {
-			return nil, fmt.Errorf("failed to extract claims from token: %w", err)
+			return nil, fmt.Errorf("failed to extract claims from refreshed token: %w", err)
 		}
 
-		internalClaims = p.createInternalClaims(aat.Subject, oidcClaims)
-	} else {
-		p.logger.Info("populate existing token claims", zap.String("token", string(aat.AccessToken)))
-
-		existingClaims, err := p.parseTokenClaims(string(aat.AccessToken))
+		_, err = p.store.upsertUserFromClaims(ctx, oidcClaims)
 		if err != nil {
-			return nil, fmt.Errorf("failed to parse existing token claims: %w", err)
+			return nil, fmt.Errorf("failed to sync user: %w", err)
 		}
 
-		// Create new claims with updated timestamps and new ID
-		internalClaims = &Claims{
-			RegisteredClaims: &jwt.RegisteredClaims{
-				ID:        uuid.NewString(),
-				Subject:   existingClaims.Subject,
-				ExpiresAt: jwt.NewNumericDate(time.Now().Add(p.refreshTokenTTL)),
-				IssuedAt:  jwt.NewNumericDate(time.Now()),
-				NotBefore: jwt.NewNumericDate(time.Now()),
-				Issuer:    admiralProviderName,
-			},
-			ExternalSubject: existingClaims.ExternalSubject,
-			Kind:            existingClaims.Kind,
-			Email:           existingClaims.Email,
-			EmailVerified:   existingClaims.EmailVerified,
-			Name:            existingClaims.Name,
-			GivenName:       existingClaims.GivenName,
-			FamilyName:      existingClaims.FamilyName,
-			Picture:         existingClaims.Picture,
-			Groups:          existingClaims.Groups,
-			Scopes:          existingClaims.Scopes,
+		externalToken, err = p.store.save(ctx, providerTokenId, nil, oidcClaims.Subject, p.oidcProviderName, model.AuthnTokenKindExternal, oidcToken)
+		if err != nil {
+			return nil, fmt.Errorf("failed to store refreshed external token: %w", err)
 		}
 	}
+
+	// Build new internal claims from the (possibly refreshed) external token.
+	oidcClaims, err := p.claimsFromOIDCToken(ctx, providerTokenId, externalToken.ToOAuth2Token())
+	if err != nil {
+		return nil, fmt.Errorf("failed to extract claims from token: %w", err)
+	}
+
+	internalClaims := p.createInternalClaims(aat.Subject, oidcClaims, externalToken.ExpiresAt)
 
 	internalTokenId, err := uuid.Parse(internalClaims.ID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse token ID: %w", err)
 	}
 
-	internalToken, err := p.issueToken(internalClaims, true)
+	internalToken, err := p.issueToken(internalClaims)
 	if err != nil {
 		return nil, fmt.Errorf("failed to issue token: %w", err)
 	}
 
-	p.logger.Info("token not before", zap.Time("not_before", internalClaims.NotBefore.Time))
-	p.logger.Info("token issued at", zap.Time("issued_at", internalClaims.IssuedAt.Time))
-	p.logger.Info("token expires at", zap.Time("expires_at", internalClaims.ExpiresAt.Time))
-
-	_, err = p.store.save(ctx, internalTokenId, providerTokenId, internalClaims.Subject, admiralProviderName, aat.Kind, internalToken)
+	_, err = p.store.save(ctx, internalTokenId, &providerTokenId, aat.Subject, admiralProviderName, model.AuthnTokenKindUser, internalToken)
 	if err != nil {
-		return nil, fmt.Errorf("failed to store internal token: %w", err)
+		return nil, fmt.Errorf("failed to store refreshed internal token: %w", err)
 	}
-	_ = p.store.delete(ctx, refreshTokenId)
+
+	// Revoke the old internal token.
+	_ = p.store.delete(ctx, tokenID)
 
 	return internalToken, nil
 }
@@ -413,34 +356,17 @@ func (p *OIDCProvider) RevokeToken(ctx context.Context, token *oauth2.Token) err
 	return p.store.delete(ctx, jti)
 }
 
-func (p *OIDCProvider) issueToken(claims *Claims, refresh bool) (*oauth2.Token, error) {
+func (p *OIDCProvider) issueToken(claims *Claims) (*oauth2.Token, error) {
 	accessToken, err := jwt.NewWithClaims(jwt.SigningMethodHS256, claims).SignedString([]byte(p.signingKey))
 	if err != nil {
 		return nil, err
 	}
 
-	token := &oauth2.Token{
+	return &oauth2.Token{
 		AccessToken: accessToken,
 		Expiry:      claims.ExpiresAt.Time,
 		TokenType:   "Bearer",
-	}
-
-	if refresh {
-		refreshClaims := &jwt.RegisteredClaims{
-			ID:        claims.ID,
-			Issuer:    claims.Issuer,
-			Subject:   claims.Subject,
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(p.refreshTokenTTL)),
-		}
-
-		refreshToken, err := jwt.NewWithClaims(jwt.SigningMethodHS256, refreshClaims).SignedString([]byte(p.signingKey))
-		if err != nil {
-			return nil, fmt.Errorf("failed to create refresh token: %w", err)
-		}
-		token.RefreshToken = refreshToken
-	}
-
-	return token, nil
+	}, nil
 }
 
 func (p *OIDCProvider) parseTokenClaims(rawToken string) (*Claims, error) {
@@ -497,12 +423,17 @@ func (p *OIDCProvider) claimsFromOIDCToken(ctx context.Context, id uuid.UUID, to
 	return claims, nil
 }
 
-func (p *OIDCProvider) createInternalClaims(subject string, oidcClaims *Claims) *Claims {
+func (p *OIDCProvider) createInternalClaims(subject string, oidcClaims *Claims, expiry time.Time) *Claims {
+	maxExpiry := time.Now().Add(p.sessionRefreshTTL)
+	if expiry.IsZero() || expiry.After(maxExpiry) {
+		expiry = maxExpiry
+	}
+
 	tokenClaims := Claims{
 		RegisteredClaims: &jwt.RegisteredClaims{
 			ID:        uuid.NewString(),
 			Subject:   subject,
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(p.refreshTokenTTL)),
+			ExpiresAt: jwt.NewNumericDate(expiry),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 			NotBefore: jwt.NewNumericDate(time.Now()),
 			Issuer:    admiralProviderName,

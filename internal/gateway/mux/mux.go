@@ -9,6 +9,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"golang.org/x/net/http2"
@@ -110,10 +111,10 @@ func newCustomResponseForwarder(sess session.Service) func(context.Context, http
 
 		if tokens := md.HeaderMD.Get("Set-Access-Token"); len(tokens) > 0 {
 			sess.Put(ctx, "accessToken", tokens[0])
-		}
 
-		if tokens := md.HeaderMD.Get("Set-Refresh-Token"); len(tokens) > 0 {
-			sess.Put(ctx, "refreshToken", tokens[0])
+			if !sess.Exists(ctx, "sessionCreatedAt") {
+				sess.Put(ctx, "sessionCreatedAt", time.Now().Unix())
+			}
 		}
 
 		// Redirect if it's the browser (non-XHR).
