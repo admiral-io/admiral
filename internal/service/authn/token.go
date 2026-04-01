@@ -25,6 +25,7 @@ var AllScopes = []string{
 	"connection:read", "connection:write",
 	"state:read", "state:write", "state:admin",
 	"token:read", "token:write",
+	"user:read",
 	"runner:exec",
 }
 
@@ -36,5 +37,6 @@ var SessionScopes = []string{
 	"connection:*",
 	"state:*",
 	"token:*",
+	"user:*",
 	"runner:*",
 }

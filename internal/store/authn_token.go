@@ -163,6 +163,27 @@ func (s *AuthnTokenStore) Delete(ctx context.Context, id uuid.UUID) error {
 	return nil
 }
 
+func (s *AuthnTokenStore) ListBySubject(ctx context.Context, subject string, kind string) ([]model.AuthnToken, error) {
+	if subject == "" {
+		return nil, errors.New("subject cannot be empty")
+	}
+
+	var tokens []model.AuthnToken
+	query := s.db.WithContext(ctx).
+		Where("subject = ? AND status = ?", subject, model.AuthnTokenStatusActive)
+
+	if kind != "" {
+		query = query.Where("kind = ?", kind)
+	}
+
+	err := query.Order("created_at DESC").Find(&tokens).Error
+	if err != nil {
+		return nil, fmt.Errorf("failed to list tokens for subject %s: %w", subject, err)
+	}
+
+	return tokens, nil
+}
+
 func (s *AuthnTokenStore) DeleteBySubject(ctx context.Context, subject string) (int64, error) {
 	if subject == "" {
 		return 0, errors.New("subject cannot be empty")

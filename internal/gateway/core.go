@@ -2,8 +2,10 @@ package gateway
 
 import (
 	"go.admiral.io/admiral/internal/endpoint"
+	applicationep "go.admiral.io/admiral/internal/endpoint/application"
 	authnep "go.admiral.io/admiral/internal/endpoint/authn"
 	healthcheckep "go.admiral.io/admiral/internal/endpoint/healthcheck"
+	userep "go.admiral.io/admiral/internal/endpoint/user"
 	"go.admiral.io/admiral/internal/middleware"
 	authnmw "go.admiral.io/admiral/internal/middleware/authn"
 	authzmw "go.admiral.io/admiral/internal/middleware/authz"
@@ -31,8 +33,10 @@ var Middleware = middleware.Factory{
 }
 
 var Endpoints = endpoint.Factory{
+	applicationep.Name: applicationep.New,
 	authnep.Name:       authnep.New,
 	healthcheckep.Name: healthcheckep.New,
+	userep.Name:        userep.New,
 }
 
 var CoreComponentFactory = &ComponentFactory{

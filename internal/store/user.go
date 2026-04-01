@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 
 	"go.admiral.io/admiral/internal/model"
@@ -20,6 +21,21 @@ func NewUserStore(db *gorm.DB) (*UserStore, error) {
 	}
 
 	return &UserStore{db: db}, nil
+}
+
+func (s *UserStore) GetByID(ctx context.Context, id uuid.UUID) (*model.User, error) {
+	var user model.User
+	err := s.db.WithContext(ctx).Where("id = ?", id).First(&user).Error
+
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, fmt.Errorf("user not found: %s", id)
+	}
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to get user: %w", err)
+	}
+
+	return &user, nil
 }
 
 func (s *UserStore) UpsertByProviderSubject(ctx context.Context, providerSubject string, profile model.UserInfo) (*model.User, error) {
