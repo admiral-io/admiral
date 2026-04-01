@@ -54,7 +54,7 @@ func New(cfg *config.Config, logger *zap.Logger, scope tally.Scope) (service.Ser
 	}
 }
 
-// validateObjectPath sanitizes and validates object paths to prevent directory traversal
+// validateObjectPath sanitizes and validates object paths to prevent directory traversal.
 func validateObjectPath(path string) error {
 	if path == "" {
 		return fmt.Errorf("path cannot be empty")
@@ -81,7 +81,7 @@ func validateObjectPath(path string) error {
 	return nil
 }
 
-// validateBucketName validates bucket names
+// validateBucketName validates bucket names.
 func validateBucketName(bucket string) error {
 	if bucket == "" {
 		return fmt.Errorf("bucket name cannot be empty")
@@ -92,7 +92,7 @@ func validateBucketName(bucket string) error {
 	return nil
 }
 
-// validateContentSize validates content size limits
+// validateContentSize validates content size limits.
 func validateContentSize(content []byte) error {
 	if content == nil {
 		return fmt.Errorf("content cannot be nil")
@@ -103,7 +103,7 @@ func validateContentSize(content []byte) error {
 	return nil
 }
 
-// sanitizePathForLogging removes sensitive information from paths for logging
+// sanitizePathForLogging removes sensitive information from paths for logging.
 func sanitizePathForLogging(path string) string {
 	if len(path) > 50 {
 		return path[:25] + "..." + path[len(path)-22:]

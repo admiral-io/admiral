@@ -33,8 +33,8 @@ type OIDCProvider struct {
 	signingKey        string
 	subjectClaim      string
 	sessionRefreshTTL time.Duration
-	tokenStore *store.AuthnTokenStore
-	userStore  *store.UserStore
+	tokenStore        *store.AuthnTokenStore
+	userStore         *store.UserStore
 	logger            *zap.Logger
 }
 
@@ -75,8 +75,8 @@ func NewOIDCProvider(cfg *config.Config, logger *zap.Logger, tokens *store.Authn
 		signingKey:        cfg.Services.Authn.SigningSecret,
 		subjectClaim:      cfg.Services.Authn.SubjectClaim,
 		sessionRefreshTTL: cfg.Services.Authn.SessionRefreshTTL,
-		tokenStore: tokens,
-		userStore:  users,
+		tokenStore:        tokens,
+		userStore:         users,
 		logger:            logger,
 	}, nil
 }

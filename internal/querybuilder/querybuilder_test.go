@@ -167,19 +167,19 @@ func TestPaginatedQueryBuilder(t *testing.T) {
 		{
 			id:          "Search by field",
 			input:       "field['foo'] = value",
-			expect:      "SELECT * FROM `objects` WHERE foo ILIKE ? AND `objects`.`deleted_at` IS NULL ORDER BY created_at ASC, id ASC LIMIT ?",
+			expect:      "SELECT * FROM `objects` WHERE foo = ? AND `objects`.`deleted_at` IS NULL ORDER BY created_at ASC, id ASC LIMIT ?",
 			shouldError: false,
 		},
 		{
 			id:          "Search by quoted field",
 			input:       "field['foo'] = 'value'",
-			expect:      "SELECT * FROM `objects` WHERE foo ILIKE ? AND `objects`.`deleted_at` IS NULL ORDER BY created_at ASC, id ASC LIMIT ?",
+			expect:      "SELECT * FROM `objects` WHERE foo = ? AND `objects`.`deleted_at` IS NULL ORDER BY created_at ASC, id ASC LIMIT ?",
 			shouldError: false,
 		},
 		{
 			id:          "Search by multiple fields",
 			input:       "field['foo'] = value1 field['bar'] = value2",
-			expect:      "SELECT * FROM `objects` WHERE (foo ILIKE ? AND bar ILIKE ?) AND `objects`.`deleted_at` IS NULL ORDER BY created_at ASC, id ASC LIMIT ?",
+			expect:      "SELECT * FROM `objects` WHERE (foo = ? AND bar = ?) AND `objects`.`deleted_at` IS NULL ORDER BY created_at ASC, id ASC LIMIT ?",
 			shouldError: false,
 		},
 		{
@@ -227,7 +227,7 @@ func TestPaginatedQueryBuilder(t *testing.T) {
 		{
 			id:          "Multiple fields with AND keyword",
 			input:       "field['foo'] = 'value1' AND field['bar'] = 'value2'",
-			expect:      "SELECT * FROM `objects` WHERE (foo ILIKE ? AND bar ILIKE ?) AND `objects`.`deleted_at` IS NULL ORDER BY created_at ASC, id ASC LIMIT ?",
+			expect:      "SELECT * FROM `objects` WHERE (foo = ? AND bar = ?) AND `objects`.`deleted_at` IS NULL ORDER BY created_at ASC, id ASC LIMIT ?",
 			shouldError: false,
 		},
 		{
@@ -285,28 +285,28 @@ func TestParseFilter(t *testing.T) {
 		{
 			id:           "Search by field",
 			input:        "field['foo'] = value",
-			expectQuery:  "foo ILIKE @p0",
+			expectQuery:  "foo = @p0",
 			expectValues: map[string]interface{}{"p0": "value"},
 			shouldError:  false,
 		},
 		{
 			id:           "Search by double-quoted field key",
 			input:        `field[ "foo" ] = "value"`,
-			expectQuery:  "foo ILIKE @p0",
+			expectQuery:  "foo = @p0",
 			expectValues: map[string]interface{}{"p0": "value"},
 			shouldError:  false,
 		},
 		{
 			id:           "Search by single quoted field",
 			input:        "field['foo'] = 'value'",
-			expectQuery:  "foo ILIKE @p0",
+			expectQuery:  "foo = @p0",
 			expectValues: map[string]interface{}{"p0": "value"},
 			shouldError:  false,
 		},
 		{
 			id:           "Search by multiple fields",
 			input:        "field['foo'] = 'value1' field['bar'] = 'value2'",
-			expectQuery:  "foo ILIKE @p0 AND bar ILIKE @p1",
+			expectQuery:  "foo = @p0 AND bar = @p1",
 			expectValues: map[string]interface{}{"p0": "value1", "p1": "value2"},
 			shouldError:  false,
 		},
@@ -369,14 +369,14 @@ func TestParseFilter(t *testing.T) {
 		{
 			id:           "Explicit AND keyword",
 			input:        "field['foo'] = 'a' AND field['bar'] = 'b'",
-			expectQuery:  "foo ILIKE @p0 AND bar ILIKE @p1",
+			expectQuery:  "foo = @p0 AND bar = @p1",
 			expectValues: map[string]interface{}{"p0": "a", "p1": "b"},
 			shouldError:  false,
 		},
 		{
 			id:           "Case-insensitive AND keyword",
 			input:        "field['foo'] = 'a' and field['bar'] = 'b'",
-			expectQuery:  "foo ILIKE @p0 AND bar ILIKE @p1",
+			expectQuery:  "foo = @p0 AND bar = @p1",
 			expectValues: map[string]interface{}{"p0": "a", "p1": "b"},
 			shouldError:  false,
 		},
@@ -409,7 +409,7 @@ func TestParseFilter(t *testing.T) {
 		{
 			id:           "Single meta key uses text extraction",
 			input:        "meta['region'] = 'us'",
-			expectQuery:  "metadata ->> 'region' ILIKE @p0",
+			expectQuery:  "metadata ->> 'region' = @p0",
 			expectValues: map[string]interface{}{"p0": "us"},
 			shouldError:  false,
 		},
@@ -471,28 +471,28 @@ func TestParseFilter(t *testing.T) {
 		{
 			id:           "Double-quoted string value",
 			input:        `field['foo'] = "hello world"`,
-			expectQuery:  "foo ILIKE @p0",
+			expectQuery:  "foo = @p0",
 			expectValues: map[string]interface{}{"p0": "hello world"},
 			shouldError:  false,
 		},
 		{
 			id:           "Escaped single quote in value",
 			input:        "field['foo'] = 'it\\'s here'",
-			expectQuery:  "foo ILIKE @p0",
+			expectQuery:  "foo = @p0",
 			expectValues: map[string]interface{}{"p0": "it's here"},
 			shouldError:  false,
 		},
 		{
 			id:           "Escaped double quote in value",
 			input:        `field['foo'] = "say \"hi\""`,
-			expectQuery:  "foo ILIKE @p0",
+			expectQuery:  "foo = @p0",
 			expectValues: map[string]interface{}{"p0": `say "hi"`},
 			shouldError:  false,
 		},
 		{
 			id:           "Identifier value with dots",
 			input:        "field['foo'] = some.dotted.value",
-			expectQuery:  "foo ILIKE @p0",
+			expectQuery:  "foo = @p0",
 			expectValues: map[string]interface{}{"p0": "some.dotted.value"},
 			shouldError:  false,
 		},
@@ -502,14 +502,14 @@ func TestParseFilter(t *testing.T) {
 		{
 			id:           "Nested two-level meta key",
 			input:        "meta['a.b'] = 'val'",
-			expectQuery:  "metadata -> 'a' ->> 'b' ILIKE @p0",
+			expectQuery:  "metadata -> 'a' ->> 'b' = @p0",
 			expectValues: map[string]interface{}{"p0": "val"},
 			shouldError:  false,
 		},
 		{
 			id:           "Deeply nested meta key",
 			input:        "meta['a.b.c'] = 'val'",
-			expectQuery:  "metadata -> 'a' -> 'b' ->> 'c' ILIKE @p0",
+			expectQuery:  "metadata -> 'a' -> 'b' ->> 'c' = @p0",
 			expectValues: map[string]interface{}{"p0": "val"},
 			shouldError:  false,
 		},
@@ -541,9 +541,9 @@ func TestParseFilter(t *testing.T) {
 			shouldError:  false,
 		},
 		{
-			id:           "Default column id with non-UUID uses ILIKE",
+			id:           "Default column id with non-UUID uses exact match",
 			input:        "field['id'] = 'somevalue'",
-			expectQuery:  "id ILIKE @p0",
+			expectQuery:  "id = @p0",
 			expectValues: map[string]interface{}{"p0": "somevalue"},
 			shouldError:  false,
 		},
@@ -557,7 +557,7 @@ func TestParseFilter(t *testing.T) {
 		{
 			id:           "Default column metadata is filterable as plain field",
 			input:        "field['metadata'] = 'test'",
-			expectQuery:  "metadata ILIKE @p0",
+			expectQuery:  "metadata = @p0",
 			expectValues: map[string]interface{}{"p0": "test"},
 			shouldError:  false,
 		},
@@ -573,9 +573,9 @@ func TestParseFilter(t *testing.T) {
 		// fast path) and returns a parse error. This is arguable — you could
 		// expect it to behave like empty string. Flagging for discussion.
 		{
-			id:          "Whitespace-only filter errors",
+			id:          "Whitespace-only filter treated as empty",
 			input:       "   ",
-			shouldError: true,
+			shouldError: false,
 		},
 		{
 			id:          "Filter at exactly max length rejected",
@@ -613,7 +613,7 @@ func TestParseFilter(t *testing.T) {
 		{
 			id:           "Three fields with mixed operators",
 			input:        "field['foo'] = 'a' AND field['bar'] > 10 AND field['id'] = '550e8400-e29b-41d4-a716-446655440000'",
-			expectQuery:  "foo ILIKE @p0 AND bar > @p1 AND id = @p2",
+			expectQuery:  "foo = @p0 AND bar > @p1 AND id = @p2",
 			expectValues: map[string]interface{}{"p0": "a", "p1": int64(10), "p2": "550e8400-e29b-41d4-a716-446655440000"},
 			shouldError:  false,
 		},
@@ -712,7 +712,7 @@ func TestPaginatedQueryPageToken(t *testing.T) {
 		require.NoError(t, q.Error)
 		sql := q.Statement.SQL.String()
 		// Filter and cursor should both appear.
-		assert.Contains(t, sql, "foo ILIKE")
+		assert.Contains(t, sql, "foo =")
 		assert.Contains(t, sql, "created_at >")
 	})
 
@@ -855,17 +855,17 @@ func FuzzParseFilter(f *testing.F) {
 		"field['foo'] = 42",
 		"field['foo'] = 3.14",
 		"field['foo'] = 1e5",
-		"field['foo'] = 'v' GARBAGE",                 // Trailing garbage
-		"meta['x\\') OR 1=1--'] = 'test'",            // SQL injection attempt
-		"field['foo'] > 10 field['foo'] < 20",         // Duplicate field names
-		"field['foo'] = true",                         // Boolean
-		"field['foo'] = false",                        // Boolean
-		"field['foo'] = -42",                          // Negative integer
-		"field['foo'] = -3.14",                        // Negative float
-		"field['foo'] = 'it\\'s here'",                // Escaped quote
-		"   ",                                         // Whitespace only
-		"field['foo'] = 'a' OR field['bar'] = 'b'",   // OR (unsupported)
-		"meta[''] = 'x'",                             // Empty meta key
+		"field['foo'] = 'v' GARBAGE",               // Trailing garbage
+		"meta['x\\') OR 1=1--'] = 'test'",          // SQL injection attempt
+		"field['foo'] > 10 field['foo'] < 20",      // Duplicate field names
+		"field['foo'] = true",                      // Boolean
+		"field['foo'] = false",                     // Boolean
+		"field['foo'] = -42",                       // Negative integer
+		"field['foo'] = -3.14",                     // Negative float
+		"field['foo'] = 'it\\'s here'",             // Escaped quote
+		"   ",                                      // Whitespace only
+		"field['foo'] = 'a' OR field['bar'] = 'b'", // OR (unsupported)
+		"meta[''] = 'x'",                           // Empty meta key
 	}
 
 	for _, tc := range testCases {

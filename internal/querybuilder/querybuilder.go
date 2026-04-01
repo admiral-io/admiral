@@ -10,7 +10,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
@@ -35,7 +34,7 @@ const (
 )
 
 type QueryBuilder interface {
-	ParseFilter(string) (string, map[string]interface{}, error)
+	ParseFilter(string) (string, map[string]any, error)
 	PaginatedQuery(string, int32, *string) func(*gorm.DB) *gorm.DB
 }
 
@@ -43,7 +42,7 @@ type queryBuilder struct {
 	columns []string // Whitelisted columns for filtering
 }
 
-// New creates a new QueryBuilder instance with the specified columns
+// New creates a new QueryBuilder instance with the specified columns.
 func New(columns []string) QueryBuilder {
 	defaultCols := []string{"id", "metadata", "created_at"}
 	colMap := map[string]bool{}
@@ -53,16 +52,22 @@ func New(columns []string) QueryBuilder {
 
 	for _, d := range defaultCols {
 		if !colMap[d] {
-			columns = append(columns, d)
+			colMap[d] = true
 		}
 	}
 
+	merged := make([]string, 0, len(colMap))
+	for c := range colMap {
+		merged = append(merged, c)
+	}
+
 	return &queryBuilder{
-		columns: columns,
+		columns: merged,
 	}
 }
 
-func (qb *queryBuilder) ParseFilter(filter string) (string, map[string]interface{}, error) {
+func (qb *queryBuilder) ParseFilter(filter string) (string, map[string]any, error) {
+	filter = strings.TrimSpace(filter)
 	if len(filter) == 0 {
 		return "", nil, nil
 	}
@@ -82,7 +87,7 @@ func (qb *queryBuilder) ParseFilter(filter string) (string, map[string]interface
 	}
 
 	var aq strings.Builder
-	av := make(map[string]interface{})
+	av := make(map[string]any)
 
 	for i, af := range q.AndFields {
 		var colExpr string // the SQL column/expression (may contain JSON operators)
@@ -101,6 +106,8 @@ func (qb *queryBuilder) ParseFilter(filter string) (string, map[string]interface
 					return "", nil, fmt.Errorf("invalid metadata key: %q", p)
 				}
 			}
+			// Safety: single quotes in path segments are safe because validMetaKey
+			// only allows [a-zA-Z_][a-zA-Z0-9_]* — no quotes or SQL-special chars.
 			var sb strings.Builder
 			for j, p := range parts {
 				if j == 0 {
@@ -111,7 +118,7 @@ func (qb *queryBuilder) ParseFilter(filter string) (string, map[string]interface
 				} else {
 					sb.WriteString(" ->> ")
 				}
-				sb.WriteString("'" + p + "'")
+				fmt.Fprintf(&sb, "'%s'", p)
 			}
 			colExpr = sb.String()
 		default:
@@ -132,25 +139,16 @@ func (qb *queryBuilder) ParseFilter(filter string) (string, map[string]interface
 
 		switch af.Operation {
 		case "~=":
-			aq.WriteString(fmt.Sprintf("%s ILIKE @%s", colExpr, paramName))
+			fmt.Fprintf(&aq, "%s ILIKE @%s", colExpr, paramName)
 			av[paramName] = fmt.Sprintf("%%%s%%", af.Value)
 		case "!=":
-			aq.WriteString(fmt.Sprintf("%s != @%s", colExpr, paramName))
+			fmt.Fprintf(&aq, "%s != @%s", colExpr, paramName)
 			av[paramName] = af.Value
 		case "=":
-			if val, ok := af.Value.(string); ok {
-				if _, err := uuid.Parse(val); err == nil {
-					aq.WriteString(fmt.Sprintf("%s = @%s", colExpr, paramName))
-				} else {
-					aq.WriteString(fmt.Sprintf("%s ILIKE @%s", colExpr, paramName))
-				}
-				av[paramName] = val
-			} else {
-				aq.WriteString(fmt.Sprintf("%s = @%s", colExpr, paramName))
-				av[paramName] = af.Value
-			}
+			fmt.Fprintf(&aq, "%s = @%s", colExpr, paramName)
+			av[paramName] = af.Value
 		default:
-			aq.WriteString(fmt.Sprintf("%s %s @%s", colExpr, af.Operation, paramName))
+			fmt.Fprintf(&aq, "%s %s @%s", colExpr, af.Operation, paramName)
 			av[paramName] = af.Value
 		}
 	}
@@ -195,7 +193,7 @@ func (qb *queryBuilder) PaginatedQuery(filter string, limit int32, pageToken *st
 				wq = cursorCondition
 			}
 			if wv == nil {
-				wv = make(map[string]interface{})
+				wv = make(map[string]any)
 			}
 			wv["cursorTime"] = cursorTime
 			wv["cursorID"] = cursorID

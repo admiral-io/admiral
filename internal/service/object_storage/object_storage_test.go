@@ -387,7 +387,7 @@ func TestObject_Struct(t *testing.T) {
 	})
 }
 
-// Test the Service interface implementation
+// Test the Service interface implementation.
 func TestService_Interface(t *testing.T) {
 	t.Run("Service interface methods", func(t *testing.T) {
 		// This test ensures that any implementation of Service has the correct methods
@@ -395,7 +395,7 @@ func TestService_Interface(t *testing.T) {
 	})
 }
 
-// mockService is a minimal implementation to test interface compliance
+// mockService is a minimal implementation to test interface compliance.
 type mockService struct{}
 
 func (m *mockService) ListObjects(ctx context.Context, bucket, prefix string) ([]Object, error) {
