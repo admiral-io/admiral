@@ -2,47 +2,6 @@ package config
 
 import "fmt"
 
-type ObjectStorage struct {
-	Type ObjectStorageType `yaml:"type"`
-	S3   *S3StorageConfig  `yaml:"s3,omitempty"`
-	GCS  *GCSStorageConfig `yaml:"gcs,omitempty"`
-}
-
-func (s *ObjectStorage) SetDefaults() {
-	if s == nil {
-		return
-	}
-	// Set S3 defaults
-	if s.Type == ObjectStorageTypeS3 && s.S3 != nil {
-		s.S3.SetDefaults()
-	}
-	// GCS doesn't have defaults currently
-}
-
-func (s *ObjectStorage) Validate() error {
-	if s == nil {
-		return nil
-	}
-	if s.Type == "" {
-		return fmt.Errorf("type is required")
-	}
-
-	switch s.Type {
-	case ObjectStorageTypeS3:
-		if s.S3 == nil {
-			return fmt.Errorf("S3 config is required for type %q", s.Type)
-		}
-		return s.S3.Validate()
-	case ObjectStorageTypeGCS:
-		if s.GCS == nil {
-			return fmt.Errorf("GCS config is required for type %q", s.Type)
-		}
-		return s.GCS.Validate()
-	default:
-		return fmt.Errorf("unsupported storage type: %q", s.Type)
-	}
-}
-
 type ObjectStorageType string
 
 const (
@@ -54,6 +13,7 @@ func (s *ObjectStorageType) String() string {
 	if s == nil {
 		return "unspecified"
 	}
+
 	return string(*s)
 }
 
@@ -77,6 +37,10 @@ type S3StorageConfig struct {
 }
 
 func (s *S3StorageConfig) SetDefaults() {
+	if s == nil {
+		return
+	}
+
 	if s.UseSSL == nil {
 		useSSL := true
 		s.UseSSL = &useSSL
@@ -84,6 +48,10 @@ func (s *S3StorageConfig) SetDefaults() {
 }
 
 func (s *S3StorageConfig) Validate() error {
+	if s == nil {
+		return nil
+	}
+
 	return nil
 }
 
@@ -94,6 +62,63 @@ type GCSStorageConfig struct {
 	UseADC          bool   `yaml:"use_adc"`
 }
 
+func (g *GCSStorageConfig) SetDefaults() {
+	if g == nil {
+		return
+	}
+}
+
 func (g *GCSStorageConfig) Validate() error {
+	if g == nil {
+		return nil
+	}
+
 	return nil
+}
+
+type ObjectStorage struct {
+	Type ObjectStorageType `yaml:"type"`
+	S3   *S3StorageConfig  `yaml:"s3,omitempty"`
+	GCS  *GCSStorageConfig `yaml:"gcs,omitempty"`
+}
+
+func (s *ObjectStorage) SetDefaults() {
+	if s == nil {
+		return
+	}
+
+	if s.Type == ObjectStorageTypeS3 && s.S3 != nil {
+		s.S3.SetDefaults()
+	}
+
+	if s.Type == ObjectStorageTypeGCS && s.GCS != nil {
+		s.GCS.SetDefaults()
+	}
+}
+
+func (s *ObjectStorage) Validate() error {
+	if s == nil {
+		return nil
+	}
+
+	if s.Type == "" {
+		return fmt.Errorf("type is required")
+	}
+
+	switch s.Type {
+	case ObjectStorageTypeS3:
+		if s.S3 == nil {
+			return fmt.Errorf("S3 config is required for type %q", s.Type)
+		}
+
+		return s.S3.Validate()
+	case ObjectStorageTypeGCS:
+		if s.GCS == nil {
+			return fmt.Errorf("GCS config is required for type %q", s.Type)
+		}
+
+		return s.GCS.Validate()
+	default:
+		return fmt.Errorf("unsupported storage type: %q", s.Type)
+	}
 }
