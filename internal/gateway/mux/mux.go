@@ -120,7 +120,7 @@ func newCustomResponseForwarder(sess session.Service) func(context.Context, http
 
 		// Redirect if it's the browser (non-XHR).
 		redirects := md.HeaderMD.Get("Location")
-		if len(redirects) > 0 && isBrowser(requestHeadersFromResponseWriter(w)) {
+		if len(redirects) > 0 && isBrowserFromMetadata(md.HeaderMD) {
 			code := http.StatusFound
 			if st := md.HeaderMD.Get("Location-Status"); len(st) > 0 {
 				headerCodeOverride, err := strconv.Atoi(st[0])
@@ -140,6 +140,12 @@ func newCustomResponseForwarder(sess session.Service) func(context.Context, http
 
 func customHeaderMatcher(key string) (string, bool) {
 	key = textproto.CanonicalMIMEHeaderKey(key)
+
+	switch key {
+	case "Sec-Fetch-Mode", "Sec-Fetch-Dest", "Accept":
+		return runtime.MetadataPrefix + key, true
+	}
+
 	if strings.HasPrefix(key, xHeader) {
 		if key != xForwardedFor && key != xForwardedHost {
 			return runtime.MetadataPrefix + key, true
