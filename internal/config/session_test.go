@@ -19,7 +19,7 @@ func TestSessionSetDefaults(t *testing.T) {
 	require.NotNil(t, s.Cookie.HttpOnly)
 	assert.True(t, *s.Cookie.HttpOnly)
 	require.NotNil(t, s.Cookie.Secure)
-	assert.False(t, *s.Cookie.Secure)
+	assert.True(t, *s.Cookie.Secure)
 	require.NotNil(t, s.Cookie.Persist)
 	assert.True(t, *s.Cookie.Persist)
 }

@@ -60,7 +60,7 @@ func (s *Session) SetDefaults() {
 		s.Cookie.HttpOnly = &httpOnly
 	}
 	if s.Cookie.Secure == nil {
-		secure := false
+		secure := true
 		s.Cookie.Secure = &secure
 	}
 	if s.Cookie.Persist == nil {

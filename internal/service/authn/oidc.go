@@ -131,8 +131,7 @@ func (p *OIDCProvider) GetAuthCodeURL(_ context.Context, state string) (string, 
 		return "", errors.New("state parameter cannot be empty")
 	}
 
-	opts := []oauth2.AuthCodeOption{oauth2.AccessTypeOffline}
-	authURL := p.oauth2.AuthCodeURL(state, opts...)
+	authURL := p.oauth2.AuthCodeURL(state)
 	if authURL == "" {
 		return "", errors.New("failed to generate auth code URL")
 	}
@@ -143,7 +142,7 @@ func (p *OIDCProvider) GetAuthCodeURL(_ context.Context, state string) (string, 
 func (p *OIDCProvider) Exchange(ctx context.Context, code string) (*oauth2.Token, error) {
 	ctx = context.WithValue(ctx, oauth2.HTTPClient, p.httpClient)
 
-	oidcToken, err := p.oauth2.Exchange(ctx, code, oauth2.AccessTypeOffline)
+	oidcToken, err := p.oauth2.Exchange(ctx, code)
 	if err != nil {
 		return nil, fmt.Errorf("failed to exchange auth code: %w", err)
 	}

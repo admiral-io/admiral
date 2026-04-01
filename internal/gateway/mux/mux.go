@@ -3,6 +3,7 @@ package mux
 import (
 	"context"
 	"fmt"
+	"net"
 	"net/http"
 	"net/http/pprof"
 	"net/textproto"
@@ -75,7 +76,7 @@ func New(unaryInterceptors []grpc.UnaryServerInterceptor, assets http.FileSystem
 	})
 
 	if cfg.EnablePprof {
-		httpMux.HandleFunc("/debug/pprof/", pprof.Index)
+		httpMux.HandleFunc("/debug/pprof/", localhostOnly(pprof.Index))
 	}
 
 	if metricsHandler != nil {
@@ -172,4 +173,15 @@ func customErrorHandler(ctx context.Context, mux *runtime.ServeMux, m runtime.Ma
 
 func InsecureHandler(handler http.Handler) http.Handler {
 	return h2c.NewHandler(handler, &http2.Server{})
+}
+
+func localhostOnly(next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		host, _, _ := net.SplitHostPort(r.RemoteAddr)
+		if host != "127.0.0.1" && host != "::1" {
+			http.Error(w, "forbidden", http.StatusForbidden)
+			return
+		}
+		next(w, r)
+	}
 }

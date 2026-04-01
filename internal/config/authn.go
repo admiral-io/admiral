@@ -21,7 +21,7 @@ type Authn struct {
 func (a *Authn) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	type rawAuthn Authn
 	raw := rawAuthn{
-		Scopes: []string{"openid", "email", "profile"},
+		Scopes: []string{"openid", "email", "profile", "offline_access"},
 	}
 
 	var temp map[string]interface{}
@@ -116,7 +116,7 @@ func (a *Authn) SetDefaults() {
 	}
 
 	if len(a.Scopes) == 0 {
-		a.Scopes = []string{"openid", "email", "profile"}
+		a.Scopes = []string{"openid", "email", "profile", "offline_access"}
 	}
 
 	if a.SessionRefreshTTL == 0 {

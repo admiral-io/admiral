@@ -7,7 +7,9 @@ import (
 	"github.com/uber-go/tally/v4"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/status"
 
 	"go.admiral.io/admiral/internal/config"
 	"go.admiral.io/admiral/internal/endpoint"
@@ -64,7 +66,11 @@ func (a *api) Login(ctx context.Context, req *authnv1.LoginRequest) (*authnv1.Lo
 
 func (a *api) Callback(ctx context.Context, req *authnv1.CallbackRequest) (*authnv1.CallbackResponse, error) {
 	if req.Error != "" {
-		return nil, fmt.Errorf("%s: %s", req.Error, req.ErrorDescription)
+		a.logger.Warn("OAuth callback error",
+			zap.String("error", req.Error),
+			zap.String("error_description", req.ErrorDescription),
+		)
+		return nil, status.Errorf(codes.Unauthenticated, "authentication failed: %s", sanitizeOAuthError(req.Error))
 	}
 
 	redirectURL, err := a.provider.ValidateStateNonce(ctx, req.State)
@@ -87,4 +93,27 @@ func (a *api) Callback(ctx context.Context, req *authnv1.CallbackRequest) (*auth
 	}
 
 	return &authnv1.CallbackResponse{}, nil
+}
+
+// sanitizeOAuthError maps OAuth error codes to known safe strings.
+// Prevents user-controlled error params from being reflected in responses.
+func sanitizeOAuthError(errorCode string) string {
+	switch errorCode {
+	case "access_denied":
+		return "access denied by identity provider"
+	case "invalid_request":
+		return "invalid authentication request"
+	case "unauthorized_client":
+		return "client not authorized"
+	case "unsupported_response_type":
+		return "unsupported response type"
+	case "invalid_scope":
+		return "invalid scope requested"
+	case "server_error":
+		return "identity provider error"
+	case "temporarily_unavailable":
+		return "identity provider temporarily unavailable"
+	default:
+		return "unknown authentication error"
+	}
 }
