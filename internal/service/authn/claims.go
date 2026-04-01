@@ -10,23 +10,6 @@ import (
 	"github.com/google/uuid"
 )
 
-type ClaimsKind string
-
-const (
-	ClaimsKindSession ClaimsKind = "session"
-	ClaimsKindPAT     ClaimsKind = "pat"
-	ClaimsKindAGT     ClaimsKind = "agt"
-)
-
-func ValidClaimsKind(k string) bool {
-	switch ClaimsKind(k) {
-	case ClaimsKindSession, ClaimsKindPAT, ClaimsKindAGT:
-		return true
-	default:
-		return false
-	}
-}
-
 type stateClaims struct {
 	*jwt.RegisteredClaims
 	RedirectURL string `json:"redirect"`
@@ -63,6 +46,7 @@ type Claims struct {
 	FamilyName      string   `json:"family_name,omitempty"`
 	Picture         string   `json:"picture,omitempty"`
 	Groups          []string `json:"groups,omitempty"`
+	Scopes          []string `json:"scopes,omitempty"`
 }
 
 func (c Claims) Validate() error {
@@ -76,7 +60,7 @@ func (c Claims) Validate() error {
 		missing = append(missing, "subject (valid UUID required)")
 	}
 
-	if c.Kind != "" && !ValidClaimsKind(c.Kind) {
+	if c.Kind != "" && !ValidTokenKind(c.Kind) {
 		missing = append(missing, fmt.Sprintf("kind (got %q, must be one of: session, pat, agt)", c.Kind))
 	}
 

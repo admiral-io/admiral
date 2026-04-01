@@ -53,7 +53,7 @@ func (s *store) save(ctx context.Context, tokenId uuid.UUID, parentTokenId *uuid
 	err := s.database.WithContext(ctx).First(&existing, "id = ?", tokenId).Error
 
 	if err == nil {
-		updates := map[string]interface{}{
+		updates := map[string]any{
 			"subject":      subject,
 			"issuer":       issuer,
 			"kind":         kind,
@@ -123,7 +123,7 @@ func (s *store) get(ctx context.Context, id uuid.UUID) (*model.AuthnToken, error
 
 	var authnToken model.AuthnToken
 	err := s.database.WithContext(ctx).
-		Where("id = ?", id).
+		Where("id = ? AND status = ?", id, model.AuthnTokenStatusActive).
 		First(&authnToken).Error
 
 	if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -141,13 +141,21 @@ func (s *store) delete(ctx context.Context, id uuid.UUID) error {
 		return errors.New("id cannot be empty")
 	}
 
-	result := s.database.WithContext(ctx).Delete(&model.AuthnToken{}, "id = ?", id)
+	now := time.Now()
+	result := s.database.WithContext(ctx).
+		Model(&model.AuthnToken{}).
+		Where("id = ? AND deleted_at IS NULL", id).
+		Updates(map[string]any{
+			"status":     model.AuthnTokenStatusRevoked,
+			"deleted_at": now,
+			"updated_at": now,
+		})
 	if result.Error != nil {
-		return fmt.Errorf("failed to delete authn token: %w", result.Error)
+		return fmt.Errorf("failed to revoke authn token: %w", result.Error)
 	}
 
 	if result.RowsAffected == 0 {
-		return errors.New("no token found to delete")
+		return errors.New("no token found to revoke")
 	}
 
 	return nil

@@ -35,7 +35,7 @@ type Provider interface {
 }
 
 type Issuer interface {
-	CreateToken(ctx context.Context, subject string, expiry *time.Duration) (*oauth2.Token, error)
+	CreateToken(ctx context.Context, kind TokenKind, subject string, scopes []string, expiry *time.Duration) (*oauth2.Token, error)
 	RefreshToken(ctx context.Context, token *oauth2.Token) (*oauth2.Token, error)
 	RevokeToken(ctx context.Context, token *oauth2.Token) error
 }

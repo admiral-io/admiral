@@ -33,7 +33,7 @@ type OIDCProvider struct {
 	logger           *zap.Logger
 }
 
-func NewOIDCProvider(cfg *config.Config, logger *zap.Logger, store *store) (Provider, error) {
+func NewOIDCProvider(cfg *config.Config, logger *zap.Logger, store *store) (Service, error) {
 	httpClient := &http.Client{
 		Transport: &http.Transport{
 			TLSClientConfig: &tls.Config{
@@ -209,13 +209,35 @@ func (p *OIDCProvider) Verify(ctx context.Context, rawToken string) (*Claims, er
 	return claims, nil
 }
 
-func (p *OIDCProvider) CreateToken(ctx context.Context, subject string, expiry *time.Duration) (*oauth2.Token, error) {
+func (p *OIDCProvider) CreateToken(ctx context.Context, kind TokenKind, subject string, scopes []string, expiry *time.Duration) (*oauth2.Token, error) {
 	if subject == "" {
 		return nil, errors.New("subject is empty")
 	}
 
+	if !ValidTokenKind(string(kind)) {
+		return nil, fmt.Errorf("invalid token kind: %q", kind)
+	}
+
+	if kind == TokenKindSession {
+		return nil, errors.New("session tokens are created via the OAuth2 flow, not CreateToken")
+	}
+
+	if len(scopes) == 0 {
+		return nil, errors.New("scopes cannot be empty")
+	}
+
 	if expiry == nil || *expiry <= 0 {
 		return nil, errors.New("expiry must be positive")
+	}
+
+	var dbKind model.AuthnTokenKind
+	switch kind {
+	case TokenKindPAT:
+		dbKind = model.AuthnTokenKindUser
+	case TokenKindAGT:
+		dbKind = model.AuthnTokenKindAgent
+	default:
+		return nil, fmt.Errorf("unsupported token kind for CreateToken: %q", kind)
 	}
 
 	tokenId := uuid.New()
@@ -229,7 +251,8 @@ func (p *OIDCProvider) CreateToken(ctx context.Context, subject string, expiry *
 			NotBefore: jwt.NewNumericDate(now),
 			ExpiresAt: jwt.NewNumericDate(now.Add(*expiry)),
 		},
-		//Kind: string(tokenKind),
+		Kind:   string(kind),
+		Scopes: scopes,
 	}
 
 	token, err := p.issueToken(claims, false)
@@ -237,17 +260,7 @@ func (p *OIDCProvider) CreateToken(ctx context.Context, subject string, expiry *
 		return nil, fmt.Errorf("failed to issue token: %w", err)
 	}
 
-	//var modelTokenKind model.AuthnTokenKind
-	//switch tokenKind {
-	//case TokenKindUser:
-	//	modelTokenKind = model.AuthnTokenKindUser
-	//case TokenKindCluster:
-	//	modelTokenKind = model.AuthnTokenKindCluster
-	//default:
-	//	return nil, fmt.Errorf("unsupported token kind: %s", tokenKind)
-	//}
-
-	_, err = p.store.save(ctx, tokenId, nil, subject, admiralProviderName, model.AuthnTokenKindUser, token)
+	_, err = p.store.save(ctx, tokenId, nil, subject, admiralProviderName, dbKind, token)
 	if err != nil {
 		return nil, fmt.Errorf("failed to store token: %w", err)
 	}
@@ -357,6 +370,7 @@ func (p *OIDCProvider) RefreshToken(ctx context.Context, token *oauth2.Token) (*
 			FamilyName:      existingClaims.FamilyName,
 			Picture:         existingClaims.Picture,
 			Groups:          existingClaims.Groups,
+			Scopes:          existingClaims.Scopes,
 		}
 	}
 
@@ -469,7 +483,6 @@ func (p *OIDCProvider) claimsFromOIDCToken(ctx context.Context, id uuid.UUID, to
 			Issuer:    oidcClaims.Issuer,
 		},
 		ExternalSubject: oidcClaims.Subject,
-		//Kind:            string(TokenKindUser),
 		Email:         oidcClaims.Email,
 		EmailVerified: oidcClaims.EmailVerified,
 		Name:          oidcClaims.Name,
@@ -493,7 +506,7 @@ func (p *OIDCProvider) createInternalClaims(subject string, oidcClaims *Claims) 
 			Issuer:    admiralProviderName,
 		},
 		ExternalSubject: oidcClaims.ExternalSubject,
-		Kind:            oidcClaims.Kind,
+		Kind:            string(TokenKindSession),
 		Email:           oidcClaims.Email,
 		EmailVerified:   oidcClaims.EmailVerified,
 		Name:            oidcClaims.Name,
@@ -501,6 +514,7 @@ func (p *OIDCProvider) createInternalClaims(subject string, oidcClaims *Claims) 
 		FamilyName:      oidcClaims.FamilyName,
 		Picture:         oidcClaims.Picture,
 		Groups:          make([]string, len(oidcClaims.Groups)),
+		Scopes:          AllScopes,
 	}
 
 	copy(tokenClaims.Groups, oidcClaims.Groups)
