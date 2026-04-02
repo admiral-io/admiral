@@ -8,6 +8,7 @@ export const persistConfig = {
   key: 'menu',
   keyPrefix: 'admiral:',
   storage,
+  blacklist: ['menu'],
 };
 
 const initialState: MenuState = {

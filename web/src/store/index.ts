@@ -9,15 +9,13 @@ import {
   useDispatch as useReduxDispatch,
   useSelector as useReduxSelector,
 } from 'react-redux';
-import { FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER } from 'redux-persist';
+import { FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER, persistStore } from 'redux-persist';
 import { createLogger } from 'redux-logger';
-import { persistStore } from 'redux-persist';
 
 import { listenerMiddleware } from '@/store/middleware';
-import rootReducer from '@/store/reducer';
-import type { RootState } from '@/store/reducer';
+import rootReducer, { type RootState } from '@/store/reducer';
 
-export type { RootState } from '@/store/reducer';
+export type { RootState };
 
 const middleware: ConfigureStoreOptions['middleware'] = (getDefaultMiddleware) => {
   return getDefaultMiddleware({

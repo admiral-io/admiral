@@ -86,7 +86,7 @@ const snackbarSlice = createSlice({
   },
 });
 
-export const snackbar = (state: RootState): SnackbarState => state.snackbar;
+export const selectSnackbar = (state: RootState): SnackbarState => state.snackbar;
 export const { openSnackbar, closeSnackbar, setDenseMode, setMaxStack, setIconVariant } =
   snackbarSlice.actions;
 

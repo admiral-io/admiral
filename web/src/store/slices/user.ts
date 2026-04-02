@@ -34,7 +34,7 @@ export interface UserState {
   name: string;
   givenName: string;
   familyName: string;
-  pictureUrl: string;
+  pictureUrl: string | undefined;
   preferences: UserPreferences;
 }
 
@@ -45,7 +45,7 @@ const initialState: UserState = {
   name: '',
   givenName: '',
   familyName: '',
-  pictureUrl: '',
+  pictureUrl: undefined,
   preferences: loadPreferences(),
 };
 
@@ -61,10 +61,10 @@ const userSlice = createSlice({
       state.name = name ?? '';
       state.givenName = givenName ?? '';
       state.familyName = familyName ?? '';
-      state.pictureUrl = pictureUrl ?? '';
+      state.pictureUrl = pictureUrl;
     },
     setThemeMode(state, action: PayloadAction<ThemeMode>) {
-      state.preferences.themeMode = action.payload || initialState.preferences.themeMode;
+      state.preferences.themeMode = action.payload ?? initialState.preferences.themeMode;
     },
   },
 });
