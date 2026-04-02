@@ -13,7 +13,7 @@ CREATE TABLE IF NOT EXISTS authn_tokens (
     id_token BYTEA,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-    expires_at TIMESTAMP WITH TIME ZONE NOT NULL CHECK (expires_at > created_at),
+    expires_at TIMESTAMP WITH TIME ZONE CHECK (expires_at IS NULL OR expires_at > created_at),
     deleted_at TIMESTAMP WITH TIME ZONE
 );
 
