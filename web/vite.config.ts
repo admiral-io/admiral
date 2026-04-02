@@ -1,5 +1,6 @@
 import { createLogger as createLoggerRaw, defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
+import tsconfigPaths from 'vite-tsconfig-paths';
 
 export default defineConfig(({ mode }) => {
   process.env = { ...process.env, ...loadEnv(mode, process.cwd()) };
@@ -27,7 +28,7 @@ export default defineConfig(({ mode }) => {
       host: 'localhost',
       port: 8888,
       proxy: {
-        '^/((auth|api|debug)/.*)|(meta|metrics|healthcheck)$': {
+        '^/((auth|api|debug|admiral\\.|grpc\\.)/.*)|(meta|metrics|healthcheck)$': {
           target: process.env.VITE_API_ENDPOINT || 'http://localhost:8080',
           changeOrigin: true,
           xfwd: true,
@@ -49,6 +50,6 @@ export default defineConfig(({ mode }) => {
         },
       },
     },
-    plugins: [react()],
+    plugins: [tsconfigPaths(), react()],
   };
 });
