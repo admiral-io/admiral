@@ -17,12 +17,6 @@ import (
 
 const Name = "service.authn"
 
-var AlwaysAllowedMethods = []string{
-	"/admiral.api.authentication.v1.AuthenticationAPI/Callback",
-	"/admiral.api.authentication.v1.AuthenticationAPI/Login",
-	"/admiral.api.healthcheck.v1.HealthcheckAPI/*",
-}
-
 type Service interface {
 	Issuer
 	Provider

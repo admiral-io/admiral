@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	commonv1 "buf.build/gen/go/admiral/common/protocolbuffers/go/admiral/common/v1"
 	"github.com/google/uuid"
 	"github.com/uber-go/tally/v4"
 	"go.uber.org/zap"
@@ -14,8 +15,10 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/proto"
 
 	"go.admiral.io/admiral/internal/config"
+	"go.admiral.io/admiral/internal/gateway/meta"
 	"go.admiral.io/admiral/internal/gateway/mux"
 	"go.admiral.io/admiral/internal/middleware"
 	"go.admiral.io/admiral/internal/service"
@@ -57,26 +60,28 @@ func (m *mid) UnaryInterceptor() grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
 		authenticatedCtx, authErr := m.authenticate(ctx)
 
-		checkRequired := true
-		for _, allow := range authn.AlwaysAllowedMethods {
-			if middleware.MatchMethodOrResource(allow, info.FullMethod) {
-				checkRequired = false
-				break
-			}
-		}
-
-		if checkRequired {
+		if !requiresAuth(info.FullMethod) {
+			// No AuthRule annotation — auth is optional.
 			if authErr != nil {
-				return nil, status.New(codes.Unauthenticated, authErr.Error()).Err()
+				return handler(authn.ContextWithAnonymousClaims(ctx), req)
 			}
 			return handler(authenticatedCtx, req)
 		}
 
-		if _, err := authn.ClaimsFromContext(authenticatedCtx); err != nil {
-			return handler(authn.ContextWithAnonymousClaims(ctx), req)
+		// Has AuthRule annotation — auth is required.
+		if authErr != nil {
+			return nil, status.Error(codes.Unauthenticated, authErr.Error())
 		}
 		return handler(authenticatedCtx, req)
 	}
+}
+
+func requiresAuth(fullMethod string) bool {
+	opts := meta.GetMethodOptions(fullMethod)
+	if opts == nil {
+		return false
+	}
+	return proto.HasExtension(opts, commonv1.E_Authz)
 }
 
 func (m *mid) authenticate(ctx context.Context) (context.Context, error) {
