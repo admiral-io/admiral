@@ -118,9 +118,9 @@ func newCustomResponseForwarder(sess session.Service) func(context.Context, http
 			}
 		}
 
-		// Redirect if it's the browser (non-XHR).
+		// Redirect when a Location header is set by the handler (auth flow).
 		redirects := md.HeaderMD.Get("Location")
-		if len(redirects) > 0 && isBrowserFromMetadata(md.HeaderMD) {
+		if len(redirects) > 0 {
 			code := http.StatusFound
 			if st := md.HeaderMD.Get("Location-Status"); len(st) > 0 {
 				headerCodeOverride, err := strconv.Atoi(st[0])
