@@ -700,7 +700,7 @@ func TestPaginatedQueryPageToken(t *testing.T) {
 		sql := q.Statement.SQL.String()
 		assert.Contains(t, sql, "created_at >")
 		assert.Contains(t, sql, "created_at =")
-		assert.Contains(t, sql, "id >=")
+		assert.Contains(t, sql, "id >")
 		assert.Contains(t, sql, "ORDER BY created_at ASC, id ASC")
 	})
 
@@ -743,13 +743,12 @@ func TestPaginatedQueryPageToken(t *testing.T) {
 		assert.Contains(t, q.Error.Error(), "invalid timestamp in page token")
 	})
 
-	t.Run("Page token with too many pipe segments", func(t *testing.T) {
+	t.Run("Page token with extra pipe segments treats remainder as ID", func(t *testing.T) {
 		token := makeToken("123|abc|extra")
 		q := db.Session(&gorm.Session{DryRun: true}).
 			Scopes(qb.PaginatedQuery("", 0, token)).
 			Find(&[]object{})
-		assert.Error(t, q.Error)
-		assert.Contains(t, q.Error.Error(), "invalid page token format")
+		assert.NoError(t, q.Error)
 	})
 
 	t.Run("Nil page token is no-op", func(t *testing.T) {
@@ -783,15 +782,13 @@ func TestPaginatedQueryPageTokenEdgeCases(t *testing.T) {
 	qb := New([]string{"foo"})
 	db, _ := gorm.Open(tests.DummyDialector{}, nil)
 
-	t.Run("Page token with pipe in cursor ID", func(t *testing.T) {
-		// If a cursor ID somehow contained a pipe, Split would produce 3+ parts.
-		// This should be rejected by the format check.
+	t.Run("Page token with pipe in cursor ID treats remainder as ID", func(t *testing.T) {
+		// SplitN(…, 2) stops at the first pipe, so extra pipes become part of the ID.
 		token := base64.RawURLEncoding.EncodeToString([]byte("1700000000|id|with|pipes"))
 		q := db.Session(&gorm.Session{DryRun: true}).
 			Scopes(qb.PaginatedQuery("", 0, &token)).
 			Find(&[]object{})
-		assert.Error(t, q.Error)
-		assert.Contains(t, q.Error.Error(), "invalid page token format")
+		assert.NoError(t, q.Error)
 	})
 
 	t.Run("Valid page token combined with invalid filter", func(t *testing.T) {

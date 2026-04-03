@@ -33,18 +33,6 @@ const (
 	MaxFilterLen         = 4096
 )
 
-// EffectiveLimit clamps a requested page size to the valid range [1, MaxResultLimit],
-// defaulting to DefaultLimit when pageSize is zero or negative.
-func EffectiveLimit(pageSize int32) int32 {
-	if pageSize <= 0 {
-		return DefaultLimit
-	}
-	if pageSize > MaxResultLimit {
-		return MaxResultLimit
-	}
-	return pageSize
-}
-
 type QueryBuilder interface {
 	ParseFilter(string) (string, map[string]any, error)
 	PaginatedQuery(string, int32, *string) func(*gorm.DB) *gorm.DB
@@ -54,7 +42,6 @@ type queryBuilder struct {
 	columns []string // Whitelisted columns for filtering
 }
 
-// New creates a new QueryBuilder instance with the specified columns.
 func New(columns []string) QueryBuilder {
 	defaultCols := []string{"id", "metadata", "created_at"}
 	colMap := map[string]bool{}
@@ -183,8 +170,8 @@ func (qb *queryBuilder) PaginatedQuery(filter string, limit int32, pageToken *st
 				return db
 			}
 
-			parts := strings.Split(string(decoded), "|")
-			if len(parts) != 2 {
+			parts := strings.SplitN(string(decoded), "|", 2)
+			if len(parts) != 2 || parts[0] == "" || parts[1] == "" {
 				_ = db.AddError(fmt.Errorf("invalid page token format"))
 				return db
 			}
@@ -197,7 +184,7 @@ func (qb *queryBuilder) PaginatedQuery(filter string, limit int32, pageToken *st
 
 			cursorTime := time.Unix(ts, 0)
 			cursorID := parts[1]
-			cursorCondition := `((created_at > @cursorTime) OR (created_at = @cursorTime AND id >= @cursorID))`
+			cursorCondition := `((created_at > @cursorTime) OR (created_at = @cursorTime AND id > @cursorID))`
 
 			if len(wq) > 0 {
 				wq += " AND " + cursorCondition
@@ -227,4 +214,14 @@ func (qb *queryBuilder) PaginatedQuery(filter string, limit int32, pageToken *st
 		db = db.Order("created_at ASC, id ASC")
 		return db.Limit(int(queryLimit))
 	}
+}
+
+func EffectiveLimit(pageSize int32) int32 {
+	if pageSize <= 0 {
+		return DefaultLimit
+	}
+	if pageSize > MaxResultLimit {
+		return MaxResultLimit
+	}
+	return pageSize
 }
