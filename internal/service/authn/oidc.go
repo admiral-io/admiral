@@ -167,12 +167,12 @@ func (p *OIDCProvider) Exchange(ctx context.Context, code string) (*oauth2.Token
 		return nil, fmt.Errorf("failed to parse token ID: %w", err)
 	}
 
-	externalToken, err := p.tokenStore.Save(ctx, externalTokenId, nil, oidcClaims.Subject, p.oidcProviderName, model.AuthnTokenKindExternal, oidcToken)
+	externalToken, err := p.tokenStore.Save(ctx, externalTokenId, nil, "", oidcClaims.Subject, p.oidcProviderName, model.AuthnTokenKindExternal, oidcToken)
 	if err != nil {
 		return nil, fmt.Errorf("failed to store provider token: %w", err)
 	}
 
-	internalClaims := p.createInternalClaims(authenticatedUser.Id.String(), oidcClaims, externalToken.ExpiresAt)
+	internalClaims := p.createInternalClaims(authenticatedUser.Id.String(), oidcClaims, ptrTimeOrZero(externalToken.ExpiresAt))
 	internalToken, err := p.issueToken(internalClaims)
 	if err != nil {
 		return nil, fmt.Errorf("failed to issue token: %w", err)
@@ -183,7 +183,7 @@ func (p *OIDCProvider) Exchange(ctx context.Context, code string) (*oauth2.Token
 		return nil, fmt.Errorf("failed to parse token ID: %w", err)
 	}
 
-	_, err = p.tokenStore.Save(ctx, internalTokenId, &externalToken.Id, authenticatedUser.Id.String(), admiralProviderName, model.AuthnTokenKindUser, internalToken)
+	_, err = p.tokenStore.Save(ctx, internalTokenId, &externalToken.Id, "", authenticatedUser.Id.String(), admiralProviderName, model.AuthnTokenKindUser, internalToken)
 	if err != nil {
 		return nil, fmt.Errorf("failed to store internal token: %w", err)
 	}
@@ -214,25 +214,29 @@ func (p *OIDCProvider) Verify(ctx context.Context, rawToken string) (*Claims, er
 	return claims, nil
 }
 
-func (p *OIDCProvider) CreateToken(ctx context.Context, kind TokenKind, subject string, scopes []string, expiry *time.Duration) (*oauth2.Token, error) {
+func (p *OIDCProvider) CreateToken(ctx context.Context, kind TokenKind, name string, subject string, scopes []string, expiry *time.Duration) (*model.AuthnToken, *oauth2.Token, error) {
 	if subject == "" {
-		return nil, errors.New("subject is empty")
+		return nil, nil, errors.New("subject is empty")
 	}
 
 	if !ValidTokenKind(string(kind)) {
-		return nil, fmt.Errorf("invalid token kind: %q", kind)
+		return nil, nil, fmt.Errorf("invalid token kind: %q", kind)
 	}
 
 	if kind == TokenKindSession {
-		return nil, errors.New("session tokens are created via the OAuth2 flow, not CreateToken")
+		return nil, nil, errors.New("session tokens are created via the OAuth2 flow, not CreateToken")
 	}
 
 	if len(scopes) == 0 {
-		return nil, errors.New("scopes cannot be empty")
+		return nil, nil, errors.New("scopes cannot be empty")
 	}
 
-	if expiry == nil || *expiry <= 0 {
-		return nil, errors.New("expiry must be positive")
+	if err := ValidateScopes(scopes); err != nil {
+		return nil, nil, err
+	}
+
+	if expiry != nil && *expiry <= 0 {
+		return nil, nil, errors.New("expiry must be positive")
 	}
 
 	var dbKind model.AuthnTokenKind
@@ -242,7 +246,7 @@ func (p *OIDCProvider) CreateToken(ctx context.Context, kind TokenKind, subject 
 	case TokenKindAGT:
 		dbKind = model.AuthnTokenKindAgent
 	default:
-		return nil, fmt.Errorf("unsupported token kind for CreateToken: %q", kind)
+		return nil, nil, fmt.Errorf("unsupported token kind for CreateToken: %q", kind)
 	}
 
 	tokenId := uuid.New()
@@ -254,23 +258,25 @@ func (p *OIDCProvider) CreateToken(ctx context.Context, kind TokenKind, subject 
 			Subject:   subject,
 			IssuedAt:  jwt.NewNumericDate(now),
 			NotBefore: jwt.NewNumericDate(now),
-			ExpiresAt: jwt.NewNumericDate(now.Add(*expiry)),
 		},
 		Kind:   string(kind),
 		Scopes: scopes,
 	}
+	if expiry != nil {
+		claims.ExpiresAt = jwt.NewNumericDate(now.Add(*expiry))
+	}
 
 	token, err := p.issueToken(claims)
 	if err != nil {
-		return nil, fmt.Errorf("failed to issue token: %w", err)
+		return nil, nil, fmt.Errorf("failed to issue token: %w", err)
 	}
 
-	_, err = p.tokenStore.Save(ctx, tokenId, nil, subject, admiralProviderName, dbKind, token)
+	authnToken, err := p.tokenStore.Save(ctx, tokenId, nil, name, subject, admiralProviderName, dbKind, token)
 	if err != nil {
-		return nil, fmt.Errorf("failed to store token: %w", err)
+		return nil, nil, fmt.Errorf("failed to store token: %w", err)
 	}
 
-	return token, nil
+	return authnToken, token, nil
 }
 
 func (p *OIDCProvider) RefreshToken(ctx context.Context, tokenID uuid.UUID) (*oauth2.Token, error) {
@@ -311,7 +317,7 @@ func (p *OIDCProvider) RefreshToken(ctx context.Context, tokenID uuid.UUID) (*oa
 			return nil, fmt.Errorf("failed to sync user: %w", err)
 		}
 
-		externalToken, err = p.tokenStore.Save(ctx, providerTokenId, nil, oidcClaims.Subject, p.oidcProviderName, model.AuthnTokenKindExternal, oidcToken)
+		externalToken, err = p.tokenStore.Save(ctx, providerTokenId, nil, "", oidcClaims.Subject, p.oidcProviderName, model.AuthnTokenKindExternal, oidcToken)
 		if err != nil {
 			return nil, fmt.Errorf("failed to store refreshed external token: %w", err)
 		}
@@ -323,7 +329,7 @@ func (p *OIDCProvider) RefreshToken(ctx context.Context, tokenID uuid.UUID) (*oa
 		return nil, fmt.Errorf("failed to extract claims from token: %w", err)
 	}
 
-	internalClaims := p.createInternalClaims(aat.Subject, oidcClaims, externalToken.ExpiresAt)
+	internalClaims := p.createInternalClaims(aat.Subject, oidcClaims, ptrTimeOrZero(externalToken.ExpiresAt))
 
 	internalTokenId, err := uuid.Parse(internalClaims.ID)
 	if err != nil {
@@ -335,7 +341,7 @@ func (p *OIDCProvider) RefreshToken(ctx context.Context, tokenID uuid.UUID) (*oa
 		return nil, fmt.Errorf("failed to issue token: %w", err)
 	}
 
-	_, err = p.tokenStore.Save(ctx, internalTokenId, &providerTokenId, aat.Subject, admiralProviderName, model.AuthnTokenKindUser, internalToken)
+	_, err = p.tokenStore.Save(ctx, internalTokenId, &providerTokenId, "", aat.Subject, admiralProviderName, model.AuthnTokenKindUser, internalToken)
 	if err != nil {
 		return nil, fmt.Errorf("failed to store refreshed internal token: %w", err)
 	}
@@ -370,11 +376,14 @@ func (p *OIDCProvider) issueToken(claims *Claims) (*oauth2.Token, error) {
 		return nil, err
 	}
 
-	return &oauth2.Token{
+	tok := &oauth2.Token{
 		AccessToken: accessToken,
-		Expiry:      claims.ExpiresAt.Time,
 		TokenType:   "Bearer",
-	}, nil
+	}
+	if claims.ExpiresAt != nil {
+		tok.Expiry = claims.ExpiresAt.Time
+	}
+	return tok, nil
 }
 
 func (p *OIDCProvider) parseTokenClaims(rawToken string) (*Claims, error) {
@@ -505,4 +514,11 @@ func claimsToUserInfo(claims *Claims) model.UserInfo {
 		FamilyName:    claims.FamilyName,
 		PictureUrl:    claims.Picture,
 	}
+}
+
+func ptrTimeOrZero(t *time.Time) time.Time {
+	if t != nil {
+		return *t
+	}
+	return time.Time{}
 }

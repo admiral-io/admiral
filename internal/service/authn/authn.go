@@ -10,6 +10,7 @@ import (
 	"golang.org/x/oauth2"
 
 	"go.admiral.io/admiral/internal/config"
+	"go.admiral.io/admiral/internal/model"
 	"go.admiral.io/admiral/internal/service"
 	"go.admiral.io/admiral/internal/service/database"
 	"go.admiral.io/admiral/internal/store"
@@ -31,7 +32,7 @@ type Provider interface {
 }
 
 type Issuer interface {
-	CreateToken(ctx context.Context, kind TokenKind, subject string, scopes []string, expiry *time.Duration) (*oauth2.Token, error)
+	CreateToken(ctx context.Context, kind TokenKind, name string, subject string, scopes []string, expiry *time.Duration) (*model.AuthnToken, *oauth2.Token, error)
 	RefreshToken(ctx context.Context, tokenID uuid.UUID) (*oauth2.Token, error)
 	RevokeToken(ctx context.Context, token *oauth2.Token) error
 	RevokeAllTokens(ctx context.Context, subject string) (int64, error)

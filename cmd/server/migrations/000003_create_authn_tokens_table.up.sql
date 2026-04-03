@@ -4,6 +4,7 @@ CREATE TYPE authn_token_status AS ENUM ('active', 'revoked', 'rotating');
 CREATE TABLE IF NOT EXISTS authn_tokens (
     id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
     parent_id TEXT REFERENCES authn_tokens(id) ON DELETE SET NULL,
+    name TEXT,
     subject TEXT NOT NULL,
     issuer TEXT NOT NULL CHECK (issuer <> ''),
     kind authn_token_kind NOT NULL,

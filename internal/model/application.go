@@ -4,7 +4,11 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"google.golang.org/protobuf/types/known/timestamppb"
 	"gorm.io/gorm"
+
+	commonv1 "buf.build/gen/go/admiral/common/protocolbuffers/go/admiral/common/v1"
+	applicationv1 "go.admiral.io/sdk/proto/admiral/api/application/v1"
 )
 
 type Application struct {
@@ -17,4 +21,21 @@ type Application struct {
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
 	DeletedAt   gorm.DeletedAt `gorm:"index"`
+}
+
+func (app *Application) ToProto() *applicationv1.Application {
+	return &applicationv1.Application{
+		Id:          app.Id.String(),
+		Name:        app.Name,
+		Description: app.Description,
+		Labels:      map[string]string(app.Labels),
+		CreatedBy: &commonv1.ActorRef{
+			Id: app.CreatedBy,
+		},
+		UpdatedBy: &commonv1.ActorRef{
+			Id: app.UpdatedBy,
+		},
+		CreatedAt: timestamppb.New(app.CreatedAt),
+		UpdatedAt: timestamppb.New(app.UpdatedAt),
+	}
 }

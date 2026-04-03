@@ -6,13 +6,11 @@ import (
 	"fmt"
 	"time"
 
-	commonv1 "buf.build/gen/go/admiral/common/protocolbuffers/go/admiral/common/v1"
 	"github.com/google/uuid"
 	"github.com/uber-go/tally/v4"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"go.admiral.io/admiral/internal/config"
 	"go.admiral.io/admiral/internal/endpoint"
@@ -31,9 +29,9 @@ var filterColumns = []string{"name"}
 
 type api struct {
 	store  *store.ApplicationStore
+	qb     querybuilder.QueryBuilder
 	logger *zap.Logger
 	scope  tally.Scope
-	qb     querybuilder.QueryBuilder
 }
 
 func New(_ *config.Config, log *zap.Logger, scope tally.Scope) (endpoint.Endpoint, error) {
@@ -79,13 +77,13 @@ func (a *api) CreateApplication(ctx context.Context, req *applicationv1.CreateAp
 		UpdatedBy:   claims.Subject,
 	}
 
-	created, err := a.store.Create(ctx, app)
+	app, err = a.store.Create(ctx, app)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to create application: %v", err)
 	}
 
 	return &applicationv1.CreateApplicationResponse{
-		Application: applicationToProto(created),
+		Application: app.ToProto(),
 	}, nil
 }
 
@@ -101,7 +99,7 @@ func (a *api) GetApplication(ctx context.Context, req *applicationv1.GetApplicat
 	}
 
 	return &applicationv1.GetApplicationResponse{
-		Application: applicationToProto(app),
+		Application: app.ToProto(),
 	}, nil
 }
 
@@ -119,10 +117,10 @@ func (a *api) ListApplications(ctx context.Context, req *applicationv1.ListAppli
 
 	resp := &applicationv1.ListApplicationsResponse{}
 	for _, app := range apps {
-		resp.Applications = append(resp.Applications, applicationToProto(&app))
+		resp.Applications = append(resp.Applications, app.ToProto())
 	}
 
-	if len(apps) > 0 && int32(len(apps)) == effectiveLimit(req.GetPageSize()) {
+	if len(apps) > 0 && int32(len(apps)) == querybuilder.EffectiveLimit(req.GetPageSize()) {
 		last := apps[len(apps)-1]
 		token := fmt.Sprintf("%d|%s", last.CreatedAt.Unix(), last.Id.String())
 		resp.NextPageToken = base64.RawURLEncoding.EncodeToString([]byte(token))
@@ -147,7 +145,7 @@ func (a *api) UpdateApplication(ctx context.Context, req *applicationv1.UpdateAp
 		return nil, status.Errorf(codes.InvalidArgument, "invalid application ID: %v", err)
 	}
 
-	existing, err := a.store.Get(ctx, id)
+	app, err := a.store.Get(ctx, id)
 	if err != nil {
 		return nil, status.Errorf(codes.NotFound, "application not found: %s", id)
 	}
@@ -177,13 +175,13 @@ func (a *api) UpdateApplication(ctx context.Context, req *applicationv1.UpdateAp
 		}
 	}
 
-	updated, err := a.store.Update(ctx, existing, fields)
+	app, err = a.store.Update(ctx, app, fields)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to update application: %v", err)
 	}
 
 	return &applicationv1.UpdateApplicationResponse{
-		Application: applicationToProto(updated),
+		Application: app.ToProto(),
 	}, nil
 }
 
@@ -198,31 +196,4 @@ func (a *api) DeleteApplication(ctx context.Context, req *applicationv1.DeleteAp
 	}
 
 	return &applicationv1.DeleteApplicationResponse{}, nil
-}
-
-func applicationToProto(app *model.Application) *applicationv1.Application {
-	return &applicationv1.Application{
-		Id:          app.Id.String(),
-		Name:        app.Name,
-		Description: app.Description,
-		Labels:      map[string]string(app.Labels),
-		CreatedBy: &commonv1.ActorRef{
-			Id: app.CreatedBy,
-		},
-		UpdatedBy: &commonv1.ActorRef{
-			Id: app.UpdatedBy,
-		},
-		CreatedAt: timestamppb.New(app.CreatedAt),
-		UpdatedAt: timestamppb.New(app.UpdatedAt),
-	}
-}
-
-func effectiveLimit(pageSize int32) int32 {
-	if pageSize <= 0 {
-		return querybuilder.DefaultLimit
-	}
-	if pageSize > querybuilder.MaxResultLimit {
-		return querybuilder.MaxResultLimit
-	}
-	return pageSize
 }

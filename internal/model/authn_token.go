@@ -7,7 +7,10 @@ import (
 
 	"github.com/google/uuid"
 	"golang.org/x/oauth2"
+	"google.golang.org/protobuf/types/known/timestamppb"
 	"gorm.io/gorm"
+
+	commonv1 "buf.build/gen/go/admiral/common/protocolbuffers/go/admiral/common/v1"
 )
 
 type AuthnTokenKind string
@@ -101,6 +104,7 @@ func (s *AuthnTokenStatus) String() string {
 type AuthnToken struct {
 	Id           uuid.UUID        `gorm:"column:id;primaryKey"`
 	ParentID     *uuid.UUID       `gorm:"column:parent_id"`
+	Name         string           `gorm:"column:name"`
 	Subject      string           `gorm:"column:subject"`
 	Issuer       string           `gorm:"column:issuer"`
 	Kind         AuthnTokenKind   `gorm:"column:kind"`
@@ -110,7 +114,7 @@ type AuthnToken struct {
 	IdToken      []byte           `gorm:"column:id_token"`
 	CreatedAt    time.Time        `gorm:"column:created_at"`
 	UpdatedAt    time.Time        `gorm:"column:updated_at"`
-	ExpiresAt    time.Time        `gorm:"column:expires_at"`
+	ExpiresAt    *time.Time       `gorm:"column:expires_at"`
 	DeletedAt    gorm.DeletedAt   `gorm:"column:deleted_at"`
 }
 
@@ -118,11 +122,47 @@ func (AuthnToken) TableName() string {
 	return "authn_tokens"
 }
 
+func (at *AuthnToken) ToProto() *commonv1.AccessToken {
+	proto := &commonv1.AccessToken{
+		Id:        at.Id.String(),
+		Name:      at.Name,
+		CreatedAt: timestamppb.New(at.CreatedAt),
+	}
+	if at.ExpiresAt != nil {
+		proto.ExpiresAt = timestamppb.New(*at.ExpiresAt)
+	}
+
+	switch at.Status {
+	case AuthnTokenStatusActive:
+		proto.Status = commonv1.AccessTokenStatus_ACCESS_TOKEN_STATUS_ACTIVE
+	case AuthnTokenStatusRevoked:
+		proto.Status = commonv1.AccessTokenStatus_ACCESS_TOKEN_STATUS_REVOKED
+	case AuthnTokenStatusRotating:
+		proto.Status = commonv1.AccessTokenStatus_ACCESS_TOKEN_STATUS_ROTATING
+	}
+
+	switch at.Kind {
+	case AuthnTokenKindUser:
+		proto.TokenType = commonv1.TokenType_TOKEN_TYPE_PAT
+		proto.BindingType = commonv1.BindingType_BINDING_TYPE_USER
+		proto.BindingId = at.Subject
+	case AuthnTokenKindAgent:
+		proto.TokenType = commonv1.TokenType_TOKEN_TYPE_AGT
+		proto.BindingType = commonv1.BindingType_BINDING_TYPE_CLUSTER
+		proto.BindingId = at.Subject
+	}
+
+	return proto
+}
+
 func (at *AuthnToken) ToOAuth2Token() *oauth2.Token {
 	token := &oauth2.Token{
 		AccessToken: string(at.AccessToken),
-		Expiry:      at.ExpiresAt,
 		TokenType:   "Bearer",
+	}
+
+	if at.ExpiresAt != nil {
+		token.Expiry = *at.ExpiresAt
 	}
 
 	if len(at.RefreshToken) > 0 {

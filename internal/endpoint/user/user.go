@@ -4,14 +4,8 @@ import (
 	"context"
 	"time"
 
-	commonv1 "buf.build/gen/go/admiral/common/protocolbuffers/go/admiral/common/v1"
 	"github.com/google/uuid"
 	"github.com/uber-go/tally/v4"
-	"go.uber.org/zap"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
-	"google.golang.org/protobuf/types/known/timestamppb"
-
 	"go.admiral.io/admiral/internal/config"
 	"go.admiral.io/admiral/internal/endpoint"
 	"go.admiral.io/admiral/internal/model"
@@ -20,6 +14,9 @@ import (
 	"go.admiral.io/admiral/internal/service/database"
 	"go.admiral.io/admiral/internal/store"
 	userv1 "go.admiral.io/sdk/proto/admiral/api/user/v1"
+	"go.uber.org/zap"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 const Name = "endpoint.user"
@@ -84,7 +81,7 @@ func (a *api) GetMe(ctx context.Context, _ *userv1.GetMeRequest) (*userv1.GetMeR
 	}
 
 	return &userv1.GetMeResponse{
-		User: userToProto(user),
+		User: user.ToProto(),
 	}, nil
 }
 
@@ -100,7 +97,7 @@ func (a *api) GetUser(ctx context.Context, req *userv1.GetUserRequest) (*userv1.
 	}
 
 	return &userv1.GetUserResponse{
-		User: userToProto(user),
+		User: user.ToProto(),
 	}, nil
 }
 
@@ -115,6 +112,10 @@ func (a *api) CreatePersonalAccessToken(ctx context.Context, req *userv1.CreateP
 		return nil, status.Error(codes.InvalidArgument, "at least one scope is required")
 	}
 
+	if err := authn.ValidateScopes(scopes); err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "invalid scopes: %v", err)
+	}
+
 	var expiry *time.Duration
 	if req.ExpiresAt != nil {
 		d := time.Until(req.ExpiresAt.AsTime())
@@ -124,19 +125,14 @@ func (a *api) CreatePersonalAccessToken(ctx context.Context, req *userv1.CreateP
 		expiry = &d
 	}
 
-	token, err := a.issuer.CreateToken(ctx, authn.TokenKindPAT, claims.Subject, scopes, expiry)
+	authnToken, oauthToken, err := a.issuer.CreateToken(ctx, authn.TokenKindPAT, req.GetName(), claims.Subject, scopes, expiry)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to create token: %v", err)
 	}
 
 	return &userv1.CreatePersonalAccessTokenResponse{
-		AccessToken: &commonv1.AccessToken{
-			Id:     "", // TODO: parse JTI from token
-			Name:   req.GetName(),
-			Scopes: scopes,
-			Status: commonv1.AccessTokenStatus_ACCESS_TOKEN_STATUS_ACTIVE,
-		},
-		PlainTextToken: token.AccessToken,
+		AccessToken:    authnToken.ToProto(),
+		PlainTextToken: oauthToken.AccessToken,
 	}, nil
 }
 
@@ -153,7 +149,7 @@ func (a *api) ListPersonalAccessTokens(ctx context.Context, req *userv1.ListPers
 
 	resp := &userv1.ListPersonalAccessTokensResponse{}
 	for _, t := range tokens {
-		resp.AccessTokens = append(resp.AccessTokens, authnTokenToProto(&t))
+		resp.AccessTokens = append(resp.AccessTokens, t.ToProto())
 	}
 
 	return resp, nil
@@ -171,7 +167,7 @@ func (a *api) GetPersonalAccessToken(ctx context.Context, req *userv1.GetPersona
 	}
 
 	return &userv1.GetPersonalAccessTokenResponse{
-		AccessToken: authnTokenToProto(token),
+		AccessToken: token.ToProto(),
 	}, nil
 }
 
@@ -193,53 +189,6 @@ func (a *api) RevokePersonalAccessToken(ctx context.Context, req *userv1.RevokeP
 
 	token.Status = model.AuthnTokenStatusRevoked
 	return &userv1.RevokePersonalAccessTokenResponse{
-		AccessToken: authnTokenToProto(token),
+		AccessToken: token.ToProto(),
 	}, nil
-}
-
-func userToProto(u *model.User) *userv1.User {
-	proto := &userv1.User{
-		Id:            u.Id.String(),
-		Email:         u.Email,
-		EmailVerified: u.EmailVerified,
-		CreatedAt:     timestamppb.New(u.CreatedAt),
-		UpdatedAt:     timestamppb.New(u.UpdatedAt),
-	}
-
-	if u.Name != "" {
-		proto.DisplayName = &u.Name
-	}
-
-	if u.GivenName != "" {
-		proto.GivenName = &u.GivenName
-	}
-
-	if u.FamilyName != "" {
-		proto.FamilyName = &u.FamilyName
-	}
-
-	if u.PictureUrl != "" {
-		proto.AvatarUrl = &u.PictureUrl
-	}
-
-	return proto
-}
-
-func authnTokenToProto(t *model.AuthnToken) *commonv1.AccessToken {
-	proto := &commonv1.AccessToken{
-		Id:        t.Id.String(),
-		CreatedAt: timestamppb.New(t.CreatedAt),
-		ExpiresAt: timestamppb.New(t.ExpiresAt),
-	}
-
-	switch t.Status {
-	case model.AuthnTokenStatusActive:
-		proto.Status = commonv1.AccessTokenStatus_ACCESS_TOKEN_STATUS_ACTIVE
-	case model.AuthnTokenStatusRevoked:
-		proto.Status = commonv1.AccessTokenStatus_ACCESS_TOKEN_STATUS_REVOKED
-	case model.AuthnTokenStatusRotating:
-		proto.Status = commonv1.AccessTokenStatus_ACCESS_TOKEN_STATUS_ROTATING
-	}
-
-	return proto
 }

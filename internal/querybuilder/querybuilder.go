@@ -33,6 +33,18 @@ const (
 	MaxFilterLen         = 4096
 )
 
+// EffectiveLimit clamps a requested page size to the valid range [1, MaxResultLimit],
+// defaulting to DefaultLimit when pageSize is zero or negative.
+func EffectiveLimit(pageSize int32) int32 {
+	if pageSize <= 0 {
+		return DefaultLimit
+	}
+	if pageSize > MaxResultLimit {
+		return MaxResultLimit
+	}
+	return pageSize
+}
+
 type QueryBuilder interface {
 	ParseFilter(string) (string, map[string]any, error)
 	PaginatedQuery(string, int32, *string) func(*gorm.DB) *gorm.DB

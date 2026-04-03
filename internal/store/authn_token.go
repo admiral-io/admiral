@@ -25,7 +25,7 @@ func NewAuthnTokenStore(db *gorm.DB) (*AuthnTokenStore, error) {
 	return &AuthnTokenStore{db: db}, nil
 }
 
-func (s *AuthnTokenStore) Save(ctx context.Context, tokenId uuid.UUID, parentTokenId *uuid.UUID, subject string, issuer string, kind model.AuthnTokenKind, token *oauth2.Token) (*model.AuthnToken, error) {
+func (s *AuthnTokenStore) Save(ctx context.Context, tokenId uuid.UUID, parentTokenId *uuid.UUID, name string, subject string, issuer string, kind model.AuthnTokenKind, token *oauth2.Token) (*model.AuthnToken, error) {
 	if tokenId == uuid.Nil {
 		return nil, errors.New("id cannot be empty")
 	}
@@ -46,7 +46,7 @@ func (s *AuthnTokenStore) Save(ctx context.Context, tokenId uuid.UUID, parentTok
 		return nil, errors.New("access token cannot be empty")
 	}
 
-	if token.Expiry.IsZero() || token.Expiry.Before(time.Now()) {
+	if !token.Expiry.IsZero() && token.Expiry.Before(time.Now()) {
 		return nil, errors.New("token expiry is invalid")
 	}
 
@@ -55,11 +55,12 @@ func (s *AuthnTokenStore) Save(ctx context.Context, tokenId uuid.UUID, parentTok
 
 	if err == nil {
 		updates := map[string]any{
+			"name":         name,
 			"subject":      subject,
 			"issuer":       issuer,
 			"kind":         kind,
 			"access_token": []byte(token.AccessToken),
-			"expires_at":   token.Expiry,
+			"expires_at":   timeToPtr(token.Expiry),
 			"updated_at":   time.Now(),
 		}
 
@@ -90,11 +91,12 @@ func (s *AuthnTokenStore) Save(ctx context.Context, tokenId uuid.UUID, parentTok
 		authnToken := &model.AuthnToken{
 			Id:          tokenId,
 			ParentID:    parentTokenId,
+			Name:        name,
 			Subject:     subject,
 			Issuer:      issuer,
 			Kind:        kind,
 			AccessToken: []byte(token.AccessToken),
-			ExpiresAt:   token.Expiry,
+			ExpiresAt:   timeToPtr(token.Expiry),
 		}
 
 		if token.RefreshToken != "" {
@@ -204,4 +206,11 @@ func (s *AuthnTokenStore) DeleteBySubject(ctx context.Context, subject string) (
 	}
 
 	return result.RowsAffected, nil
+}
+
+func timeToPtr(t time.Time) *time.Time {
+	if t.IsZero() {
+		return nil
+	}
+	return &t
 }
