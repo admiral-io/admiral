@@ -75,13 +75,13 @@ pigeon:
 
 .PHONY: build # Build the unified admiral binary.
 build: preflight-checks-go
-	go build -ldflags="-s -w -X go.admiral.io/admiral/internal/common.version=$(VERSION) -X go.admiral.io/admiral/internal/common.commit=$(COMMIT) -X go.admiral.io/admiral/internal/common.date=$(DATE) -X go.admiral.io/admiral/internal/common.builtBy=$(BUILT_BY)" \
+	go build -ldflags="-s -w -X main.version=$(VERSION) -X main.commit=$(COMMIT) -X main.date=$(DATE) -X main.builtBy=$(BUILT_BY)" \
 		-o ./build/admiral ./cmd/
 
 .PHONY: build-with-assets # Build the unified binary with web assets.
 build-with-assets: preflight-checks-go web
 	go run cmd/assets/generate.go ./web/build && go build -tags withAssets \
-		-ldflags="-s -w -X go.admiral.io/admiral/internal/common.version=$(VERSION) -X go.admiral.io/admiral/internal/common.commit=$(COMMIT) -X go.admiral.io/admiral/internal/common.date=$(DATE) -X go.admiral.io/admiral/internal/common.builtBy=$(BUILT_BY)" \
+		-ldflags="-s -w -X main.version=$(VERSION) -X main.commit=$(COMMIT) -X main.date=$(DATE) -X main.builtBy=$(BUILT_BY)" \
 		-o ./build/admiral .
 
 # Legacy aliases for backward compatibility

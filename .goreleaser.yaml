@@ -1,0 +1,164 @@
+version: 2
+
+project_name: admiral
+
+snapshot:
+  version_template: "{{ incpatch .Version }}-dev"
+
+before:
+  hooks:
+    - go mod download
+    - make web
+    - go run cmd/assets/generate.go ./web/build
+
+report_sizes: true
+
+env:
+  - CGO_ENABLED=0
+
+dist: dist
+
+builds:
+  - id: admiral
+    binary: admiral
+    main: .
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - arm64
+      - s390x
+      - ppc64le
+    ignore:
+      - goos: darwin
+        goarch: s390x
+      - goos: darwin
+        goarch: ppc64le
+      - goos: windows
+        goarch: s390x
+      - goos: windows
+        goarch: ppc64le
+      - goos: windows
+        goarch: arm64
+    mod_timestamp: "{{ .CommitTimestamp }}"
+    flags:
+      - -tags=withAssets -trimpath
+    ldflags:
+      - -s -w
+      - -X main.version={{.Version}}
+      - -X main.commit={{.FullCommit}}
+      - -X main.date={{.Date}}
+      - -X main.builtBy=goreleaser
+
+checksum:
+  name_template: "checksums.txt"
+  algorithm: sha256
+
+signs:
+  - cmd: cosign
+    certificate: "${artifact}.pem"
+    args:
+      - sign-blob
+      - "--output-certificate=${certificate}"
+      - "--output-signature=${signature}"
+      - "${artifact}"
+      - "--yes"
+    artifacts: checksum
+    output: true
+
+docker_signs:
+  - cmd: cosign
+    artifacts: images
+    output: true
+    args:
+      - sign
+      - "${artifact}"
+      - "--yes"
+
+sboms:
+  - artifacts: archive
+
+archives:
+  - id: admiral
+    formats: [tar.gz]
+    name_template: >-
+      admiral-v{{ .Version }}_{{ .Os }}_
+      {{- if eq .Arch "amd64" }}x86_64
+      {{- else }}{{ .Arch }}{{ end }}
+      {{- if .Arm }}v{{ .Arm }}{{ end }}
+    format_overrides:
+      - goos: windows
+        formats: [zip]
+    files:
+      - LICENSE
+      - README.md
+      - config.yaml
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^test:"
+      - '^chore(?!\(deps\))'
+      - "merge conflict"
+      - Merge pull request
+      - Merge remote-tracking branch
+      - Merge branch
+      - go mod tidy
+  groups:
+    - title: "Features"
+      regexp: '^feat(\([[:word:]]+\))?!?:.+$'
+      order: 100
+    - title: "Security Updates"
+      regexp: '^sec(\([[:word:]]+\))?!?:.+$'
+      order: 200
+    - title: "Bug Fixes"
+      regexp: '^fix(\([[:word:]]+\))?!?:.+$'
+      order: 300
+    - title: "Dependency Updates"
+      regexp: '^(feat|fix)\(deps\)!?:.+$'
+      order: 400
+    - title: "Documentation Updates"
+      regexp: '^doc(\([[:word:]]+\))?!?:.+$'
+      order: 500
+    - title: "Build Process Updates"
+      regexp: '^build(\([[:word:]]+\))?!?:.+$'
+      order: 600
+    - title: "Other Changes"
+      order: 9999
+
+release:
+  footer: |
+    **Full Changelog**: https://github.com/admiral-io/admiral/compare/{{ .PreviousTag }}...{{ .Tag }}
+
+    ## Helping out
+    This release ({{ .Version }}) was built on {{ .Date }} by {{ .Env.GITHUB_ACTOR }}.
+    Thanks to **all** the awesome people who made it possible!
+
+dockers_v2:
+  - images:
+      - "ghcr.io/admiral-io/admiral"
+    dockerfile: Dockerfile
+    tags:
+      - "{{ .Tag }}"
+      - "v{{ .Major }}"
+      - "v{{ .Major }}.{{ .Minor }}"
+      - "latest"
+    platforms:
+      - linux/amd64
+      - linux/arm64
+    flags:
+      - "--pull"
+    labels:
+      io.artifacthub.package.maintainers: '[{"name":"Admiral","email":"support@admiral.io"}]'
+      io.artifacthub.package.license: "AGPL-3.0-only"
+      org.opencontainers.image.created: "{{.Date}}"
+      org.opencontainers.image.name: "{{.ProjectName}}"
+      org.opencontainers.image.revision: "{{.FullCommit}}"
+      org.opencontainers.image.version: "{{.Version}}"
+      org.opencontainers.image.source: "{{.GitURL}}"
+    extra_files:
+      - LICENSE
+      - config.yaml
