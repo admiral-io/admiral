@@ -1,7 +1,7 @@
 version: 2
 updates:
   - package-ecosystem: "gomod"
-    directory: "."
+    directory: "/"
     schedule:
       interval: "weekly"
       day: "monday"
@@ -9,11 +9,11 @@ updates:
     labels:
       - "dependencies"
     commit-message:
-      prefix: "chore"
+      prefix: "fix"
       include: "scope"
 
   - package-ecosystem: "docker"
-    directory: "."
+    directory: "/"
     schedule:
       interval: "weekly"
       day: "monday"
@@ -21,11 +21,11 @@ updates:
     labels:
       - "dependencies"
     commit-message:
-      prefix: "chore"
+      prefix: "fix"
       include: "scope"
 
   - package-ecosystem: "bun"
-    directory: "web"
+    directory: "/web"
     schedule:
       interval: "weekly"
       day: "monday"
@@ -33,7 +33,7 @@ updates:
     labels:
       - "dependencies"
     commit-message:
-      prefix: "chore"
+      prefix: "fix"
       include: "scope"
 
   - package-ecosystem: "github-actions"
@@ -45,5 +45,5 @@ updates:
     labels:
       - "dependencies"
     commit-message:
-      prefix: "chore"
+      prefix: "fix"
       include: "scope"

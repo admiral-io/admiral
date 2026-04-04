@@ -1,0 +1,26 @@
+name: Misspell
+
+on:
+  push:
+    branches:
+      - "master"
+  pull_request:
+    branches:
+      - "master"
+
+permissions:
+  contents: read
+
+jobs:
+  misspell:
+    name: spellcheck
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+
+      - name: Check spelling
+        uses: reviewdog/action-misspell@9daa94af4357dddb6fd3775de806bc0a8e98d3e4 # v1.26.3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          locale: "US"
