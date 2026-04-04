@@ -17,7 +17,7 @@ const (
 	checksumLen     = 6
 )
 
-// base62 alphabet for CRC32 checksum encoding (matches GitHub/npm convention).
+// base62 alphabet for CRC32 checksum encoding.
 const base62 = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
 
 // GenerateOpaqueToken creates a prefixed opaque token with a CRC32 checksum
@@ -53,16 +53,6 @@ func HashOpaqueToken(raw string) []byte {
 // IsOpaqueToken returns true if the token has an Admiral opaque prefix.
 func IsOpaqueToken(raw string) bool {
 	return strings.HasPrefix(raw, PrefixPAT) || strings.HasPrefix(raw, PrefixSAT) || strings.HasPrefix(raw, PrefixSession)
-}
-
-// IsSessionToken returns true if the token has the session prefix.
-func IsSessionToken(raw string) bool {
-	return strings.HasPrefix(raw, PrefixSession)
-}
-
-// IsAccessToken returns true if the token has a PAT or SAT prefix.
-func IsAccessToken(raw string) bool {
-	return strings.HasPrefix(raw, PrefixPAT) || strings.HasPrefix(raw, PrefixSAT)
 }
 
 // ValidateChecksum verifies the CRC32 checksum suffix of an opaque token.

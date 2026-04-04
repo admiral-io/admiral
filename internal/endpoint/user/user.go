@@ -157,8 +157,17 @@ func (a *api) ListPersonalAccessTokens(ctx context.Context, req *userv1.ListPers
 }
 
 func (a *api) GetPersonalAccessToken(ctx context.Context, req *userv1.GetPersonalAccessTokenRequest) (*userv1.GetPersonalAccessTokenResponse, error) {
+	claims, err := authn.ClaimsFromContext(ctx)
+	if err != nil {
+		return nil, status.Error(codes.Unauthenticated, "authentication required")
+	}
+
 	token, err := a.tokenStore.Get(ctx, req.GetTokenId())
 	if err != nil {
+		return nil, status.Errorf(codes.NotFound, "token not found: %s", req.GetTokenId())
+	}
+
+	if token.Subject != claims.Subject {
 		return nil, status.Errorf(codes.NotFound, "token not found: %s", req.GetTokenId())
 	}
 
@@ -168,8 +177,17 @@ func (a *api) GetPersonalAccessToken(ctx context.Context, req *userv1.GetPersona
 }
 
 func (a *api) RevokePersonalAccessToken(ctx context.Context, req *userv1.RevokePersonalAccessTokenRequest) (*userv1.RevokePersonalAccessTokenResponse, error) {
+	claims, err := authn.ClaimsFromContext(ctx)
+	if err != nil {
+		return nil, status.Error(codes.Unauthenticated, "authentication required")
+	}
+
 	token, err := a.tokenStore.Get(ctx, req.GetTokenId())
 	if err != nil {
+		return nil, status.Errorf(codes.NotFound, "token not found: %s", req.GetTokenId())
+	}
+
+	if token.Subject != claims.Subject {
 		return nil, status.Errorf(codes.NotFound, "token not found: %s", req.GetTokenId())
 	}
 
