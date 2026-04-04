@@ -376,11 +376,11 @@ func TestS3Service_ContextHandling(t *testing.T) {
 	require.True(t, ok)
 
 	t.Run("operations handle context cancellation", func(t *testing.T) {
-		// Create a cancelled context
+		// Create a canceled context
 		ctx, cancel := context.WithCancel(context.Background())
 		cancel()
 
-		// These operations should handle the cancelled context
+		// These operations should handle the canceled context
 		// Note: Validation will run first, but if it passes, context cancellation
 		// should be handled by the underlying S3 client
 

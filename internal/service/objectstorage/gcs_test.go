@@ -466,7 +466,7 @@ func TestGCSService_ContextHandling(t *testing.T) {
 		ctx, cancel := context.WithCancel(context.Background())
 		cancel()
 
-		// These should handle cancelled context gracefully by failing validation first
+		// These should handle canceled context gracefully by failing validation first
 		_, err := mockGCS.GetObject(ctx, "", "valid/path.txt") // Empty bucket fails validation
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "invalid bucket")

@@ -513,7 +513,7 @@ func TestMid_UnaryInterceptor_TimeoutBehavior(t *testing.T) {
 					// Context timeout
 					assert.Equal(t, context.DeadlineExceeded, err)
 				} else if err == context.Canceled {
-					// Context cancelled
+					// Context canceled
 					assert.Equal(t, context.Canceled, err)
 				} else {
 					// Convert to gRPC status and check
@@ -638,7 +638,7 @@ func TestMid_UnaryInterceptor_ContextAware(t *testing.T) {
 
 		resp, err := interceptor(ctx, &mockRequest{Data: "test"}, info, handler)
 
-		assert.Error(t, err, "Should return error when context is cancelled")
+		assert.Error(t, err, "Should return error when context is canceled")
 		assert.Nil(t, resp, "Response should be nil")
 		assert.Equal(t, context.Canceled, err, "Should return context.Canceled error")
 	})
