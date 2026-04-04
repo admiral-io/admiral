@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/lib/pq"
+	"golang.org/x/oauth2"
 	"gorm.io/gorm"
 
 	"go.admiral.io/admiral/internal/model"
@@ -154,6 +155,44 @@ func (s *AccessTokenStore) DeleteBySubject(ctx context.Context, subject string) 
 	}
 
 	return result.RowsAffected, nil
+}
+
+func (s *AccessTokenStore) UpdateIdPTokens(ctx context.Context, id string, idpToken *oauth2.Token, expiresAt *time.Time) error {
+	if id == "" {
+		return errors.New("id cannot be empty")
+	}
+
+	updates := map[string]any{
+		"expires_at": expiresAt,
+		"updated_at": time.Now(),
+	}
+
+	if idpToken != nil {
+		if idpToken.AccessToken != "" {
+			updates["idp_access_token"] = []byte(idpToken.AccessToken)
+		}
+		if idpToken.RefreshToken != "" {
+			updates["idp_refresh_token"] = []byte(idpToken.RefreshToken)
+		}
+		if it, ok := idpToken.Extra("id_token").(string); ok && it != "" {
+			updates["idp_id_token"] = []byte(it)
+		}
+	}
+
+	result := s.db.WithContext(ctx).
+		Model(&model.AccessToken{}).
+		Where("id = ? AND status = ?", id, model.AccessTokenStatusActive).
+		Updates(updates)
+
+	if result.Error != nil {
+		return fmt.Errorf("failed to update IdP tokens: %w", result.Error)
+	}
+
+	if result.RowsAffected == 0 {
+		return errors.New("no active access token found to update")
+	}
+
+	return nil
 }
 
 func (s *AccessTokenStore) UpdateScopes(ctx context.Context, id string, scopes []string) error {

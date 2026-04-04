@@ -70,7 +70,28 @@ func (a *api) Callback(ctx context.Context, req *authnv1.CallbackRequest) (*auth
 			zap.String("error", req.Error),
 			zap.String("error_description", req.ErrorDescription),
 		)
-		return nil, status.Errorf(codes.Unauthenticated, "authentication failed: %s", sanitizeOAuthError(req.Error))
+
+		var safeError string
+		switch req.Error {
+		case "access_denied":
+			safeError = "access denied by identity provider"
+		case "invalid_request":
+			safeError = "invalid authentication request"
+		case "unauthorized_client":
+			safeError = "client not authorized"
+		case "unsupported_response_type":
+			safeError = "unsupported response type"
+		case "invalid_scope":
+			safeError = "invalid scope requested"
+		case "server_error":
+			safeError = "identity provider error"
+		case "temporarily_unavailable":
+			safeError = "identity provider temporarily unavailable"
+		default:
+			safeError = "unknown authentication error"
+		}
+
+		return nil, status.Errorf(codes.Unauthenticated, "authentication failed: %s", safeError)
 	}
 
 	redirectURL, err := a.provider.ValidateStateNonce(ctx, req.State)
@@ -78,14 +99,14 @@ func (a *api) Callback(ctx context.Context, req *authnv1.CallbackRequest) (*auth
 		return nil, err
 	}
 
-	token, err := a.provider.Exchange(ctx, req.Code)
+	sessionID, err := a.provider.Exchange(ctx, req.Code)
 	if err != nil {
 		return nil, fmt.Errorf("token exchange failed: %w", err)
 	}
 
 	md := metadata.New(map[string]string{
-		"Location":         redirectURL,
-		"Set-Access-Token": token.AccessToken,
+		"Location":          redirectURL,
+		"Set-Session-Token": sessionID,
 	})
 
 	if err := grpc.SetHeader(ctx, md); err != nil {
@@ -93,27 +114,4 @@ func (a *api) Callback(ctx context.Context, req *authnv1.CallbackRequest) (*auth
 	}
 
 	return &authnv1.CallbackResponse{}, nil
-}
-
-// sanitizeOAuthError maps OAuth error codes to known safe strings.
-// Prevents user-controlled error params from being reflected in responses.
-func sanitizeOAuthError(errorCode string) string {
-	switch errorCode {
-	case "access_denied":
-		return "access denied by identity provider"
-	case "invalid_request":
-		return "invalid authentication request"
-	case "unauthorized_client":
-		return "client not authorized"
-	case "unsupported_response_type":
-		return "unsupported response type"
-	case "invalid_scope":
-		return "invalid scope requested"
-	case "server_error":
-		return "identity provider error"
-	case "temporarily_unavailable":
-		return "identity provider temporarily unavailable"
-	default:
-		return "unknown authentication error"
-	}
 }

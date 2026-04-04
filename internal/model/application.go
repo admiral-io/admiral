@@ -3,11 +3,11 @@ package model
 import (
 	"time"
 
+	commonv1 "buf.build/gen/go/admiral/common/protocolbuffers/go/admiral/common/v1"
 	"github.com/google/uuid"
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"gorm.io/gorm"
 
-	commonv1 "buf.build/gen/go/admiral/common/protocolbuffers/go/admiral/common/v1"
 	applicationv1 "go.admiral.io/sdk/proto/admiral/api/application/v1"
 )
 

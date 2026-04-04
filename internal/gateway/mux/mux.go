@@ -110,8 +110,8 @@ func newCustomResponseForwarder(sess session.Service) func(context.Context, http
 			return nil
 		}
 
-		if tokens := md.HeaderMD.Get("Set-Access-Token"); len(tokens) > 0 {
-			sess.Put(ctx, "accessToken", tokens[0])
+		if ids := md.HeaderMD.Get("Set-Session-Token"); len(ids) > 0 {
+			sess.Put(ctx, "sessionToken", ids[0])
 
 			if !sess.Exists(ctx, "sessionCreatedAt") {
 				sess.Put(ctx, "sessionCreatedAt", time.Now().Unix())
