@@ -225,13 +225,13 @@ func TestMid_UnaryInterceptor_ContextHandling(t *testing.T) {
 			description: "Should work with context containing values",
 		},
 		{
-			name: "handles cancelled context",
+			name: "handles canceled context",
 			setupCtx: func() context.Context {
 				ctx, cancel := context.WithCancel(context.Background())
 				cancel()
 				return ctx
 			},
-			description: "Should handle cancelled context",
+			description: "Should handle canceled context",
 		},
 	}
 
