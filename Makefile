@@ -13,10 +13,7 @@ PROJECT_ROOT_DIR := $(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))
 
 # Tool binaries
 AIR := ./tools/air.sh
-AIR_DEV := ./tools/air-dev.sh
 BUN := ./tools/bun.sh
-BUF := ./tools/buf.sh
-CONTROLLER_GEN := ./tools/controller-gen.sh
 GOLANGCI-LINT := ./tools/golangci-lint.sh
 NO-DIFF := tools/ensure-no-diff.sh
 PREFLIGHT-CHECKS := ./tools/preflight-checks.sh
@@ -54,58 +51,26 @@ verify:
 
 .PHONY: clean # Remove build and cache artifacts.
 clean:
-	rm -rf build cmd/assets/generated_assets.go dist node_modules web/build web/node_modules web/tsconfig.tsbuildinfo tmp
-
-.PHONY: proto # Generate proto assets.
-proto:
-	$(BUF) generate --clean
-
-.PHONY: proto-lint # Lint the generated proto assets.
-proto-lint:
-	$(BUF) lint
-
-.PHONY: proto-verify # Verify proto changes.
-proto-verify:
-	@$(MAKE) proto
-	$(NO-DIFF) api
+	rm -rf build cmd/assets/generated_assets.go dist node_modules web/build web/node_modules
 
 .PHONY: pigeon # Generate PEG parser
 pigeon:
-	 pigeon -o internal/server/querybuilder/parser.go internal/server/querybuilder/parser.peg
+	 pigeon -o internal/querybuilder/parser.go internal/querybuilder/parser.peg
 
-.PHONY: build # Build the unified admiral binary.
-build: preflight-checks-go
+.PHONY: server # Build the unified admiral binary.
+server: preflight-checks-go
 	go build -ldflags="-s -w -X main.version=$(VERSION) -X main.commit=$(COMMIT) -X main.date=$(DATE) -X main.builtBy=$(BUILT_BY)" \
-		-o ./build/admiral ./cmd/
+		-o ./build/admiral .
 
-.PHONY: build-with-assets # Build the unified binary with web assets.
-build-with-assets: preflight-checks-go web
+.PHONY: server-with-assets # Build the unified binary with web assets.
+server-with-assets: preflight-checks-go web
 	go run cmd/assets/generate.go ./web/build && go build -tags withAssets \
 		-ldflags="-s -w -X main.version=$(VERSION) -X main.commit=$(COMMIT) -X main.date=$(DATE) -X main.builtBy=$(BUILT_BY)" \
 		-o ./build/admiral .
 
-# Legacy aliases for backward compatibility
-.PHONY: server # Build the unified binary (legacy alias).
-server: build
-
-.PHONY: server-with-assets # Build with assets (legacy alias).
-server-with-assets: build-with-assets
-
 .PHONY: server-dev # Start the server in development mode.
 server-dev: preflight-checks-go
-	$(AIR_DEV) server
-
-.PHONY: worker # Build the unified binary (legacy alias).
-worker: build
-
-.PHONY: worker-dev # Start the worker in development mode.
-worker-dev: preflight-checks-go
-	$(AIR_DEV) worker
-
-.PHONY: install-symlinks # Create symlinks for compatibility.
-install-symlinks: build
-	ln -sf admiral ./build/admiral-server
-	ln -sf admiral ./build/admiral-worker
+	$(AIR) server
 
 .PHONY: server-lint # Lint the server code.
 server-lint: preflight-checks-go
@@ -149,12 +114,6 @@ web-lint-fix: bun-install
 web-test: bun-install
 	$(BUN) run --cwd web test:run
 
-.PHONY: web-test-storybook # Run Storybook browser tests for the web code.
-web-test-storybook: bun-install
-	@echo "⚠️  Running Storybook tests (known cleanup timeout issue)..."
-	-$(BUN) run --cwd web test:storybook
-	@echo "✅ Storybook tests completed. Check above for results."
-
 .PHONY: web-verify # Verify web packages are sorted.
 web-verify: bun-install
 	$(BUN) run --cwd web lint:packages
@@ -170,8 +129,3 @@ preflight-checks-go:
 .PHONY: preflight-checks
 preflight-checks:
 	$(PREFLIGHT-CHECKS)
-
-.PHONY: controller-gen
-controller-gen:
-	$(CONTROLLER_GEN) crd:allowDangerousTypes=true rbac:roleName=admiral-controller webhook object paths="./internal/controller/..." \
-		output:crd:artifacts:config=manifests/crd output:rbac:artifacts:config=manifests/rbac output:webhook:artifacts:config=manifests/webhook
