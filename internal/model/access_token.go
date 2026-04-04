@@ -5,23 +5,24 @@ import (
 	"fmt"
 	"time"
 
+	commonv1 "buf.build/gen/go/admiral/common/protocolbuffers/go/admiral/common/v1"
 	"github.com/lib/pq"
+	"golang.org/x/oauth2"
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"gorm.io/gorm"
-
-	commonv1 "buf.build/gen/go/admiral/common/protocolbuffers/go/admiral/common/v1"
 )
 
 type AccessTokenKind string
 
 const (
-	AccessTokenKindPAT AccessTokenKind = "pat"
-	AccessTokenKindSAT AccessTokenKind = "sat"
+	AccessTokenKindPAT     AccessTokenKind = "pat"
+	AccessTokenKindSAT     AccessTokenKind = "sat"
+	AccessTokenKindSession AccessTokenKind = "session"
 )
 
 func (k *AccessTokenKind) Value() (driver.Value, error) {
 	switch *k {
-	case AccessTokenKindPAT, AccessTokenKindSAT:
+	case AccessTokenKindPAT, AccessTokenKindSAT, AccessTokenKindSession:
 		return string(*k), nil
 	default:
 		return nil, fmt.Errorf("invalid AccessTokenKind value: %q", *k)
@@ -48,7 +49,7 @@ func (k *AccessTokenKind) Scan(value any) error {
 
 func (k *AccessTokenKind) String() string {
 	switch *k {
-	case AccessTokenKindPAT, AccessTokenKindSAT:
+	case AccessTokenKindPAT, AccessTokenKindSAT, AccessTokenKindSession:
 		return string(*k)
 	default:
 		return ""
@@ -99,18 +100,22 @@ func (s *AccessTokenStatus) String() string {
 }
 
 type AccessToken struct {
-	Id          string            `gorm:"column:id;primaryKey"`
-	Name        string            `gorm:"column:name"`
-	Subject     string            `gorm:"column:subject"`
-	Kind        AccessTokenKind   `gorm:"column:kind"`
-	Status      AccessTokenStatus `gorm:"column:status;default:active"`
-	TokenHash   []byte            `gorm:"column:token_hash"`
-	TokenPrefix string            `gorm:"column:token_prefix"`
-	Scopes      pq.StringArray    `gorm:"column:scopes;type:text[]"`
-	CreatedAt   time.Time         `gorm:"column:created_at"`
-	UpdatedAt   time.Time         `gorm:"column:updated_at"`
-	ExpiresAt   *time.Time        `gorm:"column:expires_at"`
-	DeletedAt   gorm.DeletedAt    `gorm:"column:deleted_at"`
+	Id              string            `gorm:"column:id;primaryKey"`
+	Name            string            `gorm:"column:name"`
+	Subject         string            `gorm:"column:subject"`
+	Kind            AccessTokenKind   `gorm:"column:kind"`
+	Status          AccessTokenStatus `gorm:"column:status;default:active"`
+	TokenHash       []byte            `gorm:"column:token_hash"`
+	TokenPrefix     string            `gorm:"column:token_prefix"`
+	Scopes          pq.StringArray    `gorm:"column:scopes;type:text[]"`
+	Issuer          string            `gorm:"column:issuer"`
+	IdpAccessToken  []byte            `gorm:"column:idp_access_token"`
+	IdpRefreshToken []byte            `gorm:"column:idp_refresh_token"`
+	IdpIdToken      []byte            `gorm:"column:idp_id_token"`
+	CreatedAt       time.Time         `gorm:"column:created_at"`
+	UpdatedAt       time.Time         `gorm:"column:updated_at"`
+	ExpiresAt       *time.Time        `gorm:"column:expires_at"`
+	DeletedAt       gorm.DeletedAt    `gorm:"column:deleted_at"`
 }
 
 func (AccessToken) TableName() string {
@@ -148,4 +153,29 @@ func (at *AccessToken) ToProto() *commonv1.AccessToken {
 	}
 
 	return proto
+}
+
+// IdPToken reconstructs an oauth2.Token from the stored IdP token fields.
+func (at *AccessToken) IdPToken() *oauth2.Token {
+	token := &oauth2.Token{
+		TokenType: "Bearer",
+	}
+
+	if len(at.IdpAccessToken) > 0 {
+		token.AccessToken = string(at.IdpAccessToken)
+	}
+
+	if at.ExpiresAt != nil {
+		token.Expiry = *at.ExpiresAt
+	}
+
+	if len(at.IdpRefreshToken) > 0 {
+		token.RefreshToken = string(at.IdpRefreshToken)
+	}
+
+	if len(at.IdpIdToken) > 0 {
+		token = token.WithExtra(map[string]any{"id_token": string(at.IdpIdToken)})
+	}
+
+	return token
 }

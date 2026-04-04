@@ -3,8 +3,6 @@ package authn
 import (
 	"context"
 	"errors"
-
-	"github.com/golang-jwt/jwt/v5"
 )
 
 type ClaimsContextKey struct{}
@@ -13,7 +11,7 @@ const AnonymousSubject = "system:anonymous"
 
 func ContextWithAnonymousClaims(ctx context.Context) context.Context {
 	return context.WithValue(ctx, ClaimsContextKey{}, &Claims{
-		RegisteredClaims: &jwt.RegisteredClaims{Subject: AnonymousSubject},
+		Subject: AnonymousSubject,
 	})
 }
 

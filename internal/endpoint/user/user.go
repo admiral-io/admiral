@@ -6,6 +6,10 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/uber-go/tally/v4"
+	"go.uber.org/zap"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+
 	"go.admiral.io/admiral/internal/config"
 	"go.admiral.io/admiral/internal/endpoint"
 	"go.admiral.io/admiral/internal/model"
@@ -14,19 +18,16 @@ import (
 	"go.admiral.io/admiral/internal/service/database"
 	"go.admiral.io/admiral/internal/store"
 	userv1 "go.admiral.io/sdk/proto/admiral/api/user/v1"
-	"go.uber.org/zap"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 )
 
 const Name = "endpoint.user"
 
 type api struct {
-	userStore  *store.UserStore
-	tokenStore *store.AuthnTokenStore
-	issuer     authn.Issuer
-	logger     *zap.Logger
-	scope      tally.Scope
+	userStore   *store.UserStore
+	tokenStore  *store.AccessTokenStore
+	tokenIssuer authn.TokenIssuer
+	logger      *zap.Logger
+	scope       tally.Scope
 }
 
 func New(_ *config.Config, log *zap.Logger, scope tally.Scope) (endpoint.Endpoint, error) {
@@ -40,7 +41,7 @@ func New(_ *config.Config, log *zap.Logger, scope tally.Scope) (endpoint.Endpoin
 		return nil, err
 	}
 
-	tokenStore, err := store.NewAuthnTokenStore(db.GormDB())
+	tokenStore, err := store.NewAccessTokenStore(db.GormDB())
 	if err != nil {
 		return nil, err
 	}
@@ -51,11 +52,11 @@ func New(_ *config.Config, log *zap.Logger, scope tally.Scope) (endpoint.Endpoin
 	}
 
 	return &api{
-		userStore:  userStore,
-		tokenStore: tokenStore,
-		issuer:     authnService,
-		logger:     log.Named(Name),
-		scope:      scope.SubScope("user"),
+		userStore:   userStore,
+		tokenStore:  tokenStore,
+		tokenIssuer: authnService,
+		logger:      log.Named(Name),
+		scope:       scope.SubScope("user"),
 	}, nil
 }
 
@@ -125,14 +126,14 @@ func (a *api) CreatePersonalAccessToken(ctx context.Context, req *userv1.CreateP
 		expiry = &d
 	}
 
-	authnToken, oauthToken, err := a.issuer.CreateToken(ctx, authn.TokenKindPAT, req.GetName(), claims.Subject, scopes, expiry)
+	accessToken, plaintext, err := a.tokenIssuer.CreateToken(ctx, authn.TokenKindPAT, req.GetName(), claims.Subject, scopes, expiry)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to create token: %v", err)
 	}
 
 	return &userv1.CreatePersonalAccessTokenResponse{
-		AccessToken:    authnToken.ToProto(),
-		PlainTextToken: oauthToken.AccessToken,
+		AccessToken:    accessToken.ToProto(),
+		PlainTextToken: plaintext,
 	}, nil
 }
 
@@ -142,7 +143,7 @@ func (a *api) ListPersonalAccessTokens(ctx context.Context, req *userv1.ListPers
 		return nil, status.Error(codes.Unauthenticated, "authentication required")
 	}
 
-	tokens, err := a.tokenStore.ListBySubject(ctx, claims.Subject, string(model.AuthnTokenKindUser))
+	tokens, err := a.tokenStore.ListBySubject(ctx, claims.Subject, string(model.AccessTokenKindPAT))
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to list tokens: %v", err)
 	}
@@ -156,14 +157,9 @@ func (a *api) ListPersonalAccessTokens(ctx context.Context, req *userv1.ListPers
 }
 
 func (a *api) GetPersonalAccessToken(ctx context.Context, req *userv1.GetPersonalAccessTokenRequest) (*userv1.GetPersonalAccessTokenResponse, error) {
-	id, err := uuid.Parse(req.GetTokenId())
+	token, err := a.tokenStore.Get(ctx, req.GetTokenId())
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "invalid token ID: %v", err)
-	}
-
-	token, err := a.tokenStore.Get(ctx, id)
-	if err != nil {
-		return nil, status.Errorf(codes.NotFound, "token not found: %s", id)
+		return nil, status.Errorf(codes.NotFound, "token not found: %s", req.GetTokenId())
 	}
 
 	return &userv1.GetPersonalAccessTokenResponse{
@@ -172,22 +168,16 @@ func (a *api) GetPersonalAccessToken(ctx context.Context, req *userv1.GetPersona
 }
 
 func (a *api) RevokePersonalAccessToken(ctx context.Context, req *userv1.RevokePersonalAccessTokenRequest) (*userv1.RevokePersonalAccessTokenResponse, error) {
-	id, err := uuid.Parse(req.GetTokenId())
+	token, err := a.tokenStore.Get(ctx, req.GetTokenId())
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "invalid token ID: %v", err)
+		return nil, status.Errorf(codes.NotFound, "token not found: %s", req.GetTokenId())
 	}
 
-	// Verify the token exists before revoking.
-	token, err := a.tokenStore.Get(ctx, id)
-	if err != nil {
-		return nil, status.Errorf(codes.NotFound, "token not found: %s", id)
-	}
-
-	if err := a.tokenStore.Delete(ctx, id); err != nil {
+	if err := a.tokenStore.Delete(ctx, req.GetTokenId()); err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to revoke token: %v", err)
 	}
 
-	token.Status = model.AuthnTokenStatusRevoked
+	token.Status = model.AccessTokenStatusRevoked
 	return &userv1.RevokePersonalAccessTokenResponse{
 		AccessToken: token.ToProto(),
 	}, nil
