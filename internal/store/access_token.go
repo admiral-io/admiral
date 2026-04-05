@@ -218,3 +218,29 @@ func (s *AccessTokenStore) UpdateScopes(ctx context.Context, id string, scopes [
 
 	return nil
 }
+
+func (s *AccessTokenStore) Update(ctx context.Context, id string, updates map[string]any) error {
+	if id == "" {
+		return errors.New("id cannot be empty")
+	}
+	if len(updates) == 0 {
+		return nil
+	}
+
+	updates["updated_at"] = time.Now()
+
+	result := s.db.WithContext(ctx).
+		Model(&model.AccessToken{}).
+		Where("id = ? AND status = ?", id, model.AccessTokenStatusActive).
+		Updates(updates)
+
+	if result.Error != nil {
+		return fmt.Errorf("failed to update access token: %w", result.Error)
+	}
+
+	if result.RowsAffected == 0 {
+		return errors.New("no active access token found to update")
+	}
+
+	return nil
+}

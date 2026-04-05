@@ -176,6 +176,61 @@ func (a *api) GetPersonalAccessToken(ctx context.Context, req *userv1.GetPersona
 	}, nil
 }
 
+func (a *api) UpdatePersonalAccessToken(ctx context.Context, req *userv1.UpdatePersonalAccessTokenRequest) (*userv1.UpdatePersonalAccessTokenResponse, error) {
+	claims, err := authn.ClaimsFromContext(ctx)
+	if err != nil {
+		return nil, status.Error(codes.Unauthenticated, "authentication required")
+	}
+
+	token, err := a.tokenStore.Get(ctx, req.GetTokenId())
+	if err != nil {
+		return nil, status.Errorf(codes.NotFound, "token not found: %s", req.GetTokenId())
+	}
+
+	if token.Subject != claims.Subject {
+		return nil, status.Errorf(codes.NotFound, "token not found: %s", req.GetTokenId())
+	}
+
+	if token.Status != model.AccessTokenStatusActive {
+		return nil, status.Error(codes.FailedPrecondition, "only active tokens can be updated")
+	}
+
+	updates := make(map[string]any)
+
+	if req.Name != nil {
+		updates["name"] = req.GetName()
+	}
+
+	if req.Scopes != nil {
+		if len(req.GetScopes()) == 0 {
+			return nil, status.Error(codes.InvalidArgument, "at least one scope is required")
+		}
+		if err := authn.ValidateScopes(req.GetScopes()); err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "invalid scopes: %v", err)
+		}
+		updates["scopes"] = req.GetScopes()
+	}
+
+	if len(updates) == 0 {
+		return &userv1.UpdatePersonalAccessTokenResponse{
+			AccessToken: token.ToProto(),
+		}, nil
+	}
+
+	if err := a.tokenStore.Update(ctx, req.GetTokenId(), updates); err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to update token: %v", err)
+	}
+
+	updated, err := a.tokenStore.Get(ctx, req.GetTokenId())
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to retrieve updated token: %v", err)
+	}
+
+	return &userv1.UpdatePersonalAccessTokenResponse{
+		AccessToken: updated.ToProto(),
+	}, nil
+}
+
 func (a *api) RevokePersonalAccessToken(ctx context.Context, req *userv1.RevokePersonalAccessTokenRequest) (*userv1.RevokePersonalAccessTokenResponse, error) {
 	claims, err := authn.ClaimsFromContext(ctx)
 	if err != nil {
