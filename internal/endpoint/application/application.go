@@ -20,7 +20,7 @@ import (
 	"go.admiral.io/admiral/internal/service/authn"
 	"go.admiral.io/admiral/internal/service/database"
 	"go.admiral.io/admiral/internal/store"
-	applicationv1 "go.admiral.io/sdk/proto/admiral/api/application/v1"
+	applicationv1 "go.admiral.io/sdk/proto/admiral/application/v1"
 )
 
 const Name = "endpoint.application"

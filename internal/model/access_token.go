@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"time"
 
-	commonv1 "buf.build/gen/go/admiral/common/protocolbuffers/go/admiral/common/v1"
 	"github.com/lib/pq"
+	commonv1 "go.admiral.io/sdk/proto/admiral/common/v1"
 	"golang.org/x/oauth2"
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"gorm.io/gorm"
@@ -147,7 +147,7 @@ func (at *AccessToken) ToProto() *commonv1.AccessToken {
 		proto.BindingType = commonv1.BindingType_BINDING_TYPE_USER
 		proto.BindingId = at.Subject
 	case AccessTokenKindSAT:
-		proto.TokenType = commonv1.TokenType_TOKEN_TYPE_AGT // TODO: add TOKEN_TYPE_SAT to proto
+		proto.TokenType = commonv1.TokenType_TOKEN_TYPE_SAT
 		proto.BindingType = commonv1.BindingType_BINDING_TYPE_CLUSTER
 		proto.BindingId = at.Subject
 	}

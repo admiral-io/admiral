@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	commonv1 "buf.build/gen/go/admiral/common/protocolbuffers/go/admiral/common/v1"
+	commonv1 "go.admiral.io/sdk/proto/admiral/common/v1"
 	"github.com/uber-go/tally/v4"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"

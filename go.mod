@@ -5,7 +5,6 @@ go 1.26.1
 replace go.admiral.io/sdk => ../admiral-protos/build/repo/admiral-sdk-go
 
 require (
-	buf.build/gen/go/admiral/common/protocolbuffers/go v1.36.11-20260314023923-bd3dd55dedeb.1
 	buf.build/go/protovalidate v1.1.3
 	cloud.google.com/go/storage v1.56.0
 	github.com/alexedwards/scs/gormstore v0.0.0-20251002162104-209de6e426de

@@ -7,7 +7,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"gorm.io/gorm"
 
-	userv1 "go.admiral.io/sdk/proto/admiral/api/user/v1"
+	userv1 "go.admiral.io/sdk/proto/admiral/user/v1"
 )
 
 type UserInfo struct {

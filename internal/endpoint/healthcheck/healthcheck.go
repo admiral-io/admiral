@@ -8,7 +8,7 @@ import (
 
 	"go.admiral.io/admiral/internal/config"
 	"go.admiral.io/admiral/internal/endpoint"
-	healthcheckv1 "go.admiral.io/sdk/proto/admiral/api/healthcheck/v1"
+	healthcheckv1 "go.admiral.io/sdk/proto/admiral/healthcheck/v1"
 )
 
 const Name = "endpoint.healthcheck"

@@ -17,7 +17,7 @@ import (
 	"go.admiral.io/admiral/internal/service/authn"
 	"go.admiral.io/admiral/internal/service/database"
 	"go.admiral.io/admiral/internal/store"
-	userv1 "go.admiral.io/sdk/proto/admiral/api/user/v1"
+	userv1 "go.admiral.io/sdk/proto/admiral/user/v1"
 )
 
 const Name = "endpoint.user"

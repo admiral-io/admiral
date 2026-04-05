@@ -15,7 +15,7 @@ import (
 	"go.admiral.io/admiral/internal/endpoint"
 	"go.admiral.io/admiral/internal/service"
 	"go.admiral.io/admiral/internal/service/authn"
-	authnv1 "go.admiral.io/sdk/proto/admiral/api/authentication/v1"
+	authnv1 "go.admiral.io/sdk/proto/admiral/authentication/v1"
 )
 
 const Name = "endpoint.authn"

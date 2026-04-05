@@ -14,7 +14,7 @@ import (
 
 	"go.admiral.io/admiral/internal/config"
 	"go.admiral.io/admiral/internal/middleware"
-	healthcheckv1 "go.admiral.io/sdk/proto/admiral/api/healthcheck/v1"
+	healthcheckv1 "go.admiral.io/sdk/proto/admiral/healthcheck/v1"
 )
 
 // Compile-time check: *Middleware must satisfy middleware.Middleware.
