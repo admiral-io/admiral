@@ -50,7 +50,7 @@ builds:
       - -X main.version={{.Version}}
       - -X main.commit={{.FullCommit}}
       - -X main.date={{.Date}}
-      - -X main.builtBy=goreleaser
+      - -X main.builtBy=Admiral
 
 checksum:
   name_template: "checksums.txt"
@@ -58,15 +58,14 @@ checksum:
 
 signs:
   - cmd: cosign
-    certificate: "${artifact}.pem"
-    args:
-      - sign-blob
-      - "--output-certificate=${certificate}"
-      - "--output-signature=${signature}"
-      - "${artifact}"
-      - "--yes"
     artifacts: checksum
     output: true
+    signature: "${artifact}.sigstore.json"
+    args:
+      - sign-blob
+      - --yes
+      - --bundle=${signature}
+      - ${artifact}
 
 docker_signs:
   - cmd: cosign
@@ -74,8 +73,8 @@ docker_signs:
     output: true
     args:
       - sign
-      - "${artifact}"
-      - "--yes"
+      - --yes
+      - ${artifact}@${digest}
 
 sboms:
   - artifacts: archive
@@ -97,6 +96,7 @@ archives:
       - config.yaml
 
 changelog:
+  use: github
   sort: asc
   filters:
     exclude:
@@ -128,6 +128,62 @@ changelog:
       order: 600
     - title: "Other Changes"
       order: 9999
+
+homebrew_casks:
+  - name: admiral
+    repository:
+      owner: admiral-io
+      name: homebrew-tap
+    directory: Casks
+    homepage: https://admiral.io/
+    description: Admiral - Platform Orchestrator
+    binaries:
+      - admiral
+    dependencies:
+      - formula: git
+    commit_author:
+      name: admiral-ci
+      email: support@admiral.io
+
+nfpms:
+  - id: admiral
+    file_name_template: "{{ .ConventionalFileName }}"
+    maintainer: Admiral <support@admiral.io>
+    description: Admiral - Platform Orchestrator
+    homepage: https://admiral.io
+    license: AGPL-3.0-only
+    vendor: Admiral
+    bindir: /usr/bin
+    section: utils
+    contents:
+      - src: ./LICENSE
+        dst: /usr/share/doc/admiral/copyright
+        file_info:
+          mode: 0644
+    formats:
+      - apk
+      - deb
+      - rpm
+      - archlinux
+    dependencies:
+      - git
+    deb:
+      lintian_overrides:
+        - statically-linked-binary
+        - changelog-file-missing-in-native-package
+
+scoops:
+  - name: admiral
+    repository:
+      owner: admiral-io
+      name: scoop-bucket
+    directory: bucket
+    homepage: https://admiral.io
+    description: Admiral - Platform Orchestrator for managing applications and environments.
+    license: AGPL-3.0-only
+    commit_author:
+      name: admiral-ci
+      email: support@admiral.io
 
 release:
   footer: |
