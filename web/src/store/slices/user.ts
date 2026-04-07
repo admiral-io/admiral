@@ -30,22 +30,22 @@ function loadPreferences(): UserPreferences {
 export interface UserState {
   id: string;
   email: string;
-  emailVerified: boolean;
-  name: string;
-  givenName: string;
-  familyName: string;
-  pictureUrl: string | undefined;
+  email_verified: boolean;
+  display_name: string;
+  given_name: string;
+  family_name: string;
+  avatar_url: string | undefined;
   preferences: UserPreferences;
 }
 
 const initialState: UserState = {
   id: '',
   email: '',
-  emailVerified: false,
-  name: '',
-  givenName: '',
-  familyName: '',
-  pictureUrl: undefined,
+  email_verified: false,
+  display_name: '',
+  given_name: '',
+  family_name: '',
+  avatar_url: undefined,
   preferences: loadPreferences(),
 };
 
@@ -54,14 +54,14 @@ const userSlice = createSlice({
   initialState,
   reducers: {
     setUser(state, action: PayloadAction<User>) {
-      const { id, email, emailVerified, name, givenName, familyName, pictureUrl } = action.payload;
-      state.id = id;
-      state.email = email;
-      state.emailVerified = emailVerified ?? false;
-      state.name = name ?? '';
-      state.givenName = givenName ?? '';
-      state.familyName = familyName ?? '';
-      state.pictureUrl = pictureUrl;
+      const u = action.payload;
+      state.id = u.id;
+      state.email = u.email;
+      state.email_verified = u.email_verified ?? false;
+      state.display_name = u.display_name ?? '';
+      state.given_name = u.given_name ?? '';
+      state.family_name = u.family_name ?? '';
+      state.avatar_url = u.avatar_url;
     },
     setThemeMode(state, action: PayloadAction<ThemeMode>) {
       state.preferences.themeMode = action.payload ?? initialState.preferences.themeMode;
@@ -74,14 +74,14 @@ export const { setUser, setThemeMode } = userSlice.actions;
 export const selectUser = (state: RootState): UserState => state.user;
 export const selectUserProfile = createSelector(
   (state: RootState) => state.user,
-  ({ id, email, emailVerified, name, givenName, familyName, pictureUrl }): User => ({
+  ({ id, email, email_verified, display_name, given_name, family_name, avatar_url }): User => ({
     id,
     email,
-    emailVerified,
-    name,
-    givenName,
-    familyName,
-    pictureUrl,
+    email_verified,
+    display_name,
+    given_name,
+    family_name,
+    avatar_url,
   }),
 );
 export const selectUserPreferences = (state: RootState): UserPreferences => state.user.preferences;

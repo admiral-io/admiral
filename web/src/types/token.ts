@@ -14,11 +14,11 @@ export const accessTokenSchema = z.object({
   status: z.string().optional(),
   binding_type: z.string().optional(),
   binding_id: z.string().optional(),
-  created_by: actorRefSchema.optional(),
-  expires_at: z.string().optional(),
-  last_used_at: z.string().optional(),
-  created_at: z.string().optional(),
-  revoked_at: z.string().optional(),
+  created_by: actorRefSchema.nullish(),
+  expires_at: z.string().nullish(),
+  last_used_at: z.string().nullish(),
+  created_at: z.string().nullish(),
+  revoked_at: z.string().nullish(),
 });
 
 export const listTokensSchema = z.object({
