@@ -4,11786 +4,11749 @@
  */
 
 export interface paths {
-  '/api/v1/agent/revisions/{revision_id}/bundle': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * Retrieve a revision bundle
-     * @description The bundle contains pre-rendered Kubernetes manifests (from Helm template,
-     *      kustomize build, or raw manifests) ready for server-side apply. The agent
-     *      does not need to render anything -- it applies the bundle as-is.
-     *
-     *      The cluster is identified by the agent token's binding. Returns
-     *      PERMISSION_DENIED if the revision's target cluster does not match the
-     *      AGT's cluster binding. Returns NOT_FOUND if the revision does not exist
-     *      or has been cancelled.
-     *
-     *      Scope: `cluster:deploy` | Token types: `agt`
-     */
-    get: operations['ClusterAPI_GetRevisionBundle'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/agent/revisions/{revision_id}/result': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Report revision result
-     * @description The cluster is identified by the agent token's binding. Returns
-     *      PERMISSION_DENIED if the revision's target cluster does not match the
-     *      AGT's cluster binding.
-     *
-     *      Scope: `cluster:deploy` | Token types: `agt`
-     */
-    post: operations['ClusterAPI_ReportRevisionResult'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/agent/status': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Report cluster status
-     * @description The cluster is identified by the agent token -- the server resolves the
-     *      cluster from the AGT's binding. No cluster_id is required in the request.
-     *
-     *      This endpoint is agent-facing and restricted to agent tokens.
-     *
-     *      Scope: `cluster:status` | Token types: `agt`
-     */
-    post: operations['ClusterAPI_ReportClusterStatus'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/applications': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * List applications
-     * @description Scope: `app:read`
-     */
-    get: operations['ApplicationAPI_ListApplications'];
-    put?: never;
-    /**
-     * Create an application
-     * @description Scope: `app:write`
-     */
-    post: operations['ApplicationAPI_CreateApplication'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/applications/{application.id}': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    /**
-     * Update an application
-     * @description Scope: `app:write`
-     */
-    patch: operations['ApplicationAPI_UpdateApplication'];
-    trace?: never;
-  };
-  '/api/v1/applications/{application_id}': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * Retrieve an application
-     * @description Scope: `app:read`
-     */
-    get: operations['ApplicationAPI_GetApplication'];
-    put?: never;
-    post?: never;
-    /**
-     * Delete an application
-     * @description Scope: `app:write`
-     */
-    delete: operations['ApplicationAPI_DeleteApplication'];
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/clusters': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * List clusters
-     * @description Scope: `cluster:read`
-     */
-    get: operations['ClusterAPI_ListClusters'];
-    put?: never;
-    /**
-     * Create a cluster
-     * @description The response includes a `plain_text_token` -- the raw AGT secret shown
-     *      exactly once. Deploy this token to the K8s agent (e.g., via Helm values
-     *      or a Kubernetes Secret). The agent uses it to authenticate with
-     *      AgentAPI.RegisterAgent on first boot.
-     *
-     *      Scope: `cluster:write`
-     */
-    post: operations['ClusterAPI_CreateCluster'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/clusters/{cluster.id}': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    /**
-     * Update a cluster
-     * @description Scope: `cluster:write`
-     */
-    patch: operations['ClusterAPI_UpdateCluster'];
-    trace?: never;
-  };
-  '/api/v1/clusters/{cluster_id}': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * Retrieve a cluster
-     * @description Returns the Cluster record with its server-derived health_status. For
-     *      detailed telemetry (node counts, resource usage, workload summary), use
-     *      GetClusterStatus instead.
-     *
-     *      Scope: `cluster:read`
-     */
-    get: operations['ClusterAPI_GetCluster'];
-    put?: never;
-    post?: never;
-    /**
-     * Delete a cluster
-     * @description Scope: `cluster:write`
-     */
-    delete: operations['ClusterAPI_DeleteCluster'];
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/clusters/{cluster_id}/status': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * Retrieve cluster status
-     * @description Returns NOT_FOUND if the cluster does not exist. If the cluster exists but
-     *      no agent has reported telemetry yet, the response will have health_status
-     *      PENDING and no status message.
-     *
-     *      Scope: `cluster:read`
-     */
-    get: operations['ClusterAPI_GetClusterStatus'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/clusters/{cluster_id}/tokens': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * List cluster tokens
-     * @description Scope: `cluster:read`
-     */
-    get: operations['ClusterAPI_ListClusterTokens'];
-    put?: never;
-    /**
-     * Create a cluster token
-     * @description Use this to create additional AGTs for an existing cluster (e.g., for
-     *      zero-downtime token rotation). The initial AGT is created automatically
-     *      by CreateCluster.
-     *
-     *      Scope: `cluster:write`
-     */
-    post: operations['ClusterAPI_CreateClusterToken'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/clusters/{cluster_id}/tokens/{token_id}': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * Retrieve a cluster token
-     * @description Scope: `cluster:read`
-     */
-    get: operations['ClusterAPI_GetClusterToken'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/clusters/{cluster_id}/tokens/{token_id}/revoke': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Revoke a cluster token
-     * @description Scope: `cluster:write`
-     */
-    post: operations['ClusterAPI_RevokeClusterToken'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/clusters/{cluster_id}/workloads': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * List workloads
-     * @description Scope: `cluster:read`
-     */
-    get: operations['ClusterAPI_ListWorkloads'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/clusters/{cluster_id}/workloads/status': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Report workload status
-     * @description This endpoint is agent-facing and restricted to agent tokens.
-     *
-     *      Scope: `cluster:status` | Token types: `agt`
-     */
-    post: operations['ClusterAPI_ReportWorkloadStatus'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/components': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * List components
-     * @description The response behavior depends on the filter:
-     *        - Filter by `application_id` only: returns application-level component
-     *          definitions (defaults).
-     *        - Filter by `application_id` + `environment_id`: returns the resolved
-     *          view with environment overrides applied. Disabled components are
-     *          included with `disabled=true`. The `has_override` field indicates
-     *          whether the component differs from its application-level default.
-     *
-     *      Scope: `app:read`
-     */
-    get: operations['ComponentAPI_ListComponents'];
-    put?: never;
-    /**
-     * Create a component
-     * @description The component name must be unique within the application. The source must
-     *      exist and be accessible to the caller's tenant.
-     *
-     *      Scope: `app:write`
-     */
-    post: operations['ComponentAPI_CreateComponent'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/components/{component.id}': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    /**
-     * Update a component
-     * @description When renaming a component, the server validates that no other components
-     *      reference the old name in their values_template expressions and rejects
-     *      the rename if references exist.
-     *
-     *      Scope: `app:write`
-     */
-    patch: operations['ComponentAPI_UpdateComponent'];
-    trace?: never;
-  };
-  '/api/v1/components/{component_id}': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * Retrieve a component
-     * @description Scope: `app:read`
-     */
-    get: operations['ComponentAPI_GetComponent'];
-    put?: never;
-    post?: never;
-    /**
-     * Delete a component
-     * @description Scope: `app:write`
-     */
-    delete: operations['ComponentAPI_DeleteComponent'];
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/components/{component_id}/overrides': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * List component overrides
-     * @description Scope: `env:read`
-     */
-    get: operations['ComponentAPI_ListComponentOverrides'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/components/{component_id}/overrides/{environment_id}': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * Retrieve a component override
-     * @description Scope: `env:read`
-     */
-    get: operations['ComponentAPI_GetComponentOverride'];
-    /**
-     * Set a component override
-     * @description For example, a "redis" component might use a Helm chart source in dev but
-     *      a Terraform ElastiCache module in prod.
-     *
-     *      This is an upsert -- if an override already exists for this component +
-     *      environment combination, it is replaced.
-     *
-     *      Scope: `env:write`
-     */
-    put: operations['ComponentAPI_SetComponentOverride'];
-    post?: never;
-    /**
-     * Delete a component override
-     * @description Scope: `env:write`
-     */
-    delete: operations['ComponentAPI_DeleteComponentOverride'];
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/connections': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * List connections
-     * @description Scope: `connection:read`
-     */
-    get: operations['ConnectionAPI_ListConnections'];
-    put?: never;
-    /**
-     * Create a connection
-     * @description The connection type and auth config must match -- for example, a GIT_TOKEN
-     *      connection requires a GitTokenAuth config. The server validates connectivity
-     *      on creation when possible and sets the initial status accordingly.
-     *
-     *      Scope: `connection:write`
-     */
-    post: operations['ConnectionAPI_CreateConnection'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/connections/{connection.id}': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    /**
-     * Update a connection
-     * @description When updating auth_config, the entire auth config is replaced -- partial
-     *      updates within the auth config oneof are not supported. Omitting auth_config
-     *      from the update_mask leaves credentials unchanged.
-     *
-     *      Scope: `connection:write`
-     */
-    patch: operations['ConnectionAPI_UpdateConnection'];
-    trace?: never;
-  };
-  '/api/v1/connections/{connection_id}': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * Retrieve a connection
-     * @description Returns connection metadata and status. Sensitive credential fields are
-     *      never included in the response.
-     *
-     *      Scope: `connection:read`
-     */
-    get: operations['ConnectionAPI_GetConnection'];
-    put?: never;
-    post?: never;
-    /**
-     * Delete a connection
-     * @description Scope: `connection:write`
-     */
-    delete: operations['ConnectionAPI_DeleteConnection'];
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/connections/{connection_id}/test': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Test a connection
-     * @description This operation makes a network call to the external system and may take
-     *      several seconds depending on the remote endpoint.
-     *
-     *      Scope: `connection:write`
-     */
-    post: operations['ConnectionAPI_TestConnection'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/deployments': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * List deployments
-     * @description Common filter fields: `application_id`, `environment_id`, `status`,
-     *      `trigger_type`. Use to view deployment history for an environment.
-     *
-     *      Scope: `deploy:read`
-     */
-    get: operations['DeploymentAPI_ListDeployments'];
-    put?: never;
-    /**
-     * Create a deployment
-     * @description The server resolves all components (with environment overrides applied),
-     *      builds the dependency DAG, and begins rendering and executing revisions.
-     *
-     *      To destroy all resources in an environment (e.g., before deleting the
-     *      environment), set `destroy` to true. This runs Terraform destroy for
-     *      infrastructure components and deletes workload resources from the cluster,
-     *      in reverse dependency order.
-     *
-     *      Concurrency: only one deployment can be active per application+environment
-     *      at a time. If a deployment is already in progress (PENDING or RUNNING),
-     *      the new deployment is queued and will start automatically when the
-     *      current deployment completes or is cancelled.
-     *
-     *      Scope: `deploy:write`
-     */
-    post: operations['DeploymentAPI_CreateDeployment'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/deployments/{deployment_id}': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * Retrieve a deployment
-     * @description Scope: `deploy:read`
-     */
-    get: operations['DeploymentAPI_GetDeployment'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/deployments/{deployment_id}/cancel': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Cancel a deployment
-     * @description Scope: `deploy:write`
-     */
-    post: operations['DeploymentAPI_CancelDeployment'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/deployments/{deployment_id}/revisions': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * List revisions
-     * @description Scope: `deploy:read`
-     */
-    get: operations['DeploymentAPI_ListRevisions'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/deployments/{deployment_id}/revisions/{revision_id}': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * Retrieve a revision
-     * @description Scope: `deploy:read`
-     */
-    get: operations['DeploymentAPI_GetRevision'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/deployments/{deployment_id}/revisions/{revision_id}/retry': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Retry a revision
-     * @description Scope: `deploy:write`
-     */
-    post: operations['DeploymentAPI_RetryRevision'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/environments': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * List environments
-     * @description Scope: `env:read`
-     */
-    get: operations['EnvironmentAPI_ListEnvironments'];
-    put?: never;
-    /**
-     * Create an environment
-     * @description Scope: `env:write`
-     */
-    post: operations['EnvironmentAPI_CreateEnvironment'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/environments/{environment.id}': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    /**
-     * Update an environment
-     * @description Scope: `env:write`
-     */
-    patch: operations['EnvironmentAPI_UpdateEnvironment'];
-    trace?: never;
-  };
-  '/api/v1/environments/{environment_id}': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * Retrieve an environment
-     * @description Scope: `env:read`
-     */
-    get: operations['EnvironmentAPI_GetEnvironment'];
-    put?: never;
-    post?: never;
-    /**
-     * Delete an environment
-     * @description Scope: `env:write`
-     */
-    delete: operations['EnvironmentAPI_DeleteEnvironment'];
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/healthcheck': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * Check service health
-     * @description Healthcheck verifies that the service is running and healthy.
-     *      Returns an empty response on success. Use this endpoint for load balancer
-     *      health checks and monitoring systems.
-     */
-    get: operations['HealthcheckAPI_Healthcheck'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/runner/heartbeat': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Send runner heartbeat
-     * @description The runner is identified by the agent token -- the server resolves the
-     *      runner from the AGT's binding. No runner_id is required in the request.
-     *
-     *      This endpoint is runner-facing and restricted to agent tokens.
-     *
-     *      Scope: `runner:exec` | Token types: `agt`
-     */
-    post: operations['RunnerAPI_Heartbeat'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/runner/jobs/claim': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Claim a job
-     * @description The runner is identified by the agent token -- no runner_id is required.
-     *
-     *      This endpoint is runner-facing and restricted to agent tokens.
-     *
-     *      Scope: `runner:exec` | Token types: `agt`
-     */
-    post: operations['RunnerAPI_ClaimJob'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/runner/jobs/{job_id}/bundle': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * Retrieve a job bundle
-     * @description The bundle contains everything the runner needs to execute the Terraform
-     *      operation: rendered .tf files, resolved variables, provider configuration,
-     *      backend configuration, and the required Terraform version.
-     *
-     *      This endpoint is runner-facing and restricted to agent tokens.
-     *
-     *      Scope: `runner:exec` | Token types: `agt`
-     */
-    get: operations['RunnerAPI_GetJobBundle'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/runner/jobs/{job_id}/result': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Report job result
-     * @description This endpoint is runner-facing and restricted to agent tokens.
-     *
-     *      Scope: `runner:exec` | Token types: `agt`
-     */
-    post: operations['RunnerAPI_ReportJobResult'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/runner/jobs/{job_id}/state': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * Retrieve state for a job
-     * @description The server validates that the AGT's runner binding matches the runner
-     *      assigned to this job. Returns PERMISSION_DENIED if they do not match.
-     *      Returns NOT_FOUND if the job does not exist or has been cancelled.
-     *
-     *      Maps to Terraform HTTP backend GET on the state address.
-     *
-     *      Scope: `state:read` | Token types: `agt`
-     */
-    get: operations['StateAPI_GetState'];
-    put?: never;
-    /**
-     * Push state for a job
-     * @description The server validates that the AGT's runner binding matches the runner
-     *      assigned to this job. Returns PERMISSION_DENIED if they do not match.
-     *      Returns FAILED_PRECONDITION if the serial is not greater than the current
-     *      serial. Returns INVALID_ARGUMENT if the lineage does not match the
-     *      existing state record.
-     *
-     *      Maps to Terraform HTTP backend POST on the state address.
-     *
-     *      Scope: `state:write` | Token types: `agt`
-     */
-    post: operations['StateAPI_PushState'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/runner/jobs/{job_id}/state/lock': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Lock state for a job
-     * @description The server validates that the AGT's runner binding matches the runner
-     *      assigned to this job. Returns PERMISSION_DENIED if they do not match.
-     *      Returns FAILED_PRECONDITION if the state is already locked by a different
-     *      operation. The lock_id is generated by Terraform and must be passed to
-     *      UnlockState.
-     *
-     *      Maps to Terraform HTTP backend POST on the lock address.
-     *
-     *      Scope: `state:write` | Token types: `agt`
-     */
-    post: operations['StateAPI_LockState'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/runner/jobs/{job_id}/state/unlock': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Unlock state for a job
-     * @description The server validates that the AGT's runner binding matches the runner
-     *      assigned to this job. Returns PERMISSION_DENIED if they do not match.
-     *      Returns FAILED_PRECONDITION if the lock_id does not match the currently
-     *      held lock. Returns NOT_FOUND if no lock is held.
-     *
-     *      Maps to Terraform HTTP backend POST on the unlock address.
-     *
-     *      Scope: `state:write` | Token types: `agt`
-     */
-    post: operations['StateAPI_UnlockState'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/runners': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * List runners
-     * @description Scope: `runner:read`
-     */
-    get: operations['RunnerAPI_ListRunners'];
-    put?: never;
-    /**
-     * Create a runner
-     * @description The response includes a `plain_text_token` -- the raw AGT secret shown
-     *      exactly once. Deploy this token to the runner binary for authentication.
-     *
-     *      Scope: `runner:write`
-     */
-    post: operations['RunnerAPI_CreateRunner'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/runners/{runner.id}': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    /**
-     * Update a runner
-     * @description Scope: `runner:write`
-     */
-    patch: operations['RunnerAPI_UpdateRunner'];
-    trace?: never;
-  };
-  '/api/v1/runners/{runner_id}': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * Retrieve a runner
-     * @description Returns the Runner record with its server-derived health_status. For
-     *      detailed telemetry (active jobs, capacity), use GetRunnerStatus instead.
-     *
-     *      Scope: `runner:read`
-     */
-    get: operations['RunnerAPI_GetRunner'];
-    put?: never;
-    post?: never;
-    /**
-     * Delete a runner
-     * @description Scope: `runner:write`
-     */
-    delete: operations['RunnerAPI_DeleteRunner'];
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/runners/{runner_id}/jobs': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * List runner jobs
-     * @description Scope: `runner:read`
-     */
-    get: operations['RunnerAPI_ListRunnerJobs'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/runners/{runner_id}/status': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * Retrieve runner status
-     * @description Returns NOT_FOUND if the runner does not exist. If the runner exists but
-     *      has not heartbeated yet, health_status will be PENDING and status will
-     *      be absent.
-     *
-     *      Scope: `runner:read`
-     */
-    get: operations['RunnerAPI_GetRunnerStatus'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/runners/{runner_id}/tokens': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * List runner tokens
-     * @description Scope: `runner:read`
-     */
-    get: operations['RunnerAPI_ListRunnerTokens'];
-    put?: never;
-    /**
-     * Create a runner token
-     * @description Use this to create additional AGTs for an existing runner (e.g., for
-     *      zero-downtime token rotation). The initial AGT is created automatically
-     *      by CreateRunner.
-     *
-     *      Scope: `runner:write`
-     */
-    post: operations['RunnerAPI_CreateRunnerToken'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/runners/{runner_id}/tokens/{token_id}': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * Retrieve a runner token
-     * @description Scope: `runner:read`
-     */
-    get: operations['RunnerAPI_GetRunnerToken'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/runners/{runner_id}/tokens/{token_id}/revoke': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Revoke a runner token
-     * @description Scope: `runner:write`
-     */
-    post: operations['RunnerAPI_RevokeRunnerToken'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/sources': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * List sources
-     * @description Scope: `source:read`
-     */
-    get: operations['SourceAPI_ListSources'];
-    put?: never;
-    /**
-     * Create a source
-     * @description The source type and source_config must match -- for example, a
-     *      TERRAFORM_REGISTRY source requires a TerraformRegistryConfig.
-     *
-     *      Scope: `source:write`
-     */
-    post: operations['SourceAPI_CreateSource'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/sources/{source.id}': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    /**
-     * Update a source
-     * @description Scope: `source:write`
-     */
-    patch: operations['SourceAPI_UpdateSource'];
-    trace?: never;
-  };
-  '/api/v1/sources/{source_id}': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * Retrieve a source
-     * @description Scope: `source:read`
-     */
-    get: operations['SourceAPI_GetSource'];
-    put?: never;
-    post?: never;
-    /**
-     * Delete a source
-     * @description Scope: `source:write`
-     */
-    delete: operations['SourceAPI_DeleteSource'];
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/sources/{source_id}/inputs': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * Retrieve source inputs
-     * @description For Terraform modules, this parses HCL variable blocks using
-     *      terraform-config-inspect. For Helm charts, this extracts values.yaml and
-     *      optionally values.schema.json. For Kustomize and raw manifests, inputs
-     *      are not discoverable and the response will be empty.
-     *
-     *      This operation fetches and parses the external artifact in real time and
-     *      may take several seconds.
-     *
-     *      Scope: `source:read`
-     */
-    get: operations['SourceAPI_GetSourceInputs'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/sources/{source_id}/outputs': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * Retrieve source outputs
-     * @description Only meaningful for Terraform modules, which declare formal output blocks.
-     *      Helm charts, Kustomize, and raw manifests do not have formal outputs --
-     *      workload component outputs are user-declared, not discovered.
-     *
-     *      This operation queries the external system in real time and may take
-     *      several seconds.
-     *
-     *      Scope: `source:read`
-     */
-    get: operations['SourceAPI_GetSourceOutputs'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/sources/{source_id}/sync': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Sync a source
-     * @description Use this after updating credentials on the referenced connection, or to
-     *      force a refresh when you know the upstream has changed.
-     *
-     *      This operation queries the external system in real time and may take
-     *      several seconds.
-     *
-     *      Scope: `source:write`
-     */
-    post: operations['SourceAPI_SyncSource'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/sources/{source_id}/versions': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * List source versions
-     * @description For Terraform registry sources, this calls the Module Registry Protocol's
-     *      version listing endpoint. For Helm repositories, it parses the index.yaml.
-     *      For OCI sources, it lists tags. For Git sources, it lists tags via
-     *      ls-remote.
-     *
-     *      This operation queries the external system in real time and may take
-     *      several seconds.
-     *
-     *      Scope: `source:read`
-     */
-    get: operations['SourceAPI_ListSourceVersions'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/states': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * List states
-     * @description Scope: `state:read`
-     */
-    get: operations['StateAPI_ListStates'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/states/{state_id}': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * Retrieve current state
-     * @description Returns NOT_FOUND if the state record does not exist.
-     *
-     *      Scope: `state:read`
-     */
-    get: operations['StateAPI_GetCurrentState'];
-    put?: never;
-    post?: never;
-    /**
-     * Delete a state
-     * @description Returns NOT_FOUND if the state record does not exist.
-     *      Returns FAILED_PRECONDITION if the state is currently locked.
-     *
-     *      Scope: `state:admin`
-     */
-    delete: operations['StateAPI_DeleteState'];
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/states/{state_id}/force-unlock': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Force unlock a state
-     * @description Returns NOT_FOUND if the state record does not exist.
-     *      Returns FAILED_PRECONDITION if the state has no active lock.
-     *      This action is logged in the audit trail.
-     *
-     *      Scope: `state:admin`
-     */
-    post: operations['StateAPI_ForceUnlockState'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/states/{state_id}/versions': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * List state versions
-     * @description Returns NOT_FOUND if the state record does not exist.
-     *
-     *      Scope: `state:read`
-     */
-    get: operations['StateAPI_ListStateVersions'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/states/{state_id}/versions/{serial}': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * Retrieve a state version
-     * @description Returns NOT_FOUND if the state record does not exist or if no version
-     *      with the specified serial exists for that state record.
-     *
-     *      Scope: `state:read`
-     */
-    get: operations['StateAPI_GetStateVersion'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/user/me': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * Retrieve current user profile
-     * @description GetMe retrieves the profile of the currently authenticated user.
-     *      The user is identified by the authentication token provided in the request.
-     */
-    get: operations['UserAPI_GetMe'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/user/tokens': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * List personal access tokens
-     * @description Scope: `token:read`
-     */
-    get: operations['UserAPI_ListPersonalAccessTokens'];
-    put?: never;
-    /**
-     * Create a personal access token
-     * @description Scope: `token:write`
-     */
-    post: operations['UserAPI_CreatePersonalAccessToken'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/user/tokens/{token_id}': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * Retrieve a personal access token
-     * @description Scope: `token:read`
-     */
-    get: operations['UserAPI_GetPersonalAccessToken'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/user/tokens/{token_id}/revoke': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Revoke a personal access token
-     * @description Scope: `token:write`
-     */
-    post: operations['UserAPI_RevokePersonalAccessToken'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/users/{user_id}': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * Retrieve a user by ID
-     * @description Scope: `user:read`
-     */
-    get: operations['UserAPI_GetUser'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/variables': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * List variables
-     * @description The returned list is a resolved view based on the provided filters:
-     *        - No application_id or environment_id: global variables only.
-     *        - application_id only: global + app-level variables merged.
-     *        - application_id + environment_id: global + app + environment variables merged.
-     *
-     *      When variables with the same key exist at multiple levels, all are returned
-     *      so clients can determine precedence.
-     *
-     *      Scope: `var:read`
-     */
-    get: operations['VariableAPI_ListVariables'];
-    put?: never;
-    /**
-     * Create a variable
-     * @description Fails if a variable with the same key already exists at the same level
-     *      (same key + application_id + environment_id combination).
-     *
-     *      Scope: `var:write`
-     */
-    post: operations['VariableAPI_CreateVariable'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/variables/{variable.id}': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    /**
-     * Update a variable
-     * @description Scope: `var:write`
-     */
-    patch: operations['VariableAPI_UpdateVariable'];
-    trace?: never;
-  };
-  '/api/v1/variables/{variable_id}': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * Retrieve a variable
-     * @description Sensitive variable values are masked in the response.
-     *
-     *      Scope: `var:read`
-     */
-    get: operations['VariableAPI_GetVariable'];
-    put?: never;
-    post?: never;
-    /**
-     * Delete a variable
-     * @description Scope: `var:write`
-     */
-    delete: operations['VariableAPI_DeleteVariable'];
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/auth/callback': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * OAuth2 callback
-     * @description Callback handles the OAuth2 authorization code callback from the IdP.
-     *      Validates the state nonce, exchanges the code for tokens, creates or
-     *      updates the user, and establishes a server-side session.
-     */
-    get: operations['AuthenticationAPI_Callback'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/auth/login': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * Initiate OAuth2 login
-     * @description Login initiates the OAuth2 authorization code flow. Generates a signed
-     *      state nonce and returns the IdP authorization URL for the client to
-     *      redirect to.
-     */
-    get: operations['AuthenticationAPI_Login'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
+    "/api/v1/agent/revisions/{revision_id}/bundle": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Retrieve a revision bundle
+         * @description The bundle contains pre-rendered Kubernetes manifests (from Helm template,
+         *      kustomize build, or raw manifests) ready for server-side apply. The agent
+         *      does not need to render anything -- it applies the bundle as-is.
+         *
+         *      The cluster is identified by the service access token's binding. Returns
+         *      PERMISSION_DENIED if the revision's target cluster does not match the
+         *      SAT's cluster binding. Returns NOT_FOUND if the revision does not exist
+         *      or has been canceled.
+         *
+         *      Scope: `cluster:deploy` | Token types: `sat`
+         */
+        get: operations["ClusterAPI_GetRevisionBundle"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/agent/revisions/{revision_id}/result": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Report revision result
+         * @description The cluster is identified by the service access token's binding. Returns
+         *      PERMISSION_DENIED if the revision's target cluster does not match the
+         *      SAT's cluster binding.
+         *
+         *      Scope: `cluster:deploy` | Token types: `sat`
+         */
+        post: operations["ClusterAPI_ReportRevisionResult"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/agent/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Report cluster status
+         * @description The cluster is identified by the service access token -- the server resolves the
+         *      cluster from the SAT's binding. No cluster_id is required in the request.
+         *
+         *      This endpoint is agent-facing and restricted to service access tokens.
+         *
+         *      Scope: `cluster:status` | Token types: `sat`
+         */
+        post: operations["ClusterAPI_ReportClusterStatus"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/applications": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List applications
+         * @description Scope: `app:read`
+         */
+        get: operations["ApplicationAPI_ListApplications"];
+        put?: never;
+        /**
+         * Create an application
+         * @description Scope: `app:write`
+         */
+        post: operations["ApplicationAPI_CreateApplication"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/applications/{application.id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Update an application
+         * @description Scope: `app:write`
+         */
+        patch: operations["ApplicationAPI_UpdateApplication"];
+        trace?: never;
+    };
+    "/api/v1/applications/{application_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Retrieve an application
+         * @description Scope: `app:read`
+         */
+        get: operations["ApplicationAPI_GetApplication"];
+        put?: never;
+        post?: never;
+        /**
+         * Delete an application
+         * @description Scope: `app:write`
+         */
+        delete: operations["ApplicationAPI_DeleteApplication"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/clusters": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List clusters
+         * @description Scope: `cluster:read`
+         */
+        get: operations["ClusterAPI_ListClusters"];
+        put?: never;
+        /**
+         * Create a cluster
+         * @description The response includes a `plain_text_token` -- the raw SAT secret shown
+         *      exactly once. Deploy this token to the K8s agent (e.g., via Helm values
+         *      or a Kubernetes Secret). The agent uses it to authenticate with
+         *      AgentAPI.RegisterAgent on first boot.
+         *
+         *      Scope: `cluster:write`
+         */
+        post: operations["ClusterAPI_CreateCluster"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/clusters/{cluster.id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Update a cluster
+         * @description Scope: `cluster:write`
+         */
+        patch: operations["ClusterAPI_UpdateCluster"];
+        trace?: never;
+    };
+    "/api/v1/clusters/{cluster_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Retrieve a cluster
+         * @description Returns the Cluster record with its server-derived health_status. For
+         *      detailed telemetry (node counts, resource usage, workload summary), use
+         *      GetClusterStatus instead.
+         *
+         *      Scope: `cluster:read`
+         */
+        get: operations["ClusterAPI_GetCluster"];
+        put?: never;
+        post?: never;
+        /**
+         * Delete a cluster
+         * @description Scope: `cluster:write`
+         */
+        delete: operations["ClusterAPI_DeleteCluster"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/clusters/{cluster_id}/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Retrieve cluster status
+         * @description Returns NOT_FOUND if the cluster does not exist. If the cluster exists but
+         *      no agent has reported telemetry yet, the response will have health_status
+         *      PENDING and no status message.
+         *
+         *      Scope: `cluster:read`
+         */
+        get: operations["ClusterAPI_GetClusterStatus"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/clusters/{cluster_id}/tokens": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List cluster tokens
+         * @description Scope: `cluster:read`
+         */
+        get: operations["ClusterAPI_ListClusterTokens"];
+        put?: never;
+        /**
+         * Create a cluster token
+         * @description Use this to create additional SATs for an existing cluster (e.g., for
+         *      zero-downtime token rotation). The initial SAT is created automatically
+         *      by CreateCluster.
+         *
+         *      Scope: `cluster:write`
+         */
+        post: operations["ClusterAPI_CreateClusterToken"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/clusters/{cluster_id}/tokens/{token_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Retrieve a cluster token
+         * @description Scope: `cluster:read`
+         */
+        get: operations["ClusterAPI_GetClusterToken"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/clusters/{cluster_id}/tokens/{token_id}/revoke": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Revoke a cluster token
+         * @description Scope: `cluster:write`
+         */
+        post: operations["ClusterAPI_RevokeClusterToken"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/clusters/{cluster_id}/workloads": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List workloads
+         * @description Scope: `cluster:read`
+         */
+        get: operations["ClusterAPI_ListWorkloads"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/clusters/{cluster_id}/workloads/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Report workload status
+         * @description This endpoint is agent-facing and restricted to service access tokens.
+         *
+         *      Scope: `cluster:status` | Token types: `sat`
+         */
+        post: operations["ClusterAPI_ReportWorkloadStatus"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/components": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List components
+         * @description The response behavior depends on the filter:
+         *        - Filter by `application_id` only: returns application-level component
+         *          definitions (defaults).
+         *        - Filter by `application_id` + `environment_id`: returns the resolved
+         *          view with environment overrides applied. Disabled components are
+         *          included with `disabled=true`. The `has_override` field indicates
+         *          whether the component differs from its application-level default.
+         *
+         *      Scope: `app:read`
+         */
+        get: operations["ComponentAPI_ListComponents"];
+        put?: never;
+        /**
+         * Create a component
+         * @description The component name must be unique within the application. The source must
+         *      exist and be accessible to the caller's tenant.
+         *
+         *      Scope: `app:write`
+         */
+        post: operations["ComponentAPI_CreateComponent"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/components/{component.id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Update a component
+         * @description When renaming a component, the server validates that no other components
+         *      reference the old name in their values_template expressions and rejects
+         *      the rename if references exist.
+         *
+         *      Scope: `app:write`
+         */
+        patch: operations["ComponentAPI_UpdateComponent"];
+        trace?: never;
+    };
+    "/api/v1/components/{component_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Retrieve a component
+         * @description Scope: `app:read`
+         */
+        get: operations["ComponentAPI_GetComponent"];
+        put?: never;
+        post?: never;
+        /**
+         * Delete a component
+         * @description Scope: `app:write`
+         */
+        delete: operations["ComponentAPI_DeleteComponent"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/components/{component_id}/overrides": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List component overrides
+         * @description Scope: `env:read`
+         */
+        get: operations["ComponentAPI_ListComponentOverrides"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/components/{component_id}/overrides/{environment_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Retrieve a component override
+         * @description Scope: `env:read`
+         */
+        get: operations["ComponentAPI_GetComponentOverride"];
+        /**
+         * Set a component override
+         * @description For example, a "redis" component might use a Helm chart source in dev but
+         *      a Terraform ElastiCache module in prod.
+         *
+         *      This is an upsert -- if an override already exists for this component +
+         *      environment combination, it is replaced.
+         *
+         *      Scope: `env:write`
+         */
+        put: operations["ComponentAPI_SetComponentOverride"];
+        post?: never;
+        /**
+         * Delete a component override
+         * @description Scope: `env:write`
+         */
+        delete: operations["ComponentAPI_DeleteComponentOverride"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/connections": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List connections
+         * @description Scope: `connection:read`
+         */
+        get: operations["ConnectionAPI_ListConnections"];
+        put?: never;
+        /**
+         * Create a connection
+         * @description The connection type and auth config must match -- for example, a GIT_TOKEN
+         *      connection requires a GitTokenAuth config. The server validates connectivity
+         *      on creation when possible and sets the initial status accordingly.
+         *
+         *      Scope: `connection:write`
+         */
+        post: operations["ConnectionAPI_CreateConnection"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/connections/{connection.id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Update a connection
+         * @description When updating auth_config, the entire auth config is replaced -- partial
+         *      updates within the auth config oneof are not supported. Omitting auth_config
+         *      from the update_mask leaves credentials unchanged.
+         *
+         *      Scope: `connection:write`
+         */
+        patch: operations["ConnectionAPI_UpdateConnection"];
+        trace?: never;
+    };
+    "/api/v1/connections/{connection_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Retrieve a connection
+         * @description Returns connection metadata and status. Sensitive credential fields are
+         *      never included in the response.
+         *
+         *      Scope: `connection:read`
+         */
+        get: operations["ConnectionAPI_GetConnection"];
+        put?: never;
+        post?: never;
+        /**
+         * Delete a connection
+         * @description Scope: `connection:write`
+         */
+        delete: operations["ConnectionAPI_DeleteConnection"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/connections/{connection_id}/test": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Test a connection
+         * @description This operation makes a network call to the external system and may take
+         *      several seconds depending on the remote endpoint.
+         *
+         *      Scope: `connection:write`
+         */
+        post: operations["ConnectionAPI_TestConnection"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/deployments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List deployments
+         * @description Common filter fields: `application_id`, `environment_id`, `status`,
+         *      `trigger_type`. Use to view deployment history for an environment.
+         *
+         *      Scope: `deploy:read`
+         */
+        get: operations["DeploymentAPI_ListDeployments"];
+        put?: never;
+        /**
+         * Create a deployment
+         * @description The server resolves all components (with environment overrides applied),
+         *      builds the dependency DAG, and begins rendering and executing revisions.
+         *
+         *      To destroy all resources in an environment (e.g., before deleting the
+         *      environment), set `destroy` to true. This runs Terraform destroy for
+         *      infrastructure components and deletes workload resources from the cluster,
+         *      in reverse dependency order.
+         *
+         *      Concurrency: only one deployment can be active per application+environment
+         *      at a time. If a deployment is already in progress (PENDING or RUNNING),
+         *      the new deployment is queued and will start automatically when the
+         *      current deployment completes or is cancelled.
+         *
+         *      Scope: `deploy:write`
+         */
+        post: operations["DeploymentAPI_CreateDeployment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/deployments/{deployment_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Retrieve a deployment
+         * @description Scope: `deploy:read`
+         */
+        get: operations["DeploymentAPI_GetDeployment"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/deployments/{deployment_id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Cancel a deployment
+         * @description Scope: `deploy:write`
+         */
+        post: operations["DeploymentAPI_CancelDeployment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/deployments/{deployment_id}/revisions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List revisions
+         * @description Scope: `deploy:read`
+         */
+        get: operations["DeploymentAPI_ListRevisions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/deployments/{deployment_id}/revisions/{revision_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Retrieve a revision
+         * @description Scope: `deploy:read`
+         */
+        get: operations["DeploymentAPI_GetRevision"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/deployments/{deployment_id}/revisions/{revision_id}/retry": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Retry a revision
+         * @description Scope: `deploy:write`
+         */
+        post: operations["DeploymentAPI_RetryRevision"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/environments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List environments
+         * @description Scope: `env:read`
+         */
+        get: operations["EnvironmentAPI_ListEnvironments"];
+        put?: never;
+        /**
+         * Create an environment
+         * @description Scope: `env:write`
+         */
+        post: operations["EnvironmentAPI_CreateEnvironment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/environments/{environment.id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Update an environment
+         * @description Scope: `env:write`
+         */
+        patch: operations["EnvironmentAPI_UpdateEnvironment"];
+        trace?: never;
+    };
+    "/api/v1/environments/{environment_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Retrieve an environment
+         * @description Scope: `env:read`
+         */
+        get: operations["EnvironmentAPI_GetEnvironment"];
+        put?: never;
+        post?: never;
+        /**
+         * Delete an environment
+         * @description Scope: `env:write`
+         */
+        delete: operations["EnvironmentAPI_DeleteEnvironment"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/healthcheck": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Check service health
+         * @description Healthcheck verifies that the service is running and healthy.
+         *      Returns an empty response on success. Use this endpoint for load balancer
+         *      health checks and monitoring systems.
+         */
+        get: operations["HealthcheckAPI_Healthcheck"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/runner/heartbeat": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Send runner heartbeat
+         * @description The runner is identified by the service access token -- the server resolves the
+         *      runner from the SAT's binding. No runner_id is required in the request.
+         *
+         *      This endpoint is runner-facing and restricted to service access tokens.
+         *
+         *      Scope: `runner:exec` | Token types: `sat`
+         */
+        post: operations["RunnerAPI_Heartbeat"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/runner/jobs/claim": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Claim a job
+         * @description The runner is identified by the service access token -- no runner_id is required.
+         *
+         *      This endpoint is runner-facing and restricted to service access tokens.
+         *
+         *      Scope: `runner:exec` | Token types: `sat`
+         */
+        post: operations["RunnerAPI_ClaimJob"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/runner/jobs/{job_id}/bundle": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Retrieve a job bundle
+         * @description The bundle contains everything the runner needs to execute the Terraform
+         *      operation: rendered .tf files, resolved variables, provider configuration,
+         *      backend configuration, and the required Terraform version.
+         *
+         *      This endpoint is runner-facing and restricted to service access tokens.
+         *
+         *      Scope: `runner:exec` | Token types: `sat`
+         */
+        get: operations["RunnerAPI_GetJobBundle"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/runner/jobs/{job_id}/result": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Report job result
+         * @description This endpoint is runner-facing and restricted to service access tokens.
+         *
+         *      Scope: `runner:exec` | Token types: `sat`
+         */
+        post: operations["RunnerAPI_ReportJobResult"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/runner/jobs/{job_id}/state": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Retrieve state for a job
+         * @description The server validates that the SAT's runner binding matches the runner
+         *      assigned to this job. Returns PERMISSION_DENIED if they do not match.
+         *      Returns NOT_FOUND if the job does not exist or has been cancelled.
+         *
+         *      Maps to Terraform HTTP backend GET on the state address.
+         *
+         *      Scope: `state:read` | Token types: `sat`
+         */
+        get: operations["StateAPI_GetState"];
+        put?: never;
+        /**
+         * Push state for a job
+         * @description The server validates that the SAT's runner binding matches the runner
+         *      assigned to this job. Returns PERMISSION_DENIED if they do not match.
+         *      Returns FAILED_PRECONDITION if the serial is not greater than the current
+         *      serial. Returns INVALID_ARGUMENT if the lineage does not match the
+         *      existing state record.
+         *
+         *      Maps to Terraform HTTP backend POST on the state address.
+         *
+         *      Scope: `state:write` | Token types: `sat`
+         */
+        post: operations["StateAPI_PushState"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/runner/jobs/{job_id}/state/lock": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Lock state for a job
+         * @description The server validates that the SAT's runner binding matches the runner
+         *      assigned to this job. Returns PERMISSION_DENIED if they do not match.
+         *      Returns FAILED_PRECONDITION if the state is already locked by a different
+         *      operation. The lock_id is generated by Terraform and must be passed to
+         *      UnlockState.
+         *
+         *      Maps to Terraform HTTP backend POST on the lock address.
+         *
+         *      Scope: `state:write` | Token types: `sat`
+         */
+        post: operations["StateAPI_LockState"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/runner/jobs/{job_id}/state/unlock": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Unlock state for a job
+         * @description The server validates that the SAT's runner binding matches the runner
+         *      assigned to this job. Returns PERMISSION_DENIED if they do not match.
+         *      Returns FAILED_PRECONDITION if the lock_id does not match the currently
+         *      held lock. Returns NOT_FOUND if no lock is held.
+         *
+         *      Maps to Terraform HTTP backend POST on the unlock address.
+         *
+         *      Scope: `state:write` | Token types: `sat`
+         */
+        post: operations["StateAPI_UnlockState"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/runners": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List runners
+         * @description Scope: `runner:read`
+         */
+        get: operations["RunnerAPI_ListRunners"];
+        put?: never;
+        /**
+         * Create a runner
+         * @description The response includes a `plain_text_token` -- the raw SAT secret shown
+         *      exactly once. Deploy this token to the runner binary for authentication.
+         *
+         *      Scope: `runner:write`
+         */
+        post: operations["RunnerAPI_CreateRunner"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/runners/{runner.id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Update a runner
+         * @description Scope: `runner:write`
+         */
+        patch: operations["RunnerAPI_UpdateRunner"];
+        trace?: never;
+    };
+    "/api/v1/runners/{runner_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Retrieve a runner
+         * @description Returns the Runner record with its server-derived health_status. For
+         *      detailed telemetry (active jobs, capacity), use GetRunnerStatus instead.
+         *
+         *      Scope: `runner:read`
+         */
+        get: operations["RunnerAPI_GetRunner"];
+        put?: never;
+        post?: never;
+        /**
+         * Delete a runner
+         * @description Scope: `runner:write`
+         */
+        delete: operations["RunnerAPI_DeleteRunner"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/runners/{runner_id}/jobs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List runner jobs
+         * @description Scope: `runner:read`
+         */
+        get: operations["RunnerAPI_ListRunnerJobs"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/runners/{runner_id}/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Retrieve runner status
+         * @description Returns NOT_FOUND if the runner does not exist. If the runner exists but
+         *      has not heartbeated yet, health_status will be PENDING and status will
+         *      be absent.
+         *
+         *      Scope: `runner:read`
+         */
+        get: operations["RunnerAPI_GetRunnerStatus"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/runners/{runner_id}/tokens": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List runner tokens
+         * @description Scope: `runner:read`
+         */
+        get: operations["RunnerAPI_ListRunnerTokens"];
+        put?: never;
+        /**
+         * Create a runner token
+         * @description Use this to create additional SATs for an existing runner (e.g., for
+         *      zero-downtime token rotation). The initial SAT is created automatically
+         *      by CreateRunner.
+         *
+         *      Scope: `runner:write`
+         */
+        post: operations["RunnerAPI_CreateRunnerToken"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/runners/{runner_id}/tokens/{token_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Retrieve a runner token
+         * @description Scope: `runner:read`
+         */
+        get: operations["RunnerAPI_GetRunnerToken"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/runners/{runner_id}/tokens/{token_id}/revoke": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Revoke a runner token
+         * @description Scope: `runner:write`
+         */
+        post: operations["RunnerAPI_RevokeRunnerToken"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/sources": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List sources
+         * @description Scope: `source:read`
+         */
+        get: operations["SourceAPI_ListSources"];
+        put?: never;
+        /**
+         * Create a source
+         * @description The source type and source_config must match -- for example, a
+         *      TERRAFORM_REGISTRY source requires a TerraformRegistryConfig.
+         *
+         *      Scope: `source:write`
+         */
+        post: operations["SourceAPI_CreateSource"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/sources/{source.id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Update a source
+         * @description Scope: `source:write`
+         */
+        patch: operations["SourceAPI_UpdateSource"];
+        trace?: never;
+    };
+    "/api/v1/sources/{source_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Retrieve a source
+         * @description Scope: `source:read`
+         */
+        get: operations["SourceAPI_GetSource"];
+        put?: never;
+        post?: never;
+        /**
+         * Delete a source
+         * @description Scope: `source:write`
+         */
+        delete: operations["SourceAPI_DeleteSource"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/sources/{source_id}/inputs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Retrieve source inputs
+         * @description For Terraform modules, this parses HCL variable blocks using
+         *      terraform-config-inspect. For Helm charts, this extracts values.yaml and
+         *      optionally values.schema.json. For Kustomize and raw manifests, inputs
+         *      are not discoverable and the response will be empty.
+         *
+         *      This operation fetches and parses the external artifact in real time and
+         *      may take several seconds.
+         *
+         *      Scope: `source:read`
+         */
+        get: operations["SourceAPI_GetSourceInputs"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/sources/{source_id}/outputs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Retrieve source outputs
+         * @description Only meaningful for Terraform modules, which declare formal output blocks.
+         *      Helm charts, Kustomize, and raw manifests do not have formal outputs --
+         *      workload component outputs are user-declared, not discovered.
+         *
+         *      This operation queries the external system in real time and may take
+         *      several seconds.
+         *
+         *      Scope: `source:read`
+         */
+        get: operations["SourceAPI_GetSourceOutputs"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/sources/{source_id}/sync": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Sync a source
+         * @description Use this after updating credentials on the referenced connection, or to
+         *      force a refresh when you know the upstream has changed.
+         *
+         *      This operation queries the external system in real time and may take
+         *      several seconds.
+         *
+         *      Scope: `source:write`
+         */
+        post: operations["SourceAPI_SyncSource"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/sources/{source_id}/versions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List source versions
+         * @description For Terraform registry sources, this calls the Module Registry Protocol's
+         *      version listing endpoint. For Helm repositories, it parses the index.yaml.
+         *      For OCI sources, it lists tags. For Git sources, it lists tags via
+         *      ls-remote.
+         *
+         *      This operation queries the external system in real time and may take
+         *      several seconds.
+         *
+         *      Scope: `source:read`
+         */
+        get: operations["SourceAPI_ListSourceVersions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/states": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List states
+         * @description Scope: `state:read`
+         */
+        get: operations["StateAPI_ListStates"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/states/{state_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Retrieve current state
+         * @description Returns NOT_FOUND if the state record does not exist.
+         *
+         *      Scope: `state:read`
+         */
+        get: operations["StateAPI_GetCurrentState"];
+        put?: never;
+        post?: never;
+        /**
+         * Delete a state
+         * @description Returns NOT_FOUND if the state record does not exist.
+         *      Returns FAILED_PRECONDITION if the state is currently locked.
+         *
+         *      Scope: `state:admin`
+         */
+        delete: operations["StateAPI_DeleteState"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/states/{state_id}/force-unlock": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Force unlock a state
+         * @description Returns NOT_FOUND if the state record does not exist.
+         *      Returns FAILED_PRECONDITION if the state has no active lock.
+         *      This action is logged in the audit trail.
+         *
+         *      Scope: `state:admin`
+         */
+        post: operations["StateAPI_ForceUnlockState"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/states/{state_id}/versions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List state versions
+         * @description Returns NOT_FOUND if the state record does not exist.
+         *
+         *      Scope: `state:read`
+         */
+        get: operations["StateAPI_ListStateVersions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/states/{state_id}/versions/{serial}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Retrieve a state version
+         * @description Returns NOT_FOUND if the state record does not exist or if no version
+         *      with the specified serial exists for that state record.
+         *
+         *      Scope: `state:read`
+         */
+        get: operations["StateAPI_GetStateVersion"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/user/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Retrieve current user profile
+         * @description GetMe retrieves the profile of the currently authenticated user.
+         *      The user is identified by the authentication token provided in the request.
+         */
+        get: operations["UserAPI_GetMe"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/user/tokens": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List personal access tokens
+         * @description Scope: `token:read`
+         */
+        get: operations["UserAPI_ListPersonalAccessTokens"];
+        put?: never;
+        /**
+         * Create a personal access token
+         * @description Scope: `token:write`
+         */
+        post: operations["UserAPI_CreatePersonalAccessToken"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/user/tokens/{token_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Retrieve a personal access token
+         * @description Scope: `token:read`
+         */
+        get: operations["UserAPI_GetPersonalAccessToken"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Update a personal access token
+         * @description Scope: `token:write`
+         */
+        patch: operations["UserAPI_UpdatePersonalAccessToken"];
+        trace?: never;
+    };
+    "/api/v1/user/tokens/{token_id}/revoke": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Revoke a personal access token
+         * @description Scope: `token:write`
+         */
+        post: operations["UserAPI_RevokePersonalAccessToken"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/users/{user_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Retrieve a user by ID
+         * @description Scope: `user:read`
+         */
+        get: operations["UserAPI_GetUser"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/variables": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List variables
+         * @description The returned list is a resolved view based on the provided filters:
+         *        - No application_id or environment_id: global variables only.
+         *        - application_id only: global + app-level variables merged.
+         *        - application_id + environment_id: global + app + environment variables merged.
+         *
+         *      When variables with the same key exist at multiple levels, all are returned
+         *      so clients can determine precedence.
+         *
+         *      Scope: `var:read`
+         */
+        get: operations["VariableAPI_ListVariables"];
+        put?: never;
+        /**
+         * Create a variable
+         * @description Fails if a variable with the same key already exists at the same level
+         *      (same key + application_id + environment_id combination).
+         *
+         *      Scope: `var:write`
+         */
+        post: operations["VariableAPI_CreateVariable"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/variables/{variable.id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Update a variable
+         * @description Scope: `var:write`
+         */
+        patch: operations["VariableAPI_UpdateVariable"];
+        trace?: never;
+    };
+    "/api/v1/variables/{variable_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Retrieve a variable
+         * @description Sensitive variable values are masked in the response.
+         *
+         *      Scope: `var:read`
+         */
+        get: operations["VariableAPI_GetVariable"];
+        put?: never;
+        post?: never;
+        /**
+         * Delete a variable
+         * @description Scope: `var:write`
+         */
+        delete: operations["VariableAPI_DeleteVariable"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/callback": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * OAuth2 callback
+         * @description Callback handles the OAuth2 authorization code callback from the IdP.
+         *      Validates the state nonce, exchanges the code for tokens, creates or
+         *      updates the user, and establishes a server-side session.
+         */
+        get: operations["AuthenticationAPI_Callback"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/login": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Initiate OAuth2 login
+         * @description Login initiates the OAuth2 authorization code flow. Generates a signed
+         *      state nonce and returns the IdP authorization URL for the client to
+         *      redirect to.
+         */
+        get: operations["AuthenticationAPI_Login"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
-  schemas: {
-    /**
-     * Application
-     * @description Application represents a deployable unit within a tenant. An application
-     *      groups manifests, dependencies, and environment configuration into a single
-     *      entity that Admiral orchestrates across environments.
-     * @example {
-     *       "id": "a1b2c3d4-5678-9abc-def0-1234567890ab",
-     *       "name": "inventory-api",
-     *       "description": "Core inventory management service for tracking warehouse stock levels and fulfillment.",
-     *       "labels": {
-     *         "team": "logistics",
-     *         "tier": "critical"
-     *       },
-     *       "created_by": "d290f1ee-6c54-4b01-90e6-d701748f0851",
-     *       "updated_by": "d290f1ee-6c54-4b01-90e6-d701748f0851",
-     *       "created_at": "2025-09-15T10:30:00Z",
-     *       "updated_at": "2025-11-02T14:22:00Z"
-     *     }
-     */
-    'admiral.api.application.v1.Application': {
-      /**
-       * id
-       * Format: uuid
-       * @description Unique identifier for the application (UUID).
-       */
-      id?: string;
-      /**
-       * name
-       * @description URL-safe, human-readable identifier (e.g., "inventory-api"). Unique within
-       *      the tenant. Lowercase alphanumeric and hyphens only, must start with a
-       *      letter and end with an alphanumeric character (1-63 chars).
-       */
-      name?: string;
-      /**
-       * description
-       * @description Optional longer-form description of the application's purpose
-       *      (e.g., "Core inventory service tracking warehouse stock and fulfillment").
-       */
-      description?: string;
-      /**
-       * labels
-       * @description Arbitrary key-value labels for organizing and filtering applications
-       *      (e.g., `{"team": "logistics", "tier": "critical"}`).
-       */
-      labels?: {
-        [key: string]: string;
-      };
-      /**
-       * created_by
-       * @description The user or agent who created this application (server-populated from token).
-       */
-      created_by?: components['schemas']['admiral.common.v1.ActorRef'];
-      /**
-       * updated_by
-       * @description The user or agent who last updated this application (server-populated from token).
-       */
-      updated_by?: components['schemas']['admiral.common.v1.ActorRef'];
-      /**
-       * created_at
-       * @description When the application was created.
-       */
-      created_at?: components['schemas']['google.protobuf.Timestamp'];
-      /**
-       * updated_at
-       * @description When the application was last updated.
-       */
-      updated_at?: components['schemas']['google.protobuf.Timestamp'];
-    };
-    /** LabelsEntry */
-    'admiral.api.application.v1.Application.LabelsEntry': {
-      /** key */
-      key?: string;
-      /** value */
-      value?: string;
-    };
-    /**
-     * CreateApplicationRequest
-     * @description CreateApplicationRequest contains the parameters for creating a new application.
-     */
-    'admiral.api.application.v1.CreateApplicationRequest': {
-      /**
-       * name
-       * @description URL-safe, human-readable identifier (e.g., "inventory-api"). Must be unique
-       *      within the tenant. Lowercase alphanumeric and hyphens only.
-       */
-      name?: string;
-      /**
-       * description
-       * @description Optional longer-form description of the application's purpose.
-       */
-      description?: string | null;
-      /**
-       * labels
-       * @description Arbitrary key-value labels for organizing and filtering applications.
-       */
-      labels?: {
-        [key: string]: string;
-      };
-    };
-    /** LabelsEntry */
-    'admiral.api.application.v1.CreateApplicationRequest.LabelsEntry': {
-      /** key */
-      key?: string;
-      /** value */
-      value?: string;
-    };
-    /**
-     * CreateApplicationResponse
-     * @description CreateApplicationResponse contains the newly created application.
-     */
-    'admiral.api.application.v1.CreateApplicationResponse': {
-      /**
-       * application
-       * @description The created application.
-       */
-      application?: components['schemas']['admiral.api.application.v1.Application'];
-    };
-    /**
-     * DeleteApplicationRequest
-     * @description DeleteApplicationRequest identifies an application to delete.
-     */
-    'admiral.api.application.v1.DeleteApplicationRequest': {
-      /**
-       * application_id
-       * Format: uuid
-       * @description The unique identifier of the application to delete (UUID).
-       */
-      application_id?: string;
-    };
-    /**
-     * DeleteApplicationResponse
-     * @description DeleteApplicationResponse is empty on success.
-     */
-    'admiral.api.application.v1.DeleteApplicationResponse': Record<string, never>;
-    /**
-     * GetApplicationRequest
-     * @description GetApplicationRequest identifies an application to retrieve.
-     */
-    'admiral.api.application.v1.GetApplicationRequest': {
-      /**
-       * application_id
-       * Format: uuid
-       * @description The unique identifier of the application (UUID).
-       */
-      application_id?: string;
-    };
-    /**
-     * GetApplicationResponse
-     * @description GetApplicationResponse contains the application record.
-     */
-    'admiral.api.application.v1.GetApplicationResponse': {
-      /**
-       * application
-       * @description The application record.
-       */
-      application?: components['schemas']['admiral.api.application.v1.Application'];
-    };
-    /**
-     * ListApplicationsRequest
-     * @description ListApplicationsRequest contains pagination and filter parameters.
-     */
-    'admiral.api.application.v1.ListApplicationsRequest': {
-      /**
-       * filter
-       * @description Filter expression to narrow results. Uses the Admiral filter DSL.
-       *
-       *      Syntax: `field['name'] = 'value'` with AND/OR/NOT, comparison operators
-       *      (=, !=, <, >, <=, >=, ~=), and predicates (IN, BETWEEN, CONTAINS,
-       *      STARTS_WITH, ENDS_WITH, IS NULL, EXISTS).
-       *
-       *      Filterable fields:
-       *        - `name` -- filter by application name.
-       *        - `labels.key` -- filter by label key.
-       *
-       *      Example: `field['name'] = 'inventory-api' AND field['labels.team'] = 'logistics'`
-       */
-      filter?: string;
-      /**
-       * page_size
-       * Format: int32
-       * @description Maximum number of applications to return per page.
-       */
-      page_size?: number;
-      /**
-       * page_token
-       * @description Opaque pagination token from a previous response.
-       */
-      page_token?: string;
-    };
-    /**
-     * ListApplicationsResponse
-     * @description ListApplicationsResponse contains a page of applications.
-     */
-    'admiral.api.application.v1.ListApplicationsResponse': {
-      /**
-       * applications
-       * @description The list of applications.
-       */
-      applications?: components['schemas']['admiral.api.application.v1.Application'][];
-      /**
-       * next_page_token
-       * @description Pagination token for the next page. Empty when there are no more results.
-       */
-      next_page_token?: string;
-    };
-    /**
-     * UpdateApplicationRequest
-     * @description UpdateApplicationRequest contains the application fields to update.
-     */
-    'admiral.api.application.v1.UpdateApplicationRequest': {
-      /**
-       * application
-       * @description The application with updated fields.
-       *      Only fields specified in `update_mask` are updated.
-       */
-      application: components['schemas']['admiral.api.application.v1.Application'];
-      /**
-       * update_mask
-       * @description The set of fields to update. If unset, all mutable fields are updated.
-       *      Supported fields: `name`, `description`, `labels`.
-       */
-      update_mask?: components['schemas']['google.protobuf.FieldMask'];
-    };
-    /**
-     * UpdateApplicationResponse
-     * @description UpdateApplicationResponse contains the updated application.
-     */
-    'admiral.api.application.v1.UpdateApplicationResponse': {
-      /**
-       * application
-       * @description The updated application.
-       */
-      application?: components['schemas']['admiral.api.application.v1.Application'];
-    };
-    /**
-     * CallbackRequest
-     * @description CallbackRequest contains the OAuth2 callback parameters from the IdP.
-     */
-    'admiral.api.authentication.v1.CallbackRequest': {
-      /**
-       * code
-       * @description The authorization code from the IdP.
-       */
-      code?: string;
-      /**
-       * state
-       * @description The state nonce (signed JWT) from the login request.
-       */
-      state?: string;
-      /**
-       * error
-       * @description OAuth error code (set by IdP on failure).
-       */
-      error?: string;
-      /**
-       * error_description
-       * @description Human-readable error description from the IdP.
-       */
-      error_description?: string;
-    };
-    /**
-     * CallbackResponse
-     * @description CallbackResponse is empty on success. The server sets a session cookie
-     *      and redirects the browser to the original redirect_url.
-     */
-    'admiral.api.authentication.v1.CallbackResponse': Record<string, never>;
-    /**
-     * LoginRequest
-     * @description LoginRequest contains parameters for initiating the OAuth2 flow.
-     */
-    'admiral.api.authentication.v1.LoginRequest': {
-      /**
-       * redirect_url
-       * @description The URL to redirect to after successful authentication. Must be a relative
-       *      path (no scheme or host). Baked into the signed state nonce.
-       */
-      redirect_url?: string;
-    };
-    /**
-     * LoginResponse
-     * @description LoginResponse contains the IdP authorization URL for the client to redirect to.
-     */
-    'admiral.api.authentication.v1.LoginResponse': {
-      /**
-       * auth_url
-       * @description The IdP authorization URL. The client should redirect the browser here.
-       */
-      auth_url?: string;
-    };
-    /**
-     * Cluster
-     * @description Cluster represents a registered Kubernetes cluster within a tenant.
-     * @example {
-     *       "id": "c3d4e5f6-7890-1abc-def0-abcdef012345",
-     *       "name": "prod-us-east-1",
-     *       "description": "Primary production cluster serving US East traffic.",
-     *       "labels": {
-     *         "region": "us-east-1",
-     *         "cloud": "aws",
-     *         "tier": "production"
-     *       },
-     *       "cluster_uid": "kube-system-uid-9f8e7d6c",
-     *       "health_status": "CLUSTER_HEALTH_STATUS_HEALTHY",
-     *       "created_by": "d290f1ee-6c54-4b01-90e6-d701748f0851",
-     *       "updated_by": "d290f1ee-6c54-4b01-90e6-d701748f0851",
-     *       "created_at": "2025-06-10T08:00:00Z",
-     *       "updated_at": "2025-11-20T16:45:00Z"
-     *     }
-     */
-    'admiral.api.cluster.v1.Cluster': {
-      /**
-       * id
-       * Format: uuid
-       * @description Unique identifier for the cluster (UUID).
-       */
-      id?: string;
-      /**
-       * name
-       * @description URL-safe, human-readable identifier (e.g., "prod-us-east-1"). Unique
-       *      within the tenant. Lowercase alphanumeric and hyphens only, must start
-       *      with a letter and end with an alphanumeric character (1-63 chars).
-       */
-      name?: string;
-      /**
-       * description
-       * @description Optional longer-form description of the cluster's purpose
-       *      (e.g., "Primary production cluster serving US East traffic").
-       */
-      description?: string;
-      /**
-       * labels
-       * @description Arbitrary key-value labels for organizing and filtering clusters
-       *      (e.g., `{"region": "us-east-1", "cloud": "aws"}`).
-       */
-      labels?: {
-        [key: string]: string;
-      };
-      /**
-       * cluster_uid
-       * @description The Kubernetes kube-system namespace UID, bound at agent registration
-       *      using a first-write-wins strategy. Used to detect when a token is
-       *      accidentally deployed to a different physical cluster.
-       */
-      cluster_uid?: string;
-      /**
-       * health_status
-       * @description Derived health status based on agent connectivity and workload state.
-       */
-      health_status?: components['schemas']['admiral.api.cluster.v1.ClusterHealthStatus'];
-      /**
-       * created_by
-       * @description The user or agent who created this cluster (server-populated from token).
-       */
-      created_by?: components['schemas']['admiral.common.v1.ActorRef'];
-      /**
-       * updated_by
-       * @description The user or agent who last updated this cluster (server-populated from token).
-       */
-      updated_by?: components['schemas']['admiral.common.v1.ActorRef'];
-      /**
-       * created_at
-       * @description When the cluster record was created.
-       */
-      created_at?: components['schemas']['google.protobuf.Timestamp'];
-      /**
-       * updated_at
-       * @description When the cluster record was last updated.
-       */
-      updated_at?: components['schemas']['google.protobuf.Timestamp'];
-    };
-    /** LabelsEntry */
-    'admiral.api.cluster.v1.Cluster.LabelsEntry': {
-      /** key */
-      key?: string;
-      /** value */
-      value?: string;
-    };
-    /**
-     * ClusterHealthStatus
-     * @description ClusterHealthStatus represents the derived health state of a cluster.
-     *      The status is computed from agent connectivity, node readiness, and workload health.
-     * @enum {string}
-     */
-    'admiral.api.cluster.v1.ClusterHealthStatus':
-      | 'CLUSTER_HEALTH_STATUS_UNSPECIFIED'
-      | 'CLUSTER_HEALTH_STATUS_PENDING'
-      | 'CLUSTER_HEALTH_STATUS_HEALTHY'
-      | 'CLUSTER_HEALTH_STATUS_DEGRADED'
-      | 'CLUSTER_HEALTH_STATUS_ERROR'
-      | 'CLUSTER_HEALTH_STATUS_UNREACHABLE';
-    /**
-     * ClusterStatus
-     * @description ClusterStatus contains the raw telemetry metrics for a cluster, as reported
-     *      by the K8s agent. This message is used in both the push payload
-     *      (ReportClusterStatusRequest) and the read response (GetClusterStatusResponse).
-     *
-     *      Server-derived fields (health_status, agent connectivity) are NOT included
-     *      here -- they live on the Cluster and Agent records respectively, and are
-     *      returned alongside this message in GetClusterStatusResponse.
-     */
-    'admiral.api.cluster.v1.ClusterStatus': {
-      /**
-       * k8s_version
-       * @description Kubernetes version reported by the agent (e.g., "1.29.2").
-       */
-      k8s_version?: string;
-      /**
-       * node_count
-       * Format: int32
-       * @description Total number of nodes in the cluster.
-       */
-      node_count?: number;
-      /**
-       * nodes_ready
-       * Format: int32
-       * @description Number of nodes in Ready condition.
-       */
-      nodes_ready?: number;
-      /**
-       * pod_capacity
-       * Format: int32
-       * @description Maximum number of pods the cluster can schedule.
-       */
-      pod_capacity?: number;
-      /**
-       * pod_count
-       * Format: int32
-       * @description Total number of pods across all namespaces.
-       */
-      pod_count?: number;
-      /**
-       * pods_running
-       * Format: int32
-       * @description Number of pods in Running phase.
-       */
-      pods_running?: number;
-      /**
-       * pods_pending
-       * Format: int32
-       * @description Number of pods in Pending phase.
-       */
-      pods_pending?: number;
-      /**
-       * pods_failed
-       * Format: int32
-       * @description Number of pods in Failed phase.
-       */
-      pods_failed?: number;
-      /**
-       * cpu_capacity_millicores
-       * Format: int64
-       * @description Total CPU capacity across all nodes, in millicores.
-       */
-      cpu_capacity_millicores?: number | string;
-      /**
-       * cpu_used_millicores
-       * Format: int64
-       * @description Current CPU usage across all nodes, in millicores.
-       */
-      cpu_used_millicores?: number | string;
-      /**
-       * memory_capacity_bytes
-       * Format: int64
-       * @description Total memory capacity across all nodes, in bytes.
-       */
-      memory_capacity_bytes?: number | string;
-      /**
-       * memory_used_bytes
-       * Format: int64
-       * @description Current memory usage across all nodes, in bytes.
-       */
-      memory_used_bytes?: number | string;
-      /**
-       * workloads_total
-       * Format: int32
-       * @description Total number of tracked workloads.
-       */
-      workloads_total?: number;
-      /**
-       * workloads_healthy
-       * Format: int32
-       * @description Number of workloads in healthy state.
-       */
-      workloads_healthy?: number;
-      /**
-       * workloads_degraded
-       * Format: int32
-       * @description Number of workloads in degraded state.
-       */
-      workloads_degraded?: number;
-      /**
-       * workloads_error
-       * Format: int32
-       * @description Number of workloads in error state.
-       */
-      workloads_error?: number;
-    };
-    /**
-     * ContainerStatus
-     * @description ContainerStatus describes the current state of a single container.
-     */
-    'admiral.api.cluster.v1.ContainerStatus': {
-      /**
-       * name
-       * @description Container name within the pod spec.
-       */
-      name?: string;
-      /**
-       * image
-       * @description Container image reference (e.g., "registry.example.com/api:v2.1.4").
-       */
-      image?: string;
-      /**
-       * restart_count
-       * Format: int32
-       * @description Cumulative number of container restarts.
-       */
-      restart_count?: number;
-      /**
-       * state
-       * @description Current container state (e.g., "running", "waiting", "terminated").
-       */
-      state?: string;
-      /**
-       * ready
-       * @description Whether the container's readiness probe is passing.
-       */
-      ready?: boolean;
-    };
-    /**
-     * CreateClusterRequest
-     * @description CreateClusterRequest contains the parameters for creating a new cluster.
-     */
-    'admiral.api.cluster.v1.CreateClusterRequest': {
-      /**
-       * name
-       * @description URL-safe, human-readable identifier (e.g., "prod-us-east-1"). Must be
-       *      unique within the tenant. Lowercase alphanumeric and hyphens only.
-       */
-      name?: string;
-      /**
-       * description
-       * @description Optional longer-form description of the cluster's purpose.
-       */
-      description?: string;
-      /**
-       * labels
-       * @description Arbitrary key-value labels for organizing and filtering clusters
-       *      (e.g., `{"region": "us-east-1", "cloud": "aws"}`).
-       */
-      labels?: {
-        [key: string]: string;
-      };
-    };
-    /** LabelsEntry */
-    'admiral.api.cluster.v1.CreateClusterRequest.LabelsEntry': {
-      /** key */
-      key?: string;
-      /** value */
-      value?: string;
-    };
-    /**
-     * CreateClusterResponse
-     * @description CreateClusterResponse contains the newly created cluster and its initial
-     *      Agent Token (AGT).
-     */
-    'admiral.api.cluster.v1.CreateClusterResponse': {
-      /**
-       * cluster
-       * @description The created cluster. Health status will be PENDING until an agent connects
-       *      and calls AgentAPI.RegisterAgent.
-       */
-      cluster?: components['schemas']['admiral.api.cluster.v1.Cluster'];
-      /**
-       * plain_text_token
-       * @description The raw Agent Token secret (e.g., "adm_agt_pL2mN5oQ8rS1..."). This value
-       *      is shown exactly once and cannot be retrieved again. Deploy this token to
-       *      the K8s agent for authentication.
-       *
-       *      To create additional tokens (e.g., for rotation), use
-       *      CreateClusterToken (POST /v1/clusters/{cluster_id}/tokens).
-       */
-      plain_text_token?: string;
-    };
-    /**
-     * CreateClusterTokenRequest
-     * @description CreateClusterTokenRequest contains the parameters for creating a new AGT
-     *      bound to a cluster.
-     */
-    'admiral.api.cluster.v1.CreateClusterTokenRequest': {
-      /**
-       * cluster_id
-       * Format: uuid
-       * @description The cluster to bind this token to (UUID).
-       */
-      cluster_id?: string;
-      /**
-       * name
-       * @description URL-safe, human-readable identifier for the token (e.g., "prod-agent-key").
-       *      Must be unique within the cluster's tokens. Lowercase alphanumeric and
-       *      hyphens only.
-       */
-      name?: string;
-      /**
-       * expires_at
-       * @description Optional expiration time. If unset, the token does not expire.
-       */
-      expires_at?: components['schemas']['google.protobuf.Timestamp'];
-    };
-    /**
-     * CreateClusterTokenResponse
-     * @description CreateClusterTokenResponse contains the newly created AGT.
-     */
-    'admiral.api.cluster.v1.CreateClusterTokenResponse': {
-      /**
-       * access_token
-       * @description The created token metadata. Scopes are auto-assigned for cluster AGTs.
-       */
-      access_token?: components['schemas']['admiral.common.v1.AccessToken'];
-      /**
-       * plain_text_token
-       * @description The raw token secret (e.g., "adm_agt_pL2mN5oQ8rS1..."). This value is
-       *      shown exactly once and cannot be retrieved again. Store it securely.
-       */
-      plain_text_token?: string;
-    };
-    /**
-     * DeleteClusterRequest
-     * @description DeleteClusterRequest identifies a cluster to delete.
-     */
-    'admiral.api.cluster.v1.DeleteClusterRequest': {
-      /**
-       * cluster_id
-       * Format: uuid
-       * @description The unique identifier of the cluster to delete (UUID).
-       *      All associated agent tokens will be revoked.
-       */
-      cluster_id?: string;
-    };
-    /**
-     * DeleteClusterResponse
-     * @description DeleteClusterResponse is empty on success.
-     */
-    'admiral.api.cluster.v1.DeleteClusterResponse': Record<string, never>;
-    /**
-     * GetClusterRequest
-     * @description GetClusterRequest identifies a cluster to retrieve.
-     */
-    'admiral.api.cluster.v1.GetClusterRequest': {
-      /**
-       * cluster_id
-       * Format: uuid
-       * @description The unique identifier of the cluster (UUID).
-       */
-      cluster_id?: string;
-    };
-    /**
-     * GetClusterResponse
-     * @description GetClusterResponse contains the cluster record.
-     */
-    'admiral.api.cluster.v1.GetClusterResponse': {
-      /**
-       * cluster
-       * @description The cluster record, including server-derived health_status.
-       */
-      cluster?: components['schemas']['admiral.api.cluster.v1.Cluster'];
-    };
-    /**
-     * GetClusterStatusRequest
-     * @description GetClusterStatusRequest identifies a cluster whose telemetry status to retrieve.
-     */
-    'admiral.api.cluster.v1.GetClusterStatusRequest': {
-      /**
-       * cluster_id
-       * Format: uuid
-       * @description The unique identifier of the cluster (UUID).
-       */
-      cluster_id?: string;
-    };
-    /**
-     * GetClusterStatusResponse
-     * @description GetClusterStatusResponse contains the server-derived health status and the
-     *      latest telemetry snapshot. If no agent has reported telemetry yet, the
-     *      health_status will be PENDING and status will be absent.
-     */
-    'admiral.api.cluster.v1.GetClusterStatusResponse': {
-      /**
-       * health_status
-       * @description Server-derived health status based on agent connectivity, node readiness,
-       *      and workload health.
-       */
-      health_status?: components['schemas']['admiral.api.cluster.v1.ClusterHealthStatus'];
-      /**
-       * status
-       * @description Latest telemetry snapshot from the agent. Absent if no telemetry has
-       *      been reported yet.
-       */
-      status?: components['schemas']['admiral.api.cluster.v1.ClusterStatus'];
-      /**
-       * reported_at
-       * @description When the latest telemetry was reported by the agent.
-       */
-      reported_at?: components['schemas']['google.protobuf.Timestamp'];
-    };
-    /**
-     * GetClusterTokenRequest
-     * @description GetClusterTokenRequest identifies a cluster AGT to retrieve.
-     */
-    'admiral.api.cluster.v1.GetClusterTokenRequest': {
-      /**
-       * cluster_id
-       * Format: uuid
-       * @description The cluster the token belongs to (UUID).
-       */
-      cluster_id?: string;
-      /**
-       * token_id
-       * Format: uuid
-       * @description The unique identifier of the token (UUID).
-       */
-      token_id?: string;
-    };
-    /**
-     * GetClusterTokenResponse
-     * @description GetClusterTokenResponse contains the requested cluster AGT metadata.
-     */
-    'admiral.api.cluster.v1.GetClusterTokenResponse': {
-      /**
-       * access_token
-       * @description The token metadata. The token secret is never included.
-       */
-      access_token?: components['schemas']['admiral.common.v1.AccessToken'];
-    };
-    /**
-     * GetRevisionBundleRequest
-     * @description GetRevisionBundleRequest identifies a revision whose artifact bundle to fetch.
-     */
-    'admiral.api.cluster.v1.GetRevisionBundleRequest': {
-      /**
-       * revision_id
-       * Format: uuid
-       * @description The revision to fetch the bundle for (UUID).
-       */
-      revision_id?: string;
-    };
-    /**
-     * GetRevisionBundleResponse
-     * @description GetRevisionBundleResponse contains the rendered manifests for the revision.
-     */
-    'admiral.api.cluster.v1.GetRevisionBundleResponse': {
-      /**
-       * bundle
-       * @description The artifact bundle with everything needed to apply the workload.
-       */
-      bundle?: components['schemas']['admiral.api.cluster.v1.RevisionBundle'];
-    };
-    /**
-     * ListClusterTokensRequest
-     * @description ListClusterTokensRequest contains pagination and filter parameters.
-     */
-    'admiral.api.cluster.v1.ListClusterTokensRequest': {
-      /**
-       * cluster_id
-       * Format: uuid
-       * @description The cluster to list tokens for (UUID).
-       */
-      cluster_id?: string;
-      /**
-       * filter
-       * @description Filter expression to narrow results. Uses the Admiral filter DSL.
-       *
-       *      Filterable fields:
-       *        - `name` -- filter by token name.
-       *        - `status` -- filter by token status (ACTIVE, REVOKED).
-       *
-       *      Example: `field['status'] = 'ACTIVE'`
-       */
-      filter?: string;
-      /**
-       * page_size
-       * Format: int32
-       * @description Maximum number of tokens to return per page.
-       */
-      page_size?: number;
-      /**
-       * page_token
-       * @description Opaque pagination token from a previous response.
-       */
-      page_token?: string;
-    };
-    /**
-     * ListClusterTokensResponse
-     * @description ListClusterTokensResponse contains a page of cluster AGT metadata.
-     */
-    'admiral.api.cluster.v1.ListClusterTokensResponse': {
-      /**
-       * access_tokens
-       * @description The list of tokens. Token secrets are never included.
-       */
-      access_tokens?: components['schemas']['admiral.common.v1.AccessToken'][];
-      /**
-       * next_page_token
-       * @description Pagination token for the next page. Empty when there are no more results.
-       */
-      next_page_token?: string;
-    };
-    /**
-     * ListClustersRequest
-     * @description ListClustersRequest contains pagination and filter parameters.
-     */
-    'admiral.api.cluster.v1.ListClustersRequest': {
-      /**
-       * filter
-       * @description Filter expression to narrow results. Uses the Admiral filter DSL.
-       *
-       *      Syntax: `field['name'] = 'value'` with AND/OR/NOT, comparison operators
-       *      (=, !=, <, >, <=, >=, ~=), and predicates (IN, BETWEEN, CONTAINS,
-       *      STARTS_WITH, ENDS_WITH, IS NULL, EXISTS).
-       *
-       *      Filterable fields:
-       *        - `name` -- filter by cluster name.
-       *        - `health_status` -- filter by health status.
-       *        - `labels.key` -- filter by label key.
-       *
-       *      Example: `field['health_status'] = 'HEALTHY' AND field['labels.region'] = 'us-east-1'`
-       */
-      filter?: string;
-      /**
-       * page_size
-       * Format: int32
-       * @description Maximum number of clusters to return per page.
-       */
-      page_size?: number;
-      /**
-       * page_token
-       * @description Opaque pagination token from a previous response.
-       */
-      page_token?: string;
-    };
-    /**
-     * ListClustersResponse
-     * @description ListClustersResponse contains a page of clusters.
-     */
-    'admiral.api.cluster.v1.ListClustersResponse': {
-      /**
-       * clusters
-       * @description The list of clusters.
-       */
-      clusters?: components['schemas']['admiral.api.cluster.v1.Cluster'][];
-      /**
-       * next_page_token
-       * @description Pagination token for the next page. Empty when there are no more results.
-       */
-      next_page_token?: string;
-    };
-    /**
-     * ListWorkloadsRequest
-     * @description ListWorkloadsRequest contains pagination and filter parameters for listing
-     *      workloads in a specific cluster.
-     */
-    'admiral.api.cluster.v1.ListWorkloadsRequest': {
-      /**
-       * cluster_id
-       * Format: uuid
-       * @description The cluster whose workloads to list (UUID).
-       */
-      cluster_id?: string;
-      /**
-       * filter
-       * @description Filter expression to narrow results. Uses the Admiral filter DSL.
-       *
-       *      Filterable fields:
-       *        - `namespace` -- filter by Kubernetes namespace.
-       *        - `kind` -- filter by workload kind (Deployment, StatefulSet, DaemonSet).
-       *        - `name` -- filter by workload name.
-       *        - `health_status` -- filter by workload health status.
-       *
-       *      Example: `field['namespace'] = 'production' AND field['health_status'] = 'DEGRADED'`
-       */
-      filter?: string;
-      /**
-       * page_size
-       * Format: int32
-       * @description Maximum number of workloads to return per page.
-       */
-      page_size?: number;
-      /**
-       * page_token
-       * @description Opaque pagination token from a previous response.
-       */
-      page_token?: string;
-    };
-    /**
-     * ListWorkloadsResponse
-     * @description ListWorkloadsResponse contains a page of workloads.
-     */
-    'admiral.api.cluster.v1.ListWorkloadsResponse': {
-      /**
-       * workloads
-       * @description The list of workloads.
-       */
-      workloads?: components['schemas']['admiral.api.cluster.v1.Workload'][];
-      /**
-       * next_page_token
-       * @description Pagination token for the next page. Empty when there are no more results.
-       */
-      next_page_token?: string;
-    };
-    /**
-     * ObjectReference
-     * @description ObjectReference is a lightweight reference to a Kubernetes object.
-     */
-    'admiral.api.cluster.v1.ObjectReference': {
-      /**
-       * kind
-       * @description Kubernetes resource kind (e.g., "Pod", "ReplicaSet").
-       */
-      kind?: string;
-      /**
-       * namespace
-       * @description Kubernetes namespace.
-       */
-      namespace?: string;
-      /**
-       * name
-       * @description Object name.
-       */
-      name?: string;
-    };
-    /**
-     * ReportClusterStatusRequest
-     * @description ReportClusterStatusRequest contains a combined telemetry payload from a K8s agent.
-     *      Admiral splits this into three storage tiers: current snapshot, time-series
-     *      metrics, and events.
-     *
-     *      The cluster is identified by the agent token's binding -- no cluster_id is
-     *      required. The server resolves the cluster from the AGT.
-     */
-    'admiral.api.cluster.v1.ReportClusterStatusRequest': {
-      /**
-       * status
-       * @description Cluster-level telemetry snapshot.
-       */
-      status: components['schemas']['admiral.api.cluster.v1.ClusterStatus'];
-      /**
-       * workloads
-       * @description Per-workload status snapshots.
-       */
-      workloads?: components['schemas']['admiral.api.cluster.v1.WorkloadStatus'][];
-      /**
-       * events
-       * @description Kubernetes events observed since the last push.
-       */
-      events?: components['schemas']['admiral.api.cluster.v1.WorkloadEvent'][];
-      /**
-       * reported_at
-       * @description When the agent generated this report.
-       */
-      reported_at?: components['schemas']['google.protobuf.Timestamp'];
-    };
-    /**
-     * ReportClusterStatusResponse
-     * @description ReportClusterStatusResponse acknowledges a telemetry push.
-     */
-    'admiral.api.cluster.v1.ReportClusterStatusResponse': {
-      /**
-       * ack
-       * @description Whether the report was accepted.
-       */
-      ack?: boolean;
-      /**
-       * next_push_seconds
-       * Format: int32
-       * @description Server-controlled interval (in seconds) before the agent should send
-       *      its next status push. Allows the server to adjust push frequency dynamically.
-       */
-      next_push_seconds?: number;
-    };
-    /**
-     * ReportRevisionResultRequest
-     * @description ReportRevisionResultRequest contains the outcome of applying a workload
-     *      revision to the cluster.
-     */
-    'admiral.api.cluster.v1.ReportRevisionResultRequest': {
-      /**
-       * revision_id
-       * Format: uuid
-       * @description The revision being reported on (UUID).
-       */
-      revision_id?: string;
-      /**
-       * result
-       * @description The result of applying the revision.
-       */
-      result: components['schemas']['admiral.api.cluster.v1.RevisionResult'];
-    };
-    /**
-     * ReportRevisionResultResponse
-     * @description ReportRevisionResultResponse acknowledges the result.
-     */
-    'admiral.api.cluster.v1.ReportRevisionResultResponse': {
-      /**
-       * ack
-       * @description Whether the result was accepted.
-       */
-      ack?: boolean;
-    };
-    /**
-     * ReportWorkloadStatusRequest
-     * @description ReportWorkloadStatusRequest contains incremental workload telemetry from a K8s agent.
-     */
-    'admiral.api.cluster.v1.ReportWorkloadStatusRequest': {
-      /**
-       * cluster_id
-       * Format: uuid
-       * @description The cluster these workloads belong to (UUID).
-       */
-      cluster_id?: string;
-      /**
-       * workloads
-       * @description Per-workload status snapshots.
-       */
-      workloads?: components['schemas']['admiral.api.cluster.v1.WorkloadStatus'][];
-      /**
-       * reported_at
-       * @description When the agent generated this report.
-       */
-      reported_at?: components['schemas']['google.protobuf.Timestamp'];
-    };
-    /**
-     * ReportWorkloadStatusResponse
-     * @description ReportWorkloadStatusResponse acknowledges a workload telemetry push.
-     */
-    'admiral.api.cluster.v1.ReportWorkloadStatusResponse': {
-      /**
-       * ack
-       * @description Whether the report was accepted.
-       */
-      ack?: boolean;
-    };
-    /**
-     * RevisionBundle
-     * @description RevisionBundle contains pre-rendered Kubernetes manifests for a workload
-     *      revision, ready for server-side apply by the K8s agent.
-     */
-    'admiral.api.cluster.v1.RevisionBundle': {
-      /**
-       * artifact_url
-       * @description Signed URL to download the rendered manifest bundle (tar.gz containing
-       *      ordered Kubernetes YAML manifests). Time-limited.
-       */
-      artifact_url?: string;
-      /**
-       * artifact_checksum
-       * @description SHA-256 checksum of the artifact bundle for integrity verification.
-       */
-      artifact_checksum?: string;
-      /**
-       * namespace
-       * @description The Kubernetes namespace to apply manifests into. Resolved from the
-       *      environment's KubernetesConfig.namespace (or defaults to the environment
-       *      name).
-       */
-      namespace?: string;
-      /**
-       * component_name
-       * @description Component name for logging and status tracking.
-       */
-      component_name?: string;
-      /**
-       * version
-       * @description The source version being deployed (e.g., chart version, git ref).
-       */
-      version?: string;
-    };
-    /**
-     * RevisionResult
-     * @description RevisionResult contains the outcome of applying a workload revision,
-     *      reported by the K8s agent.
-     */
-    'admiral.api.cluster.v1.RevisionResult': {
-      /**
-       * success
-       * @description Whether the revision was applied successfully.
-       */
-      success?: boolean;
-      /**
-       * error_message
-       * @description Error message if the revision failed. Empty on success.
-       */
-      error_message?: string;
-      /**
-       * resources_applied
-       * Format: int32
-       * @description Number of Kubernetes resources applied.
-       */
-      resources_applied?: number;
-      /**
-       * resources_failed
-       * Format: int32
-       * @description Number of Kubernetes resources that failed to apply.
-       */
-      resources_failed?: number;
-    };
-    /**
-     * RevokeClusterTokenRequest
-     * @description RevokeClusterTokenRequest identifies a cluster AGT to revoke.
-     */
-    'admiral.api.cluster.v1.RevokeClusterTokenRequest': {
-      /**
-       * cluster_id
-       * Format: uuid
-       * @description The cluster the token belongs to (UUID).
-       */
-      cluster_id?: string;
-      /**
-       * token_id
-       * Format: uuid
-       * @description The unique identifier of the token to revoke (UUID).
-       */
-      token_id?: string;
-    };
-    /**
-     * RevokeClusterTokenResponse
-     * @description RevokeClusterTokenResponse contains the revoked cluster AGT metadata.
-     */
-    'admiral.api.cluster.v1.RevokeClusterTokenResponse': {
-      /**
-       * access_token
-       * @description The token metadata with updated status.
-       */
-      access_token?: components['schemas']['admiral.common.v1.AccessToken'];
-    };
-    /**
-     * UpdateClusterRequest
-     * @description UpdateClusterRequest contains the cluster fields to update.
-     */
-    'admiral.api.cluster.v1.UpdateClusterRequest': {
-      /**
-       * cluster
-       * @description The cluster with updated fields. The `id` field is required.
-       *      Only fields specified in `update_mask` are updated.
-       */
-      cluster: components['schemas']['admiral.api.cluster.v1.Cluster'];
-      /**
-       * update_mask
-       * @description The set of fields to update. If unset, all mutable fields are updated.
-       *      Supported fields: `name`, `description`, `labels`.
-       */
-      update_mask?: components['schemas']['google.protobuf.FieldMask'];
-    };
-    /**
-     * UpdateClusterResponse
-     * @description UpdateClusterResponse contains the updated cluster.
-     */
-    'admiral.api.cluster.v1.UpdateClusterResponse': {
-      /**
-       * cluster
-       * @description The updated cluster.
-       */
-      cluster?: components['schemas']['admiral.api.cluster.v1.Cluster'];
-    };
-    /**
-     * Workload
-     * @description Workload represents a Kubernetes workload (Deployment, StatefulSet,
-     *      DaemonSet, etc.) as observed by the agent.
-     */
-    'admiral.api.cluster.v1.Workload': {
-      /**
-       * id
-       * @description Unique identifier for the workload within Admiral (UUID).
-       */
-      id?: string;
-      /**
-       * cluster_id
-       * @description The cluster this workload belongs to (UUID).
-       */
-      cluster_id?: string;
-      /**
-       * namespace
-       * @description Kubernetes namespace.
-       */
-      namespace?: string;
-      /**
-       * name
-       * @description Workload name.
-       */
-      name?: string;
-      /**
-       * kind
-       * @description Kubernetes resource kind (e.g., "Deployment", "StatefulSet", "DaemonSet").
-       */
-      kind?: string;
-      /**
-       * labels
-       * @description Kubernetes labels on the workload.
-       */
-      labels?: {
-        [key: string]: string;
-      };
-      /**
-       * health_status
-       * @description Derived health status.
-       */
-      health_status?: components['schemas']['admiral.api.cluster.v1.WorkloadHealthStatus'];
-      /**
-       * status_reason
-       * @description Human-readable reason for the current status (e.g., "MinimumReplicasUnavailable").
-       */
-      status_reason?: string;
-      /**
-       * replicas_desired
-       * Format: int32
-       * @description Number of desired replicas.
-       */
-      replicas_desired?: number;
-      /**
-       * replicas_ready
-       * Format: int32
-       * @description Number of ready replicas.
-       */
-      replicas_ready?: number;
-      /**
-       * replicas_available
-       * Format: int32
-       * @description Number of available replicas.
-       */
-      replicas_available?: number;
-      /**
-       * cpu_requests_millicores
-       * Format: int64
-       * @description CPU requests across all containers, in millicores.
-       */
-      cpu_requests_millicores?: number | string;
-      /**
-       * cpu_limits_millicores
-       * Format: int64
-       * @description CPU limits across all containers, in millicores.
-       */
-      cpu_limits_millicores?: number | string;
-      /**
-       * cpu_used_millicores
-       * Format: int64
-       * @description Current CPU usage across all containers, in millicores.
-       */
-      cpu_used_millicores?: number | string;
-      /**
-       * memory_requests_bytes
-       * Format: int64
-       * @description Memory requests across all containers, in bytes.
-       */
-      memory_requests_bytes?: number | string;
-      /**
-       * memory_limits_bytes
-       * Format: int64
-       * @description Memory limits across all containers, in bytes.
-       */
-      memory_limits_bytes?: number | string;
-      /**
-       * memory_used_bytes
-       * Format: int64
-       * @description Current memory usage across all containers, in bytes.
-       */
-      memory_used_bytes?: number | string;
-      /**
-       * containers
-       * @description Status of individual containers in this workload.
-       */
-      containers?: components['schemas']['admiral.api.cluster.v1.ContainerStatus'][];
-      /**
-       * last_updated_at
-       * @description When this workload's status was last updated.
-       */
-      last_updated_at?: components['schemas']['google.protobuf.Timestamp'];
-    };
-    /** LabelsEntry */
-    'admiral.api.cluster.v1.Workload.LabelsEntry': {
-      /** key */
-      key?: string;
-      /** value */
-      value?: string;
-    };
-    /**
-     * WorkloadEvent
-     * @description WorkloadEvent represents a Kubernetes event related to a workload or its
-     *      child objects (pods, replicasets). Events are deduplicated by their K8s UID.
-     */
-    'admiral.api.cluster.v1.WorkloadEvent': {
-      /**
-       * uid
-       * @description Kubernetes event UID, used for deduplication.
-       */
-      uid?: string;
-      /**
-       * type
-       * @description Event type: "Normal" or "Warning".
-       */
-      type?: string;
-      /**
-       * reason
-       * @description Short machine-readable reason (e.g., "BackOff", "FailedScheduling").
-       */
-      reason?: string;
-      /**
-       * regarding
-       * @description The Kubernetes object this event is about.
-       */
-      regarding?: components['schemas']['admiral.api.cluster.v1.ObjectReference'];
-      /**
-       * message
-       * @description Human-readable event message.
-       */
-      message?: string;
-      /**
-       * first_seen
-       * @description When this event was first observed.
-       */
-      first_seen?: components['schemas']['google.protobuf.Timestamp'];
-      /**
-       * last_seen
-       * @description When this event was most recently observed.
-       */
-      last_seen?: components['schemas']['google.protobuf.Timestamp'];
-      /**
-       * count
-       * Format: int32
-       * @description Number of times this event has occurred.
-       */
-      count?: number;
-    };
-    /**
-     * WorkloadHealthStatus
-     * @description WorkloadHealthStatus represents the derived health state of a single workload.
-     * @enum {string}
-     */
-    'admiral.api.cluster.v1.WorkloadHealthStatus':
-      | 'WORKLOAD_HEALTH_STATUS_UNSPECIFIED'
-      | 'WORKLOAD_HEALTH_STATUS_HEALTHY'
-      | 'WORKLOAD_HEALTH_STATUS_DEGRADED'
-      | 'WORKLOAD_HEALTH_STATUS_ERROR';
-    /**
-     * WorkloadStatus
-     * @description WorkloadStatus is the agent-reported status for a single workload within
-     *      a telemetry push payload.
-     */
-    'admiral.api.cluster.v1.WorkloadStatus': {
-      /**
-       * namespace
-       * @description Kubernetes namespace.
-       */
-      namespace?: string;
-      /**
-       * name
-       * @description Workload name.
-       */
-      name?: string;
-      /**
-       * kind
-       * @description Kubernetes resource kind (e.g., "Deployment", "StatefulSet").
-       */
-      kind?: string;
-      /**
-       * labels
-       * @description Kubernetes labels on the workload.
-       */
-      labels?: {
-        [key: string]: string;
-      };
-      /**
-       * replicas_desired
-       * Format: int32
-       * @description Number of desired replicas.
-       */
-      replicas_desired?: number;
-      /**
-       * replicas_ready
-       * Format: int32
-       * @description Number of ready replicas.
-       */
-      replicas_ready?: number;
-      /**
-       * replicas_available
-       * Format: int32
-       * @description Number of available replicas.
-       */
-      replicas_available?: number;
-      /**
-       * cpu_requests_millicores
-       * Format: int64
-       * @description CPU requests across all containers, in millicores.
-       */
-      cpu_requests_millicores?: number | string;
-      /**
-       * cpu_limits_millicores
-       * Format: int64
-       * @description CPU limits across all containers, in millicores.
-       */
-      cpu_limits_millicores?: number | string;
-      /**
-       * cpu_used_millicores
-       * Format: int64
-       * @description Current CPU usage across all containers, in millicores.
-       */
-      cpu_used_millicores?: number | string;
-      /**
-       * memory_requests_bytes
-       * Format: int64
-       * @description Memory requests across all containers, in bytes.
-       */
-      memory_requests_bytes?: number | string;
-      /**
-       * memory_limits_bytes
-       * Format: int64
-       * @description Memory limits across all containers, in bytes.
-       */
-      memory_limits_bytes?: number | string;
-      /**
-       * memory_used_bytes
-       * Format: int64
-       * @description Current memory usage across all containers, in bytes.
-       */
-      memory_used_bytes?: number | string;
-      /**
-       * health_status
-       * @description Derived health status.
-       */
-      health_status?: components['schemas']['admiral.api.cluster.v1.WorkloadHealthStatus'];
-      /**
-       * containers
-       * @description Status of individual containers.
-       */
-      containers?: components['schemas']['admiral.api.cluster.v1.ContainerStatus'][];
-    };
-    /** LabelsEntry */
-    'admiral.api.cluster.v1.WorkloadStatus.LabelsEntry': {
-      /** key */
-      key?: string;
-      /** value */
-      value?: string;
-    };
-    /**
-     * Component
-     * @description Component represents a named, deployable unit within an application. It
-     *      binds a source artifact to an application with configuration (values
-     *      template) that maps variables and other component outputs into the source's
-     *      expected inputs.
-     *
-     *      Components are the nodes in Admiral's dependency graph. Infrastructure
-     *      components produce auto-discovered outputs (Terraform outputs). Workload
-     *      components declare outputs explicitly. Other components consume these via
-     *      template expressions. The deployment engine resolves this DAG to determine
-     *      execution order.
-     * @example {
-     *       "id": "d4e5f6a7-8901-2bcd-ef34-567890123456",
-     *       "application_id": "a1b2c3d4-5678-9abc-def0-1234567890ab",
-     *       "name": "api-server",
-     *       "description": "Main API server deployed via Helm chart.",
-     *       "category": "COMPONENT_CATEGORY_WORKLOAD",
-     *       "source_id": "f6a7b8c9-0123-4def-5678-901234567890",
-     *       "version": "2.4.1",
-     *       "values_template": "{\"replicaCount\": \"{{ .var.REPLICA_COUNT }}\", \"image.tag\": \"{{ .var.IMAGE_TAG }}\"}",
-     *       "labels": {
-     *         "component-type": "service"
-     *       },
-     *       "depends_on": [
-     *         "vpc",
-     *         "redis"
-     *       ],
-     *       "created_by": "d290f1ee-6c54-4b01-90e6-d701748f0851",
-     *       "updated_by": "d290f1ee-6c54-4b01-90e6-d701748f0851",
-     *       "created_at": "2025-09-16T09:00:00Z",
-     *       "updated_at": "2025-10-28T11:30:00Z"
-     *     }
-     */
-    'admiral.api.component.v1.Component': {
-      /**
-       * id
-       * Format: uuid
-       * @description Unique identifier for the component (UUID).
-       */
-      id?: string;
-      /**
-       * application_id
-       * Format: uuid
-       * @description The application this component belongs to (UUID).
-       */
-      application_id?: string;
-      /**
-       * name
-       * @description Human-readable name for this component within the application
-       *      (e.g., "vpc", "redis", "api-server"). Unique within the application.
-       *      Lowercase alphanumeric and hyphens only (1-63 chars). This name is used
-       *      in template expressions: `{{ .component.<name>.<output> }}`.
-       */
-      name?: string;
-      /**
-       * description
-       * @description Optional description of the component's purpose
-       *      (e.g., "Primary VPC for all environments" or "Redis cache layer").
-       */
-      description?: string;
-      /**
-       * category
-       * @description Whether this is an infrastructure or workload component. Derived from
-       *      the source type when the component is created, but stored explicitly
-       *      for filtering and to determine execution behavior.
-       */
-      category?: components['schemas']['admiral.api.component.v1.ComponentCategory'];
-      /**
-       * source_id
-       * Format: uuid
-       * @description The source artifact this component deploys (UUID). References a Source
-       *      defined via the SourceAPI.
-       */
-      source_id?: string;
-      /**
-       * version
-       * @description Pinned version of the source artifact. For registry sources, a semver
-       *      string (e.g., "1.2.3"). For Git sources, a tag, branch, or commit SHA.
-       *      Required -- components always pin a version. Use UpdateComponent to
-       *      change the version (rolling update).
-       */
-      version?: string;
-      /**
-       * values_template
-       * @description Values template that maps configuration into the source's expected inputs.
-       *      This is a JSON-encoded object where keys are the source input names and
-       *      values are either literal values or template expressions.
-       *
-       *      Template expressions can reference:
-       *        - Variables: `{{ .var.DATABASE_URL }}`
-       *        - Component outputs: `{{ .component.vpc.vpc_id }}`
-       *        - Environment metadata: `{{ .env.name }}`
-       *
-       *      Example for a Terraform RDS module:
-       *        {
-       *          "vpc_id": "{{ .component.vpc.vpc_id }}",
-       *          "subnet_ids": "{{ .component.vpc.private_subnet_ids }}",
-       *          "instance_class": "{{ .var.RDS_INSTANCE_CLASS }}",
-       *          "engine_version": "15.4"
-       *        }
-       *
-       *      Example for a Helm chart:
-       *        {
-       *          "replicaCount": "{{ .var.REPLICA_COUNT }}",
-       *          "image.repository": "myorg/api-server",
-       *          "image.tag": "{{ .var.IMAGE_TAG }}"
-       *        }
-       *
-       *      The rendering engine resolves all expressions at deployment time using
-       *      the environment's variables and the outputs of upstream components.
-       */
-      values_template?: string;
-      /**
-       * depends_on
-       * @description Component IDs that must complete successfully before this component can
-       *      be deployed (UUIDs). Must reference components within the same
-       *      application. The deployment engine uses these, combined with implicit
-       *      dependencies from template expressions, to build the execution DAG.
-       *
-       *      Explicit depends_on is useful when there is a deployment-order dependency
-       *      that is not captured by output references (e.g., cert-manager must be
-       *      installed before any workload that uses TLS certificates).
-       */
-      depends_on?: string[];
-      /**
-       * outputs
-       * @description Declared outputs for this component. For infrastructure components
-       *      (Terraform), outputs are auto-discovered from the module and this field
-       *      is ignored. For workload components, outputs must be declared here to
-       *      be available for template expressions in other components.
-       *
-       *      See ComponentOutput for examples.
-       */
-      outputs?: components['schemas']['admiral.api.component.v1.ComponentOutput'][];
-      /**
-       * disabled
-       * @description Whether this component is disabled in the resolved environment context.
-       *      Always false on the application-level component. Set to true when
-       *      ListComponents is called with an environment_id and the component has
-       *      a disabled override for that environment.
-       */
-      disabled?: boolean;
-      /**
-       * has_override
-       * @description Whether any field on this component has been overridden in the resolved
-       *      environment context. Always false when ListComponents is called without
-       *      an environment_id.
-       */
-      has_override?: boolean;
-      /**
-       * created_by
-       * @description The user or agent who created this component (server-populated from token).
-       */
-      created_by?: components['schemas']['admiral.common.v1.ActorRef'];
-      /**
-       * updated_by
-       * @description The user or agent who last updated this component (server-populated from token).
-       */
-      updated_by?: components['schemas']['admiral.common.v1.ActorRef'];
-      /**
-       * created_at
-       * @description When the component was created.
-       */
-      created_at?: components['schemas']['google.protobuf.Timestamp'];
-      /**
-       * updated_at
-       * @description When the component was last updated.
-       */
-      updated_at?: components['schemas']['google.protobuf.Timestamp'];
-    };
-    /**
-     * ComponentCategory
-     * @description ComponentCategory indicates whether the component provisions infrastructure
-     *      or deploys workloads. This is derived from the source type but stored
-     *      explicitly for filtering and to determine rendering and execution behavior.
-     * @enum {string}
-     */
-    'admiral.api.component.v1.ComponentCategory':
-      | 'COMPONENT_CATEGORY_UNSPECIFIED'
-      | 'COMPONENT_CATEGORY_INFRASTRUCTURE'
-      | 'COMPONENT_CATEGORY_WORKLOAD';
-    /**
-     * ComponentOutput
-     * @description ComponentOutput declares a named output value produced by a component.
-     *
-     *      For infrastructure components (Terraform), outputs are auto-discovered from
-     *      the module's output blocks and this field is ignored -- do not declare
-     *      outputs manually for Terraform components.
-     *
-     *      For workload components (Helm, Kustomize, manifests), outputs must be
-     *      declared explicitly here to make them available for template expressions
-     *      in other components (e.g., `{{ .component.cache.service_host }}`).
-     *
-     *      Output values are template expressions resolved after the component is
-     *      deployed. They typically reference well-known patterns from the deployed
-     *      resources (e.g., Kubernetes service DNS names, ConfigMap keys).
-     */
-    'admiral.api.component.v1.ComponentOutput': {
-      /**
-       * name
-       * @description Output name used in template references. Must be a valid identifier
-       *      (lowercase alphanumeric and underscores, e.g., "service_host",
-       *      "connection_string"). Other components reference this as
-       *      `{{ .component.<component_name>.<output_name> }}`.
-       */
-      name?: string;
-      /**
-       * value_template
-       * @description Template expression that resolves to the output value after deployment.
-       *      Can reference environment metadata and the component's own release info.
-       *
-       *      Examples:
-       *        "{{ .release.name }}-redis-master.{{ .env.namespace }}.svc.cluster.local"
-       *        "{{ .release.name }}-redis:6379"
-       *        "http://{{ .release.name }}-grafana.{{ .env.namespace }}:3000"
-       */
-      value_template?: string;
-      /**
-       * description
-       * @description Optional description of the output's purpose.
-       */
-      description?: string;
-    };
-    /**
-     * ComponentOverride
-     * @description ComponentOverride provides environment-level customization for a component.
-     *      When an override exists for a component + environment combination, the
-     *      override fields take precedence over the application-level component
-     *      defaults during deployment.
-     *
-     *      This enables patterns like:
-     *        - Different sources per environment (Helm Redis in dev, Terraform
-     *          ElastiCache in prod)
-     *        - Different versions per environment (canary version in staging)
-     *        - Different values per environment (smaller instance in dev)
-     *        - Disabling a component in certain environments
-     */
-    'admiral.api.component.v1.ComponentOverride': {
-      /**
-       * component_id
-       * Format: uuid
-       * @description The component this override applies to (UUID).
-       */
-      component_id?: string;
-      /**
-       * environment_id
-       * Format: uuid
-       * @description The environment this override applies to (UUID).
-       */
-      environment_id?: string;
-      /**
-       * disabled
-       * @description When true, the component is not deployed in this environment.
-       *      All other override fields are ignored when disabled.
-       */
-      disabled?: boolean;
-      /**
-       * source_id
-       * Format: uuid
-       * @description Override source for this environment (UUID). When set, this source is
-       *      used instead of the component's default source. This may also change the
-       *      component's effective category (e.g., switching from a Helm source to a
-       *      Terraform source changes the component from workload to infrastructure
-       *      in this environment).
-       */
-      source_id?: string | null;
-      /**
-       * version
-       * @description Override version for this environment. When set, this version is used
-       *      instead of the component's default version.
-       */
-      version?: string | null;
-      /**
-       * values_template
-       * @description Override values template for this environment. When set, this template
-       *      completely replaces the component's default values template -- there is
-       *      no merge.
-       */
-      values_template?: string | null;
-      /**
-       * depends_on
-       * @description Override depends_on for this environment (component UUIDs). When set,
-       *      replaces the component's default depends_on list for this environment.
-       */
-      depends_on?: string[];
-      /**
-       * outputs
-       * @description Override outputs for this environment. When set, replaces the component's
-       *      declared outputs. Useful when an override changes the source type
-       *      (e.g., Helm → Terraform) and the output templates need to change.
-       */
-      outputs?: components['schemas']['admiral.api.component.v1.ComponentOutput'][];
-      /**
-       * created_by
-       * @description The user or agent who created this override (server-populated from token).
-       */
-      created_by?: components['schemas']['admiral.common.v1.ActorRef'];
-      /**
-       * updated_by
-       * @description The user or agent who last updated this override (server-populated from token).
-       */
-      updated_by?: components['schemas']['admiral.common.v1.ActorRef'];
-      /**
-       * created_at
-       * @description When the override was created.
-       */
-      created_at?: components['schemas']['google.protobuf.Timestamp'];
-      /**
-       * updated_at
-       * @description When the override was last updated.
-       */
-      updated_at?: components['schemas']['google.protobuf.Timestamp'];
-    };
-    /**
-     * CreateComponentRequest
-     * @description CreateComponentRequest contains the parameters for adding a component to
-     *      an application.
-     */
-    'admiral.api.component.v1.CreateComponentRequest': {
-      /**
-       * application_id
-       * Format: uuid
-       * @description The application to add this component to (UUID).
-       */
-      application_id?: string;
-      /**
-       * name
-       * @description Human-readable name for this component. Must be unique within the
-       *      application. This name is used in template expressions.
-       */
-      name?: string;
-      /**
-       * description
-       * @description Optional description of the component's purpose.
-       */
-      description?: string;
-      /**
-       * source_id
-       * Format: uuid
-       * @description The source artifact for this component (UUID).
-       */
-      source_id?: string;
-      /**
-       * version
-       * @description Pinned version of the source artifact.
-       */
-      version?: string;
-      /**
-       * values_template
-       * @description Values template mapping configuration into the source's inputs.
-       *      See Component.values_template for template expression syntax.
-       */
-      values_template?: string;
-      /**
-       * depends_on
-       * @description Explicit deployment-order dependencies (component UUIDs).
-       */
-      depends_on?: string[];
-      /**
-       * outputs
-       * @description Declared outputs for workload components.
-       *      Ignored for infrastructure components (Terraform outputs are
-       *      auto-discovered).
-       */
-      outputs?: components['schemas']['admiral.api.component.v1.ComponentOutput'][];
-    };
-    /**
-     * CreateComponentResponse
-     * @description CreateComponentResponse contains the newly created component.
-     */
-    'admiral.api.component.v1.CreateComponentResponse': {
-      /**
-       * component
-       * @description The created component.
-       */
-      component?: components['schemas']['admiral.api.component.v1.Component'];
-    };
-    /**
-     * DeleteComponentOverrideRequest
-     * @description DeleteComponentOverrideRequest removes an environment-level override.
-     */
-    'admiral.api.component.v1.DeleteComponentOverrideRequest': {
-      /**
-       * component_id
-       * Format: uuid
-       * @description The component (UUID).
-       */
-      component_id?: string;
-      /**
-       * environment_id
-       * Format: uuid
-       * @description The environment (UUID).
-       */
-      environment_id?: string;
-    };
-    /**
-     * DeleteComponentOverrideResponse
-     * @description DeleteComponentOverrideResponse is empty on success.
-     */
-    'admiral.api.component.v1.DeleteComponentOverrideResponse': Record<string, never>;
-    /**
-     * DeleteComponentRequest
-     * @description DeleteComponentRequest identifies a component to delete.
-     */
-    'admiral.api.component.v1.DeleteComponentRequest': {
-      /**
-       * component_id
-       * Format: uuid
-       * @description Unique identifier of the component to delete (UUID).
-       *      Fails if other components depend on this component (via depends_on
-       *      or output references in values_template).
-       */
-      component_id?: string;
-    };
-    /**
-     * DeleteComponentResponse
-     * @description DeleteComponentResponse is empty on success.
-     */
-    'admiral.api.component.v1.DeleteComponentResponse': Record<string, never>;
-    /**
-     * GetComponentOverrideRequest
-     * @description GetComponentOverrideRequest identifies a specific component + environment
-     *      override.
-     */
-    'admiral.api.component.v1.GetComponentOverrideRequest': {
-      /**
-       * component_id
-       * Format: uuid
-       * @description The component (UUID).
-       */
-      component_id?: string;
-      /**
-       * environment_id
-       * Format: uuid
-       * @description The environment (UUID).
-       */
-      environment_id?: string;
-    };
-    /**
-     * GetComponentOverrideResponse
-     * @description GetComponentOverrideResponse contains the override record.
-     */
-    'admiral.api.component.v1.GetComponentOverrideResponse': {
-      /**
-       * override
-       * @description The override record. Empty/not-found if no override exists.
-       */
-      override?: components['schemas']['admiral.api.component.v1.ComponentOverride'];
-    };
-    /**
-     * GetComponentRequest
-     * @description GetComponentRequest identifies a component to retrieve.
-     */
-    'admiral.api.component.v1.GetComponentRequest': {
-      /**
-       * component_id
-       * Format: uuid
-       * @description Unique identifier of the component (UUID).
-       */
-      component_id?: string;
-    };
-    /**
-     * GetComponentResponse
-     * @description GetComponentResponse contains the component record.
-     */
-    'admiral.api.component.v1.GetComponentResponse': {
-      /**
-       * component
-       * @description The component record (application-level defaults).
-       */
-      component?: components['schemas']['admiral.api.component.v1.Component'];
-    };
-    /**
-     * ListComponentOverridesRequest
-     * @description ListComponentOverridesRequest lists all overrides for a component.
-     */
-    'admiral.api.component.v1.ListComponentOverridesRequest': {
-      /**
-       * component_id
-       * Format: uuid
-       * @description Unique identifier of the component to list overrides for (UUID).
-       */
-      component_id?: string;
-      /**
-       * page_size
-       * Format: int32
-       * @description Maximum number of overrides to return per page.
-       */
-      page_size?: number;
-      /**
-       * page_token
-       * @description Opaque pagination token from a previous response.
-       */
-      page_token?: string;
-    };
-    /**
-     * ListComponentOverridesResponse
-     * @description ListComponentOverridesResponse contains all overrides for a component.
-     */
-    'admiral.api.component.v1.ListComponentOverridesResponse': {
-      /**
-       * overrides
-       * @description The list of environment-level overrides for the component.
-       */
-      overrides?: components['schemas']['admiral.api.component.v1.ComponentOverride'][];
-      /**
-       * next_page_token
-       * @description Pagination token for the next page. Empty when there are no more results.
-       */
-      next_page_token?: string;
-    };
-    /**
-     * ListComponentsRequest
-     * @description ListComponentsRequest contains pagination and filter parameters.
-     *
-     *      The filter controls both scoping and response behavior:
-     *        - `application_id` in filter: returns application-level component
-     *          definitions (defaults).
-     *        - `application_id` + `environment_id` in filter: returns the resolved
-     *          view with environment overrides applied. Each component reflects its
-     *          effective source, version, values_template, depends_on, and outputs.
-     *          Disabled components are included with `disabled=true`. Components with
-     *          any overridden field have `has_override=true`.
-     */
-    'admiral.api.component.v1.ListComponentsRequest': {
-      /**
-       * filter
-       * @description Filter expression using the PEG filter DSL.
-       *
-       *      Common filter fields:
-       *        - `application_id` -- scope to an application (required for meaningful
-       *          results since components always belong to an application).
-       *        - `environment_id` -- when present, triggers the resolved view with
-       *          environment overrides applied to each component.
-       *        - `category` -- filter by component category (INFRASTRUCTURE, WORKLOAD).
-       *        - `name` -- filter by component name.
-       */
-      filter?: string;
-      /**
-       * page_size
-       * Format: int32
-       * @description Maximum number of components to return per page.
-       */
-      page_size?: number;
-      /**
-       * page_token
-       * @description Opaque pagination token from a previous response.
-       */
-      page_token?: string;
-    };
-    /**
-     * ListComponentsResponse
-     * @description ListComponentsResponse contains a page of components.
-     */
-    'admiral.api.component.v1.ListComponentsResponse': {
-      /**
-       * components
-       * @description The list of components. When `environment_id` is present in the filter,
-       *      each component reflects the resolved view with overrides applied.
-       */
-      components?: components['schemas']['admiral.api.component.v1.Component'][];
-      /**
-       * next_page_token
-       * @description Pagination token for the next page. Empty when there are no more results.
-       */
-      next_page_token?: string;
-    };
-    /**
-     * SetComponentOverrideRequest
-     * @description SetComponentOverrideRequest creates or replaces an environment-level override.
-     */
-    'admiral.api.component.v1.SetComponentOverrideRequest': {
-      /**
-       * component_id
-       * Format: uuid
-       * @description The component to override (UUID).
-       */
-      component_id?: string;
-      /**
-       * environment_id
-       * Format: uuid
-       * @description The environment this override applies to (UUID).
-       */
-      environment_id?: string;
-      /**
-       * disabled
-       * @description When true, the component is not deployed in this environment.
-       */
-      disabled?: boolean;
-      /**
-       * source_id
-       * Format: uuid
-       * @description Override source (UUID). When set, replaces the component's default source.
-       */
-      source_id?: string | null;
-      /**
-       * version
-       * @description Override version. When set, replaces the component's default version.
-       */
-      version?: string | null;
-      /**
-       * values_template
-       * @description Override values template. When set, completely replaces the component's
-       *      default values template (no merge).
-       */
-      values_template?: string | null;
-      /**
-       * depends_on
-       * @description Override depends_on (component UUIDs). When set, replaces the component's
-       *      default depends_on.
-       */
-      depends_on?: string[];
-      /**
-       * outputs
-       * @description Override outputs. When set, replaces the component's declared outputs.
-       */
-      outputs?: components['schemas']['admiral.api.component.v1.ComponentOutput'][];
-    };
-    /**
-     * SetComponentOverrideResponse
-     * @description SetComponentOverrideResponse contains the override record.
-     */
-    'admiral.api.component.v1.SetComponentOverrideResponse': {
-      /**
-       * override
-       * @description The created or updated override.
-       */
-      override?: components['schemas']['admiral.api.component.v1.ComponentOverride'];
-    };
-    /**
-     * UpdateComponentRequest
-     * @description UpdateComponentRequest contains the component fields to update.
-     */
-    'admiral.api.component.v1.UpdateComponentRequest': {
-      /**
-       * component
-       * @description The component with updated fields. Only fields specified in
-       *      `update_mask` are updated.
-       */
-      component: components['schemas']['admiral.api.component.v1.Component'];
-      /**
-       * update_mask
-       * @description The set of fields to update. If unset, all mutable fields are updated.
-       *      Supported fields: `name`, `description`, `source_id`, `version`,
-       *      `values_template`, `depends_on`, `outputs`.
-       */
-      update_mask?: components['schemas']['google.protobuf.FieldMask'];
-    };
-    /**
-     * UpdateComponentResponse
-     * @description UpdateComponentResponse contains the updated component.
-     */
-    'admiral.api.component.v1.UpdateComponentResponse': {
-      /**
-       * component
-       * @description The updated component.
-       */
-      component?: components['schemas']['admiral.api.component.v1.Component'];
-    };
-    /**
-     * AWSFederationConfig
-     * @description AWSFederationConfig holds the IAM role configuration for OIDC-based
-     *      authentication to AWS services (ECR, S3, Terraform provider).
-     *
-     *      Setup: Create an IAM Role with a trust policy that accepts Admiral's OIDC
-     *      issuer (https://oidc.admiral.io) and conditions on the `tenant_id` claim
-     *      matching your Admiral tenant.
-     */
-    'admiral.api.connection.v1.AWSFederationConfig': {
-      /**
-       * role_arn
-       * @description The ARN of the IAM Role to assume (e.g., "arn:aws:iam::123456789012:role/admiral-ecr").
-       */
-      role_arn?: string;
-      /**
-       * external_id
-       * @description Optional external ID for additional assume-role protection.
-       */
-      external_id?: string;
-      /**
-       * region
-       * @description AWS region for regional service endpoints (e.g., "us-east-1").
-       */
-      region?: string;
-    };
-    /**
-     * AWSStaticAuth
-     * @description AWSStaticAuth holds static AWS credentials. Prefer AWSFederationConfig
-     *      (OIDC) instead. Static credentials require manual rotation and present a
-     *      security risk if compromised.
-     */
-    'admiral.api.connection.v1.AWSStaticAuth': {
-      /**
-       * access_key_id
-       * @description AWS access key ID.
-       */
-      access_key_id?: string;
-      /**
-       * secret_access_key
-       * @description AWS secret access key.
-       *      Write-only: masked in responses.
-       */
-      secret_access_key?: string;
-      /**
-       * region
-       * @description AWS region for regional service endpoints.
-       */
-      region?: string;
-    };
-    /**
-     * AzureFederationConfig
-     * @description AzureFederationConfig holds the federated credential configuration for
-     *      OIDC-based authentication to Azure services (ACR, Terraform).
-     *
-     *      Setup: Create a Federated Identity Credential on your Azure AD app
-     *      registration that trusts Admiral's OIDC issuer with your tenant_id claim.
-     */
-    'admiral.api.connection.v1.AzureFederationConfig': {
-      /**
-       * azure_tenant_id
-       * @description Azure AD tenant ID (directory ID).
-       */
-      azure_tenant_id?: string;
-      /**
-       * client_id
-       * @description Application (client) ID of the Azure AD app registration.
-       */
-      client_id?: string;
-    };
-    /**
-     * AzureStaticAuth
-     * @description AzureStaticAuth holds static Azure service principal credentials. Prefer
-     *      AzureFederationConfig (Federated Credential) instead.
-     */
-    'admiral.api.connection.v1.AzureStaticAuth': {
-      /**
-       * azure_tenant_id
-       * @description Azure AD tenant ID (directory ID).
-       */
-      azure_tenant_id?: string;
-      /**
-       * client_id
-       * @description Application (client) ID.
-       */
-      client_id?: string;
-      /**
-       * client_secret
-       * @description Client secret.
-       *      Write-only: masked in responses.
-       */
-      client_secret?: string;
-    };
-    /**
-     * BasicAuth
-     * @description BasicAuth holds username/password credentials for OCI registries and other
-     *      systems that use basic authentication.
-     */
-    'admiral.api.connection.v1.BasicAuth': {
-      /**
-       * username
-       * @description Username for authentication.
-       */
-      username?: string;
-      /**
-       * password
-       * @description Password or token for authentication.
-       *      Write-only: masked in responses.
-       */
-      password?: string;
-    };
-    /**
-     * BearerTokenAuth
-     * @description BearerTokenAuth holds a bearer token for systems that use token-based
-     *      authentication (e.g., private Terraform registries).
-     */
-    'admiral.api.connection.v1.BearerTokenAuth': {
-      /**
-       * token
-       * @description Bearer token value.
-       *      Write-only: masked in responses.
-       */
-      token?: string;
-    };
-    /**
-     * Connection
-     * @description Connection represents stored credentials for accessing an external system.
-     *      Connections are tenant-scoped and referenced by sources when fetching artifacts.
-     *
-     *      Sensitive fields within auth_config are write-only -- they are accepted on
-     *      create and update but never returned in API responses.
-     * @example {
-     *       "id": "b8c9d0e1-2345-6fab-cdef-0123456789ab",
-     *       "name": "ecr-prod",
-     *       "description": "Read-only access to production ECR registry for container image pulls.",
-     *       "type": "CONNECTION_TYPE_DOCKER_REGISTRY",
-     *       "status": "CONNECTION_STATUS_ACTIVE",
-     *       "labels": {
-     *         "cloud": "aws",
-     *         "team": "platform"
-     *       },
-     *       "created_by": "d290f1ee-6c54-4b01-90e6-d701748f0851",
-     *       "updated_by": "d290f1ee-6c54-4b01-90e6-d701748f0851",
-     *       "created_at": "2025-07-20T14:00:00Z",
-     *       "updated_at": "2025-10-15T10:30:00Z",
-     *       "last_tested_at": "2025-11-01T08:00:00Z"
-     *     }
-     */
-    'admiral.api.connection.v1.Connection': {
-      /**
-       * id
-       * Format: uuid
-       * @description Unique identifier for the connection (UUID).
-       */
-      id?: string;
-      /**
-       * name
-       * @description URL-safe, human-readable identifier (e.g., "github-org", "ecr-prod").
-       *      Unique within the tenant. Lowercase alphanumeric and hyphens only, must
-       *      start with a letter and end with an alphanumeric character (1-63 chars).
-       */
-      name?: string;
-      /**
-       * description
-       * @description Optional longer-form description of what this connection is for
-       *      (e.g., "Read-only access to the platform team's GitHub org").
-       */
-      description?: string;
-      /**
-       * type
-       * @description The type of external system and authentication mechanism.
-       */
-      type?: components['schemas']['admiral.api.connection.v1.ConnectionType'];
-      /**
-       * status
-       * @description Current health status of the connection's credentials.
-       */
-      status?: components['schemas']['admiral.api.connection.v1.ConnectionStatus'];
-      /**
-       * status_message
-       * @description Human-readable message when status is ERROR (e.g., "401 Unauthorized:
-       *      token expired"). Empty when status is ACTIVE or UNTESTED.
-       */
-      status_message?: string;
-      /**
-       * labels
-       * @description Arbitrary key-value labels for organizing and filtering connections
-       *      (e.g., `{"team": "platform", "environment": "prod"}`).
-       */
-      labels?: {
-        [key: string]: string;
-      };
-      /**
-       * created_by
-       * @description The user or agent who created this connection (server-populated from token).
-       */
-      created_by?: components['schemas']['admiral.common.v1.ActorRef'];
-      /**
-       * updated_by
-       * @description The user or agent who last updated this connection (server-populated from token).
-       */
-      updated_by?: components['schemas']['admiral.common.v1.ActorRef'];
-      /**
-       * created_at
-       * @description When the connection was created.
-       */
-      created_at?: components['schemas']['google.protobuf.Timestamp'];
-      /**
-       * updated_at
-       * @description When the connection was last updated.
-       */
-      updated_at?: components['schemas']['google.protobuf.Timestamp'];
-      /**
-       * last_tested_at
-       * @description When the connection was last tested (via TestConnection or auto-validation).
-       *      Absent if never tested.
-       */
-      last_tested_at?: components['schemas']['google.protobuf.Timestamp'];
-    } & (
-      | {
-          /**
-           * aws_federation
-           * @description AWS OIDC federation (for CONNECTION_TYPE_CLOUD_AWS).
-           */
-          aws_federation: components['schemas']['admiral.api.connection.v1.AWSFederationConfig'];
-        }
-      | {
-          /**
-           * aws_static
-           * @deprecated
-           * @description AWS static credentials (for CONNECTION_TYPE_CLOUD_AWS_STATIC, deprecated).
-           */
-          aws_static: components['schemas']['admiral.api.connection.v1.AWSStaticAuth'];
-        }
-      | {
-          /**
-           * azure_federation
-           * @description Azure Federated Credential (for CONNECTION_TYPE_CLOUD_AZURE).
-           */
-          azure_federation: components['schemas']['admiral.api.connection.v1.AzureFederationConfig'];
-        }
-      | {
-          /**
-           * azure_static
-           * @deprecated
-           * @description Azure static credentials (for CONNECTION_TYPE_CLOUD_AZURE_STATIC, deprecated).
-           */
-          azure_static: components['schemas']['admiral.api.connection.v1.AzureStaticAuth'];
-        }
-      | {
-          /**
-           * bearer_token
-           * @description Bearer token (for CONNECTION_TYPE_TERRAFORM_REGISTRY).
-           */
-          bearer_token: components['schemas']['admiral.api.connection.v1.BearerTokenAuth'];
-        }
-      | {
-          /**
-           * gcp_federation
-           * @description GCP Workload Identity (for CONNECTION_TYPE_CLOUD_GCP).
-           */
-          gcp_federation: components['schemas']['admiral.api.connection.v1.GCPFederationConfig'];
-        }
-      | {
-          /**
-           * gcp_static
-           * @deprecated
-           * @description GCP static credentials (for CONNECTION_TYPE_CLOUD_GCP_STATIC, deprecated).
-           */
-          gcp_static: components['schemas']['admiral.api.connection.v1.GCPStaticAuth'];
-        }
-      | {
-          /**
-           * git_github_app
-           * @description GitHub App credentials (for CONNECTION_TYPE_GIT_GITHUB_APP).
-           */
-          git_github_app: components['schemas']['admiral.api.connection.v1.GitHubAppAuth'];
-        }
-      | {
-          /**
-           * git_ssh
-           * @description Git SSH key (for CONNECTION_TYPE_GIT_SSH).
-           */
-          git_ssh: components['schemas']['admiral.api.connection.v1.GitSSHAuth'];
-        }
-      | {
-          /**
-           * git_token
-           * @description Git HTTPS token (for CONNECTION_TYPE_GIT_TOKEN).
-           */
-          git_token: components['schemas']['admiral.api.connection.v1.GitTokenAuth'];
-        }
-      | {
-          /**
-           * helm_http
-           * @description Helm HTTP basic auth (for CONNECTION_TYPE_HELM_HTTP).
-           */
-          helm_http: components['schemas']['admiral.api.connection.v1.HelmHTTPAuth'];
-        }
-      | {
-          /**
-           * oci_basic
-           * @description OCI registry basic auth (for CONNECTION_TYPE_OCI_BASIC).
-           */
-          oci_basic: components['schemas']['admiral.api.connection.v1.BasicAuth'];
-        }
-    );
-    /** LabelsEntry */
-    'admiral.api.connection.v1.Connection.LabelsEntry': {
-      /** key */
-      key?: string;
-      /** value */
-      value?: string;
-    };
-    /**
-     * ConnectionStatus
-     * @description ConnectionStatus represents the health state of a connection's credentials.
-     * @enum {string}
-     */
-    'admiral.api.connection.v1.ConnectionStatus':
-      | 'CONNECTION_STATUS_UNSPECIFIED'
-      | 'CONNECTION_STATUS_ACTIVE'
-      | 'CONNECTION_STATUS_ERROR'
-      | 'CONNECTION_STATUS_UNTESTED';
-    /**
-     * ConnectionType
-     * @description ConnectionType identifies the kind of external system and authentication
-     *      mechanism a connection uses.
-     * @enum {string}
-     */
-    'admiral.api.connection.v1.ConnectionType':
-      | 'CONNECTION_TYPE_UNSPECIFIED'
-      | 'CONNECTION_TYPE_GIT_TOKEN'
-      | 'CONNECTION_TYPE_GIT_SSH'
-      | 'CONNECTION_TYPE_GIT_GITHUB_APP'
-      | 'CONNECTION_TYPE_HELM_HTTP'
-      | 'CONNECTION_TYPE_OCI_BASIC'
-      | 'CONNECTION_TYPE_CLOUD_AWS'
-      | 'CONNECTION_TYPE_CLOUD_GCP'
-      | 'CONNECTION_TYPE_CLOUD_AZURE'
-      | 'CONNECTION_TYPE_CLOUD_AWS_STATIC'
-      | 'CONNECTION_TYPE_CLOUD_GCP_STATIC'
-      | 'CONNECTION_TYPE_CLOUD_AZURE_STATIC'
-      | 'CONNECTION_TYPE_TERRAFORM_REGISTRY'
-      | 'CONNECTION_TYPE_S3'
-      | 'CONNECTION_TYPE_GCS';
-    /**
-     * CreateConnectionRequest
-     * @description CreateConnectionRequest contains the parameters for creating a new connection.
-     */
-    'admiral.api.connection.v1.CreateConnectionRequest': {
-      /**
-       * name
-       * @description URL-safe, human-readable identifier (e.g., "github-org", "ecr-prod").
-       *      Must be unique within the tenant.
-       */
-      name?: string;
-      /**
-       * description
-       * @description Optional description of the connection's purpose.
-       */
-      description?: string;
-      /**
-       * type
-       * @description The type of external system and authentication mechanism.
-       */
-      type?: components['schemas']['admiral.api.connection.v1.ConnectionType'];
-      /**
-       * labels
-       * @description Arbitrary key-value labels for organizing and filtering connections.
-       */
-      labels?: {
-        [key: string]: string;
-      };
-    } & (
-      | {
-          /** aws_federation */
-          aws_federation: components['schemas']['admiral.api.connection.v1.AWSFederationConfig'];
-        }
-      | {
-          /**
-           * aws_static
-           * @deprecated
-           */
-          aws_static: components['schemas']['admiral.api.connection.v1.AWSStaticAuth'];
-        }
-      | {
-          /** azure_federation */
-          azure_federation: components['schemas']['admiral.api.connection.v1.AzureFederationConfig'];
-        }
-      | {
-          /**
-           * azure_static
-           * @deprecated
-           */
-          azure_static: components['schemas']['admiral.api.connection.v1.AzureStaticAuth'];
-        }
-      | {
-          /** bearer_token */
-          bearer_token: components['schemas']['admiral.api.connection.v1.BearerTokenAuth'];
-        }
-      | {
-          /** gcp_federation */
-          gcp_federation: components['schemas']['admiral.api.connection.v1.GCPFederationConfig'];
-        }
-      | {
-          /**
-           * gcp_static
-           * @deprecated
-           */
-          gcp_static: components['schemas']['admiral.api.connection.v1.GCPStaticAuth'];
-        }
-      | {
-          /** git_github_app */
-          git_github_app: components['schemas']['admiral.api.connection.v1.GitHubAppAuth'];
-        }
-      | {
-          /** git_ssh */
-          git_ssh: components['schemas']['admiral.api.connection.v1.GitSSHAuth'];
-        }
-      | {
-          /** git_token */
-          git_token: components['schemas']['admiral.api.connection.v1.GitTokenAuth'];
-        }
-      | {
-          /** helm_http */
-          helm_http: components['schemas']['admiral.api.connection.v1.HelmHTTPAuth'];
-        }
-      | {
-          /** oci_basic */
-          oci_basic: components['schemas']['admiral.api.connection.v1.BasicAuth'];
-        }
-    );
-    /** LabelsEntry */
-    'admiral.api.connection.v1.CreateConnectionRequest.LabelsEntry': {
-      /** key */
-      key?: string;
-      /** value */
-      value?: string;
-    };
-    /**
-     * CreateConnectionResponse
-     * @description CreateConnectionResponse contains the newly created connection.
-     */
-    'admiral.api.connection.v1.CreateConnectionResponse': {
-      /**
-       * connection
-       * @description The created connection. Auth config sensitive fields are masked.
-       */
-      connection?: components['schemas']['admiral.api.connection.v1.Connection'];
-    };
-    /**
-     * DeleteConnectionRequest
-     * @description DeleteConnectionRequest identifies a connection to delete.
-     */
-    'admiral.api.connection.v1.DeleteConnectionRequest': {
-      /**
-       * connection_id
-       * Format: uuid
-       * @description The unique identifier of the connection to delete (UUID).
-       *      Fails if any sources still reference this connection.
-       */
-      connection_id?: string;
-    };
-    /**
-     * DeleteConnectionResponse
-     * @description DeleteConnectionResponse is empty on success.
-     */
-    'admiral.api.connection.v1.DeleteConnectionResponse': Record<string, never>;
-    /**
-     * GCPFederationConfig
-     * @description GCPFederationConfig holds the Workload Identity Federation configuration for
-     *      OIDC-based authentication to GCP services (Artifact Registry, GCS, Terraform).
-     *
-     *      Setup: Create a Workload Identity Pool and Provider that trusts Admiral's
-     *      OIDC issuer, then grant the service account access to the required resources.
-     */
-    'admiral.api.connection.v1.GCPFederationConfig': {
-      /**
-       * project_number
-       * @description GCP project number (numeric, not project ID).
-       */
-      project_number?: string;
-      /**
-       * pool_id
-       * @description Workload Identity Pool ID.
-       */
-      pool_id?: string;
-      /**
-       * provider_id
-       * @description Workload Identity Provider ID within the pool.
-       */
-      provider_id?: string;
-      /**
-       * service_account_email
-       * @description Email of the GCP service account to impersonate.
-       */
-      service_account_email?: string;
-    };
-    /**
-     * GCPStaticAuth
-     * @description GCPStaticAuth holds a static GCP service account key. Prefer
-     *      GCPFederationConfig (Workload Identity) instead.
-     */
-    'admiral.api.connection.v1.GCPStaticAuth': {
-      /**
-       * service_account_json
-       * @description JSON-encoded service account key.
-       *      Write-only: masked in responses.
-       */
-      service_account_json?: string;
-    };
-    /**
-     * GetConnectionRequest
-     * @description GetConnectionRequest identifies a connection to retrieve.
-     */
-    'admiral.api.connection.v1.GetConnectionRequest': {
-      /**
-       * connection_id
-       * Format: uuid
-       * @description The unique identifier of the connection (UUID).
-       */
-      connection_id?: string;
-    };
-    /**
-     * GetConnectionResponse
-     * @description GetConnectionResponse contains the connection record.
-     */
-    'admiral.api.connection.v1.GetConnectionResponse': {
-      /**
-       * connection
-       * @description The connection record. Sensitive credential fields are masked.
-       */
-      connection?: components['schemas']['admiral.api.connection.v1.Connection'];
-    };
-    /**
-     * GitHubAppAuth
-     * @description GitHubAppAuth holds GitHub App credentials for Git operations.
-     *      Preferred over personal tokens for organizations -- provides granular
-     *      repository permissions and a better audit trail.
-     */
-    'admiral.api.connection.v1.GitHubAppAuth': {
-      /**
-       * app_id
-       * @description The GitHub App's numeric ID.
-       */
-      app_id?: string;
-      /**
-       * installation_id
-       * @description The installation ID for the target organization or repository.
-       */
-      installation_id?: string;
-      /**
-       * private_key
-       * @description PEM-encoded private key for the GitHub App.
-       *      Write-only: masked in responses.
-       */
-      private_key?: string;
-    };
-    /**
-     * GitSSHAuth
-     * @description GitSSHAuth holds SSH key credentials for Git operations.
-     */
-    'admiral.api.connection.v1.GitSSHAuth': {
-      /**
-       * private_key
-       * @description PEM-encoded SSH private key.
-       *      Write-only: masked in responses.
-       */
-      private_key?: string;
-      /**
-       * passphrase
-       * @description Optional passphrase for the private key.
-       *      Write-only: masked in responses.
-       */
-      passphrase?: string;
-    };
-    /**
-     * GitTokenAuth
-     * @description GitTokenAuth holds HTTPS token credentials for Git operations.
-     */
-    'admiral.api.connection.v1.GitTokenAuth': {
-      /**
-       * token
-       * @description Personal access token, OAuth token, or bot token.
-       *      Write-only: masked in responses.
-       */
-      token?: string;
-    };
-    /**
-     * HelmHTTPAuth
-     * @description HelmHTTPAuth holds basic auth credentials for classic Helm HTTP repositories.
-     */
-    'admiral.api.connection.v1.HelmHTTPAuth': {
-      /**
-       * username
-       * @description Username for basic authentication.
-       */
-      username?: string;
-      /**
-       * password
-       * @description Password for basic authentication.
-       *      Write-only: masked in responses.
-       */
-      password?: string;
-    };
-    /**
-     * ListConnectionsRequest
-     * @description ListConnectionsRequest contains pagination and filter parameters.
-     */
-    'admiral.api.connection.v1.ListConnectionsRequest': {
-      /**
-       * filter
-       * @description Filter expression to narrow results. Uses the Admiral filter DSL.
-       *
-       *      Syntax: `field['name'] = 'value'` with AND/OR/NOT, comparison operators
-       *      (=, !=, <, >, <=, >=, ~=), and predicates (IN, BETWEEN, CONTAINS,
-       *      STARTS_WITH, ENDS_WITH, IS NULL, EXISTS).
-       *
-       *      Filterable fields:
-       *        - `name` -- filter by connection name.
-       *        - `type` -- filter by connection type (GIT_TOKEN, HELM_HTTP, etc.).
-       *        - `status` -- filter by connection status (ACTIVE, ERROR, UNTESTED).
-       *        - `labels.key` -- filter by label key.
-       *
-       *      Example: `field['type'] = 'GIT_TOKEN' AND field['status'] = 'ACTIVE'`
-       */
-      filter?: string;
-      /**
-       * page_size
-       * Format: int32
-       * @description Maximum number of connections to return per page.
-       */
-      page_size?: number;
-      /**
-       * page_token
-       * @description Opaque pagination token from a previous response.
-       */
-      page_token?: string;
-    };
-    /**
-     * ListConnectionsResponse
-     * @description ListConnectionsResponse contains a page of connections.
-     */
-    'admiral.api.connection.v1.ListConnectionsResponse': {
-      /**
-       * connections
-       * @description The list of connections. Sensitive credential fields are masked.
-       */
-      connections?: components['schemas']['admiral.api.connection.v1.Connection'][];
-      /**
-       * next_page_token
-       * @description Pagination token for the next page. Empty when there are no more results.
-       */
-      next_page_token?: string;
-    };
-    /**
-     * TestConnectionRequest
-     * @description TestConnectionRequest identifies a connection to validate.
-     */
-    'admiral.api.connection.v1.TestConnectionRequest': {
-      /**
-       * connection_id
-       * Format: uuid
-       * @description The unique identifier of the connection to test (UUID).
-       */
-      connection_id?: string;
-    };
-    /**
-     * TestConnectionResponse
-     * @description TestConnectionResponse contains the result of the connectivity test.
-     */
-    'admiral.api.connection.v1.TestConnectionResponse': {
-      /**
-       * connection
-       * @description The updated connection with refreshed status and last_tested_at.
-       */
-      connection?: components['schemas']['admiral.api.connection.v1.Connection'];
-      /**
-       * success
-       * @description Whether the test succeeded.
-       */
-      success?: boolean;
-      /**
-       * message
-       * @description Human-readable message describing the test result. On failure, includes
-       *      the error details (e.g., "401 Unauthorized: token expired").
-       */
-      message?: string;
-    };
-    /**
-     * UpdateConnectionRequest
-     * @description UpdateConnectionRequest contains the connection fields to update.
-     */
-    'admiral.api.connection.v1.UpdateConnectionRequest': {
-      /**
-       * connection
-       * @description The connection with updated fields.
-       *      Only fields specified in `update_mask` are updated.
-       *
-       *      When updating auth_config, the entire auth config is replaced.
-       *      Omitting auth_config from the update_mask leaves credentials unchanged.
-       */
-      connection: components['schemas']['admiral.api.connection.v1.Connection'];
-      /**
-       * update_mask
-       * @description The set of fields to update. If unset, all mutable fields are updated.
-       *      Supported fields: `name`, `description`, `auth_config`, `labels`.
-       */
-      update_mask?: components['schemas']['google.protobuf.FieldMask'];
-    };
-    /**
-     * UpdateConnectionResponse
-     * @description UpdateConnectionResponse contains the updated connection.
-     */
-    'admiral.api.connection.v1.UpdateConnectionResponse': {
-      /**
-       * connection
-       * @description The updated connection. Sensitive credential fields are masked.
-       */
-      connection?: components['schemas']['admiral.api.connection.v1.Connection'];
-    };
-    /**
-     * CancelDeploymentRequest
-     * @description CancelDeploymentRequest cancels an in-progress deployment.
-     */
-    'admiral.api.deployment.v1.CancelDeploymentRequest': {
-      /**
-       * deployment_id
-       * Format: uuid
-       * @description Unique identifier of the deployment to cancel (UUID).
-       */
-      deployment_id?: string;
-      /**
-       * reason
-       * @description Optional reason for cancellation.
-       */
-      reason?: string;
-    };
-    /**
-     * CancelDeploymentResponse
-     * @description CancelDeploymentResponse contains the updated deployment.
-     */
-    'admiral.api.deployment.v1.CancelDeploymentResponse': {
-      /**
-       * deployment
-       * @description The cancelled deployment.
-       */
-      deployment?: components['schemas']['admiral.api.deployment.v1.Deployment'];
-    };
-    /**
-     * CreateDeploymentRequest
-     * @description CreateDeploymentRequest triggers a new deployment.
-     */
-    'admiral.api.deployment.v1.CreateDeploymentRequest': {
-      /**
-       * application_id
-       * Format: uuid
-       * @description The application to deploy (UUID).
-       */
-      application_id?: string;
-      /**
-       * environment_id
-       * Format: uuid
-       * @description The target environment (UUID).
-       */
-      environment_id?: string;
-      /**
-       * message
-       * @description Optional message describing this deployment.
-       */
-      message?: string;
-      /**
-       * destroy
-       * @description Destroy all resources in the environment. Runs Terraform destroy for
-       *      infra components and deletes workload resources from the cluster, in
-       *      reverse dependency order. Required before deleting an environment that
-       *      has active resources.
-       */
-      destroy?: boolean;
-    };
-    /**
-     * CreateDeploymentResponse
-     * @description CreateDeploymentResponse contains the newly created deployment.
-     */
-    'admiral.api.deployment.v1.CreateDeploymentResponse': {
-      /**
-       * deployment
-       * @description The created deployment. Status will be PENDING initially.
-       */
-      deployment?: components['schemas']['admiral.api.deployment.v1.Deployment'];
-    };
-    /**
-     * Deployment
-     * @description Deployment represents a single deployment of an application to an
-     *      environment. Each deployment produces one Revision per component. The
-     *      deployment tracks the composite status across all revisions and provides
-     *      the audit trail for what was deployed, when, and by whom.
-     * @example {
-     *       "id": "7e8f9a0b-1c2d-3e4f-5a6b-7c8d9e0f1a2b",
-     *       "application_id": "a1b2c3d4-5678-9abc-def0-1234567890ab",
-     *       "environment_id": "e5f6a7b8-9012-3cde-f456-789012345678",
-     *       "status": "DEPLOYMENT_STATUS_SUCCEEDED",
-     *       "version": "42",
-     *       "description": "Deploy v2.4.1 with updated ingress rules",
-     *       "created_by": "d290f1ee-6c54-4b01-90e6-d701748f0851",
-     *       "created_at": "2025-11-20T14:00:00Z",
-     *       "updated_at": "2025-11-20T14:12:00Z",
-     *       "completed_at": "2025-11-20T14:12:00Z"
-     *     }
-     */
-    'admiral.api.deployment.v1.Deployment': {
-      /**
-       * id
-       * Format: uuid
-       * @description Unique identifier for the deployment (UUID).
-       */
-      id?: string;
-      /**
-       * application_id
-       * Format: uuid
-       * @description The application being deployed (UUID).
-       */
-      application_id?: string;
-      /**
-       * environment_id
-       * Format: uuid
-       * @description The target environment (UUID).
-       */
-      environment_id?: string;
-      /**
-       * status
-       * @description Composite status derived from all component revisions.
-       */
-      status?: components['schemas']['admiral.api.deployment.v1.DeploymentStatus'];
-      /**
-       * trigger_type
-       * @description What triggered this deployment.
-       */
-      trigger_type?: components['schemas']['admiral.api.deployment.v1.DeploymentTriggerType'];
-      /**
-       * triggered_by
-       * Format: uuid
-       * @description UUID of the user that triggered the deployment.
-       */
-      triggered_by?: string;
-      /**
-       * message
-       * @description Optional message describing the deployment (e.g., "Deploying v2.1.0
-       *      with new caching layer" or "Rolling back to stable after API errors").
-       */
-      message?: string;
-      /**
-       * destroy
-       * @description Whether this is a destroy deployment. Destroy deployments tear down all
-       *      resources in the environment: Terraform destroy for infra components,
-       *      resource deletion for workload components. Executed in reverse dependency
-       *      order. Required before an environment with active resources can be deleted.
-       */
-      destroy?: boolean;
-      /**
-       * revision_summary
-       * @description Summary counts for quick status display.
-       */
-      revision_summary?: components['schemas']['admiral.api.deployment.v1.RevisionSummary'];
-      /**
-       * created_at
-       * @description When the deployment was created.
-       */
-      created_at?: components['schemas']['google.protobuf.Timestamp'];
-      /**
-       * completed_at
-       * @description When the deployment finished (all revisions completed, failed, or
-       *      cancelled). Absent while the deployment is in progress.
-       */
-      completed_at?: components['schemas']['google.protobuf.Timestamp'];
-    };
-    /**
-     * DeploymentStatus
-     * @description DeploymentStatus represents the composite status of a deployment, derived
-     *      from the statuses of all its component revisions.
-     * @enum {string}
-     */
-    'admiral.api.deployment.v1.DeploymentStatus':
-      | 'DEPLOYMENT_STATUS_UNSPECIFIED'
-      | 'DEPLOYMENT_STATUS_PENDING'
-      | 'DEPLOYMENT_STATUS_QUEUED'
-      | 'DEPLOYMENT_STATUS_RUNNING'
-      | 'DEPLOYMENT_STATUS_SUCCEEDED'
-      | 'DEPLOYMENT_STATUS_PARTIALLY_FAILED'
-      | 'DEPLOYMENT_STATUS_FAILED'
-      | 'DEPLOYMENT_STATUS_CANCELLED';
-    /**
-     * DeploymentTriggerType
-     * @description DeploymentTriggerType indicates what initiated the deployment.
-     * @enum {string}
-     */
-    'admiral.api.deployment.v1.DeploymentTriggerType':
-      | 'DEPLOYMENT_TRIGGER_TYPE_UNSPECIFIED'
-      | 'DEPLOYMENT_TRIGGER_TYPE_MANUAL'
-      | 'DEPLOYMENT_TRIGGER_TYPE_CI'
-      | 'DEPLOYMENT_TRIGGER_TYPE_DESTROY';
-    /**
-     * GetDeploymentRequest
-     * @description GetDeploymentRequest identifies a deployment to retrieve.
-     */
-    'admiral.api.deployment.v1.GetDeploymentRequest': {
-      /**
-       * deployment_id
-       * Format: uuid
-       * @description Unique identifier of the deployment (UUID).
-       */
-      deployment_id?: string;
-    };
-    /**
-     * GetDeploymentResponse
-     * @description GetDeploymentResponse contains the deployment record.
-     */
-    'admiral.api.deployment.v1.GetDeploymentResponse': {
-      /**
-       * deployment
-       * @description The deployment record with current status.
-       */
-      deployment?: components['schemas']['admiral.api.deployment.v1.Deployment'];
-    };
-    /**
-     * GetRevisionRequest
-     * @description GetRevisionRequest identifies a revision within a deployment.
-     */
-    'admiral.api.deployment.v1.GetRevisionRequest': {
-      /**
-       * deployment_id
-       * Format: uuid
-       * @description The deployment (UUID).
-       */
-      deployment_id?: string;
-      /**
-       * revision_id
-       * Format: uuid
-       * @description The revision (UUID).
-       */
-      revision_id?: string;
-    };
-    /**
-     * GetRevisionResponse
-     * @description GetRevisionResponse contains the revision record.
-     */
-    'admiral.api.deployment.v1.GetRevisionResponse': {
-      /**
-       * revision
-       * @description The revision record with current status and artifacts.
-       */
-      revision?: components['schemas']['admiral.api.deployment.v1.Revision'];
-    };
-    /**
-     * ListDeploymentsRequest
-     * @description ListDeploymentsRequest contains pagination and filter parameters.
-     */
-    'admiral.api.deployment.v1.ListDeploymentsRequest': {
-      /**
-       * filter
-       * @description Filter expression using the PEG filter DSL.
-       *
-       *      Common filter fields:
-       *        - `application_id` -- deployments for a specific application.
-       *        - `environment_id` -- deployments to a specific environment.
-       *        - `status` -- filter by deployment status.
-       *        - `trigger_type` -- filter by trigger type (MANUAL, CI, DESTROY).
-       */
-      filter?: string;
-      /**
-       * page_size
-       * Format: int32
-       * @description Maximum number of deployments to return per page.
-       */
-      page_size?: number;
-      /**
-       * page_token
-       * @description Opaque pagination token from a previous response.
-       */
-      page_token?: string;
-    };
-    /**
-     * ListDeploymentsResponse
-     * @description ListDeploymentsResponse contains a page of deployments.
-     */
-    'admiral.api.deployment.v1.ListDeploymentsResponse': {
-      /**
-       * deployments
-       * @description The list of deployments, ordered from newest to oldest.
-       */
-      deployments?: components['schemas']['admiral.api.deployment.v1.Deployment'][];
-      /**
-       * next_page_token
-       * @description Pagination token for the next page. Empty when there are no more results.
-       */
-      next_page_token?: string;
-    };
-    /**
-     * ListRevisionsRequest
-     * @description ListRevisionsRequest lists all revisions for a deployment.
-     */
-    'admiral.api.deployment.v1.ListRevisionsRequest': {
-      /**
-       * deployment_id
-       * Format: uuid
-       * @description Unique identifier of the deployment to list revisions for (UUID).
-       */
-      deployment_id?: string;
-      /**
-       * page_size
-       * Format: int32
-       * @description Maximum number of revisions to return per page.
-       */
-      page_size?: number;
-      /**
-       * page_token
-       * @description Opaque pagination token from a previous response.
-       */
-      page_token?: string;
-    };
-    /**
-     * ListRevisionsResponse
-     * @description ListRevisionsResponse contains all revisions for a deployment.
-     */
-    'admiral.api.deployment.v1.ListRevisionsResponse': {
-      /**
-       * revisions
-       * @description The list of revisions, ordered by dependency graph (upstream first).
-       */
-      revisions?: components['schemas']['admiral.api.deployment.v1.Revision'][];
-      /**
-       * next_page_token
-       * @description Pagination token for the next page. Empty when there are no more results.
-       */
-      next_page_token?: string;
-    };
-    /**
-     * RetryRevisionRequest
-     * @description RetryRevisionRequest retries a failed revision.
-     */
-    'admiral.api.deployment.v1.RetryRevisionRequest': {
-      /**
-       * deployment_id
-       * Format: uuid
-       * @description The deployment (UUID).
-       */
-      deployment_id?: string;
-      /**
-       * revision_id
-       * Format: uuid
-       * @description The revision to retry (UUID). Must be in FAILED status.
-       */
-      revision_id?: string;
-    };
-    /**
-     * RetryRevisionResponse
-     * @description RetryRevisionResponse contains the updated revision.
-     */
-    'admiral.api.deployment.v1.RetryRevisionResponse': {
-      /**
-       * revision
-       * @description The retried revision. Status resets and retry_count is incremented.
-       *      Downstream revisions that were BLOCKED will automatically unblock
-       *      if this revision succeeds.
-       */
-      revision?: components['schemas']['admiral.api.deployment.v1.Revision'];
-    };
-    /**
-     * Revision
-     * @description Revision represents an immutable, rendered artifact for a single component
-     *      within a deployment. Each revision tracks the full lifecycle from rendering
-     *      through execution, and stores references to the produced artifacts
-     *      (rendered manifests, Terraform plan files, etc.).
-     *
-     *      For infrastructure components (Terraform):
-     *        - Rendering produces .tf files and .tfvars with resolved variable values.
-     *        - `terraform plan` and `terraform apply` are executed by the assigned runner.
-     *        - The plan output is stored for visibility.
-     *        - Each component has its own Terraform state.
-     *
-     *      For workload components (Helm, Kustomize, manifests):
-     *        - Rendering produces Kubernetes manifests (via helm template, kustomize
-     *          build, or raw file collection).
-     *        - Manifests are ordered (CRDs before resources, namespaces first).
-     *        - The rendered bundle is sent to the K8s agent for application.
-     */
-    'admiral.api.deployment.v1.Revision': {
-      /**
-       * id
-       * Format: uuid
-       * @description Unique identifier for the revision (UUID).
-       */
-      id?: string;
-      /**
-       * deployment_id
-       * Format: uuid
-       * @description The deployment this revision belongs to (UUID).
-       */
-      deployment_id?: string;
-      /**
-       * component_id
-       * Format: uuid
-       * @description The component this revision is for (UUID).
-       */
-      component_id?: string;
-      /**
-       * component_name
-       * @description Component name at the time of deployment (denormalized for display).
-       */
-      component_name?: string;
-      /**
-       * category
-       * @description Component category at the time of deployment (after override resolution).
-       */
-      category?: components['schemas']['admiral.api.deployment.v1.RevisionCategory'];
-      /**
-       * status
-       * @description Lifecycle status of this revision.
-       */
-      status?: components['schemas']['admiral.api.deployment.v1.RevisionStatus'];
-      /**
-       * source_id
-       * @description The source used for this revision (UUID, after override resolution).
-       */
-      source_id?: string;
-      /**
-       * version
-       * @description The version deployed (after override resolution).
-       */
-      version?: string;
-      /**
-       * resolved_values
-       * @description The resolved values template snapshot -- the values_template with all
-       *      variable references and component output references fully resolved.
-       *      Stored for audit: shows exactly what inputs were used. Sensitive
-       *      variable values are masked in API responses.
-       */
-      resolved_values?: string;
-      /**
-       * depends_on
-       * @description Component IDs that this revision depends on. Populated from the resolved
-       *      depends_on list plus implicit dependencies from template expressions.
-       */
-      depends_on?: string[];
-      /**
-       * blocked_by
-       * @description Component IDs that are blocking this revision. Only populated when
-       *      status is BLOCKED -- indicates which upstream components failed.
-       */
-      blocked_by?: string[];
-      /**
-       * artifact_checksum
-       * @description SHA-256 checksum of the rendered artifact bundle (tar.gz).
-       */
-      artifact_checksum?: string;
-      /**
-       * artifact_url
-       * @description Storage location of the rendered artifact bundle. Internal reference
-       *      used by agents/runners to fetch the bundle.
-       */
-      artifact_url?: string;
-      /**
-       * plan_output
-       * @description (Infrastructure only) The Terraform plan output in human-readable format.
-       *      Populated after planning completes. Used for visibility and audit.
-       */
-      plan_output?: string;
-      /**
-       * plan_summary
-       * @description (Infrastructure only) The number of resources Terraform plans to add,
-       *      change, and destroy. Populated after planning completes.
-       */
-      plan_summary?: components['schemas']['admiral.api.deployment.v1.TerraformPlanSummary'];
-      /**
-       * error_message
-       * @description Error message if the revision failed. Empty on success.
-       */
-      error_message?: string;
-      /**
-       * retry_count
-       * Format: int32
-       * @description Number of retry attempts. Starts at 0 for the initial attempt.
-       */
-      retry_count?: number;
-      /**
-       * created_at
-       * @description When the revision was created (same as deployment created_at).
-       */
-      created_at?: components['schemas']['google.protobuf.Timestamp'];
-      /**
-       * started_at
-       * @description When the revision started execution (transitioned from PENDING/QUEUED).
-       */
-      started_at?: components['schemas']['google.protobuf.Timestamp'];
-      /**
-       * completed_at
-       * @description When the revision finished (succeeded, failed, or cancelled).
-       */
-      completed_at?: components['schemas']['google.protobuf.Timestamp'];
-    };
-    /**
-     * RevisionCategory
-     * @description RevisionCategory mirrors ComponentCategory but is stored on the revision
-     *      to capture the effective category at deployment time (may differ from
-     *      the component default if an environment override changed the source type).
-     * @enum {string}
-     */
-    'admiral.api.deployment.v1.RevisionCategory':
-      | 'REVISION_CATEGORY_UNSPECIFIED'
-      | 'REVISION_CATEGORY_INFRASTRUCTURE'
-      | 'REVISION_CATEGORY_WORKLOAD';
-    /**
-     * RevisionStatus
-     * @description RevisionStatus represents the lifecycle status of a single component
-     *      revision within a deployment.
-     * @enum {string}
-     */
-    'admiral.api.deployment.v1.RevisionStatus':
-      | 'REVISION_STATUS_UNSPECIFIED'
-      | 'REVISION_STATUS_PENDING'
-      | 'REVISION_STATUS_QUEUED'
-      | 'REVISION_STATUS_PLANNING'
-      | 'REVISION_STATUS_APPLYING'
-      | 'REVISION_STATUS_SUCCEEDED'
-      | 'REVISION_STATUS_FAILED'
-      | 'REVISION_STATUS_BLOCKED'
-      | 'REVISION_STATUS_CANCELLED';
-    /**
-     * RevisionSummary
-     * @description RevisionSummary provides aggregate counts of revision statuses within a
-     *      deployment, enabling quick status display without loading all revisions.
-     */
-    'admiral.api.deployment.v1.RevisionSummary': {
-      /**
-       * total
-       * Format: int32
-       * @description Total number of component revisions in this deployment.
-       */
-      total?: number;
-      /**
-       * succeeded
-       * Format: int32
-       * @description Number of revisions that completed successfully.
-       */
-      succeeded?: number;
-      /**
-       * failed
-       * Format: int32
-       * @description Number of revisions that failed.
-       */
-      failed?: number;
-      /**
-       * blocked
-       * Format: int32
-       * @description Number of revisions that are blocked by upstream failures.
-       */
-      blocked?: number;
-      /**
-       * running
-       * Format: int32
-       * @description Number of revisions currently running (planning or applying).
-       */
-      running?: number;
-      /**
-       * cancelled
-       * Format: int32
-       * @description Number of revisions that were cancelled.
-       */
-      cancelled?: number;
-      /**
-       * pending
-       * Format: int32
-       * @description Number of revisions that have not started yet.
-       */
-      pending?: number;
-    };
-    /**
-     * TerraformPlanSummary
-     * @description TerraformPlanSummary provides resource change counts from a Terraform plan.
-     */
-    'admiral.api.deployment.v1.TerraformPlanSummary': {
-      /**
-       * additions
-       * Format: int32
-       * @description Number of resources to be created.
-       */
-      additions?: number;
-      /**
-       * changes
-       * Format: int32
-       * @description Number of resources to be updated in place.
-       */
-      changes?: number;
-      /**
-       * destructions
-       * Format: int32
-       * @description Number of resources to be destroyed.
-       */
-      destructions?: number;
-    };
-    /**
-     * CreateEnvironmentRequest
-     * @description CreateEnvironmentRequest contains the parameters for creating a new environment.
-     */
-    'admiral.api.environment.v1.CreateEnvironmentRequest': {
-      /**
-       * application_id
-       * Format: uuid
-       * @description The application to create this environment for (UUID).
-       */
-      application_id?: string;
-      /**
-       * name
-       * @description URL-safe, human-readable identifier (e.g., "prod", "staging-us-east").
-       *      Must be unique within the application. Lowercase alphanumeric and hyphens only.
-       */
-      name?: string;
-      /**
-       * description
-       * @description Optional longer-form description of the environment's purpose.
-       */
-      description?: string;
-      /**
-       * runtime_type
-       * @description The kind of runtime this environment targets. Optional -- can be assigned
-       *      later via UpdateEnvironment.
-       */
-      runtime_type?: components['schemas']['admiral.api.environment.v1.RuntimeType'];
-      /**
-       * labels
-       * @description Arbitrary key-value labels for organizing and filtering environments.
-       */
-      labels?: {
-        [key: string]: string;
-      };
-      /**
-       * infrastructure
-       * @description Infrastructure execution settings (runner assignment).
-       */
-      infrastructure?: components['schemas']['admiral.api.environment.v1.InfrastructureConfig'];
-    } & {
-      /**
-       * kubernetes
-       * @description Kubernetes-specific settings (cluster, namespace).
-       */
-      kubernetes: components['schemas']['admiral.api.environment.v1.KubernetesConfig'];
-    };
-    /** LabelsEntry */
-    'admiral.api.environment.v1.CreateEnvironmentRequest.LabelsEntry': {
-      /** key */
-      key?: string;
-      /** value */
-      value?: string;
-    };
-    /**
-     * CreateEnvironmentResponse
-     * @description CreateEnvironmentResponse contains the newly created environment.
-     */
-    'admiral.api.environment.v1.CreateEnvironmentResponse': {
-      /**
-       * environment
-       * @description The created environment.
-       */
-      environment?: components['schemas']['admiral.api.environment.v1.Environment'];
-    };
-    /**
-     * DeleteEnvironmentRequest
-     * @description DeleteEnvironmentRequest identifies an environment to delete.
-     */
-    'admiral.api.environment.v1.DeleteEnvironmentRequest': {
-      /**
-       * environment_id
-       * Format: uuid
-       * @description The unique identifier of the environment to delete (UUID).
-       */
-      environment_id?: string;
-    };
-    /**
-     * DeleteEnvironmentResponse
-     * @description DeleteEnvironmentResponse is empty on success.
-     */
-    'admiral.api.environment.v1.DeleteEnvironmentResponse': Record<string, never>;
-    /**
-     * Environment
-     * @description Environment represents a named deployment target for an application. Each
-     *      environment binds an application to a runtime where its workloads are deployed.
-     * @example {
-     *       "id": "e5f6a7b8-9012-3cde-f456-789012345678",
-     *       "application_id": "a1b2c3d4-5678-9abc-def0-1234567890ab",
-     *       "name": "staging",
-     *       "description": "Shared staging environment for QA validation before production promotion.",
-     *       "runtime_type": "RUNTIME_TYPE_KUBERNETES",
-     *       "labels": {
-     *         "region": "us-east-1",
-     *         "tier": "staging"
-     *       },
-     *       "infrastructure": {
-     *         "runner_id": "b2c3d4e5-6789-0abc-def1-234567890abc"
-     *       },
-     *       "kubernetes": {
-     *         "cluster_id": "c3d4e5f6-7890-1abc-def0-abcdef012345",
-     *         "namespace": "inventory-staging"
-     *       },
-     *       "has_pending_changes": true,
-     *       "last_deployed_at": "2025-11-01T09:15:00Z",
-     *       "created_by": "d290f1ee-6c54-4b01-90e6-d701748f0851",
-     *       "updated_by": "d290f1ee-6c54-4b01-90e6-d701748f0851",
-     *       "created_at": "2025-09-15T11:00:00Z",
-     *       "updated_at": "2025-11-02T14:30:00Z"
-     *     }
-     */
-    'admiral.api.environment.v1.Environment': {
-      /**
-       * id
-       * Format: uuid
-       * @description Unique identifier for the environment (UUID).
-       */
-      id?: string;
-      /**
-       * application_id
-       * Format: uuid
-       * @description The application this environment belongs to (UUID).
-       */
-      application_id?: string;
-      /**
-       * name
-       * @description URL-safe, human-readable identifier (e.g., "prod", "staging-us-east").
-       *      Unique within the application. Lowercase alphanumeric and hyphens only,
-       *      must start with a letter and end with an alphanumeric character (1-63 chars).
-       */
-      name?: string;
-      /**
-       * description
-       * @description Optional longer-form description of the environment's purpose
-       *      (e.g., "US East production serving live traffic" or
-       *      "Shared staging for QA validation before prod promotion").
-       */
-      description?: string;
-      /**
-       * runtime_type
-       * @description The kind of runtime this environment targets. Optional -- can be assigned
-       *      after creation.
-       */
-      runtime_type?: components['schemas']['admiral.api.environment.v1.RuntimeType'];
-      /**
-       * labels
-       * @description Arbitrary key-value labels for organizing and filtering environments
-       *      (e.g., `{"region": "us-east-1", "tier": "production"}`).
-       */
-      labels?: {
-        [key: string]: string;
-      };
-      /**
-       * infrastructure
-       * @description Infrastructure execution settings (runner assignment). If unset,
-       *      infrastructure components in this environment cannot be deployed.
-       */
-      infrastructure?: components['schemas']['admiral.api.environment.v1.InfrastructureConfig'];
-      /**
-       * has_pending_changes
-       * @description Whether the environment has configuration changes that have not yet been
-       *      deployed. Server-derived by comparing current resolved config (variables,
-       *      component settings, overrides, source versions) against the last
-       *      successful deployment's snapshot. False if no successful deployment
-       *      exists yet (a fresh environment with no deployments returns false --
-       *      use `last_deployed_at` to distinguish "clean" from "never deployed").
-       */
-      has_pending_changes?: boolean;
-      /**
-       * last_deployed_at
-       * @description When the last successful deployment to this environment completed.
-       *      Absent if no successful deployment has occurred yet.
-       */
-      last_deployed_at?: components['schemas']['google.protobuf.Timestamp'];
-      /**
-       * created_by
-       * @description The user or agent who created this environment (server-populated from token).
-       */
-      created_by?: components['schemas']['admiral.common.v1.ActorRef'];
-      /**
-       * updated_by
-       * @description The user or agent who last updated this environment (server-populated from token).
-       */
-      updated_by?: components['schemas']['admiral.common.v1.ActorRef'];
-      /**
-       * created_at
-       * @description When the environment was created.
-       */
-      created_at?: components['schemas']['google.protobuf.Timestamp'];
-      /**
-       * updated_at
-       * @description When the environment was last updated.
-       */
-      updated_at?: components['schemas']['google.protobuf.Timestamp'];
-    } & {
-      /**
-       * kubernetes
-       * @description Kubernetes-specific settings (cluster, namespace).
-       */
-      kubernetes: components['schemas']['admiral.api.environment.v1.KubernetesConfig'];
-    };
-    /** LabelsEntry */
-    'admiral.api.environment.v1.Environment.LabelsEntry': {
-      /** key */
-      key?: string;
-      /** value */
-      value?: string;
-    };
-    /**
-     * GetEnvironmentRequest
-     * @description GetEnvironmentRequest identifies an environment to retrieve.
-     */
-    'admiral.api.environment.v1.GetEnvironmentRequest': {
-      /**
-       * environment_id
-       * Format: uuid
-       * @description The unique identifier of the environment (UUID).
-       */
-      environment_id?: string;
-    };
-    /**
-     * GetEnvironmentResponse
-     * @description GetEnvironmentResponse contains the environment record.
-     */
-    'admiral.api.environment.v1.GetEnvironmentResponse': {
-      /**
-       * environment
-       * @description The environment record.
-       */
-      environment?: components['schemas']['admiral.api.environment.v1.Environment'];
-    };
-    /**
-     * InfrastructureConfig
-     * @description InfrastructureConfig contains settings for infrastructure operations
-     *      (Terraform plan/apply) within this environment.
-     */
-    'admiral.api.environment.v1.InfrastructureConfig': {
-      /**
-       * runner_id
-       * Format: uuid
-       * @description The runner that executes infrastructure operations for this environment (UUID).
-       *      If unset, infrastructure components in this environment cannot be deployed.
-       */
-      runner_id?: string;
-    };
-    /**
-     * KubernetesConfig
-     * @description KubernetesConfig contains Kubernetes-specific settings for an environment.
-     */
-    'admiral.api.environment.v1.KubernetesConfig': {
-      /**
-       * cluster_id
-       * Format: uuid
-       * @description The cluster this environment deploys to (UUID).
-       */
-      cluster_id?: string;
-      /**
-       * namespace
-       * @description The Kubernetes namespace for this environment's workloads.
-       *      Defaults to the environment name if not specified at deploy time.
-       */
-      namespace?: string | null;
-    };
-    /**
-     * ListEnvironmentsRequest
-     * @description ListEnvironmentsRequest contains pagination and filter parameters.
-     */
-    'admiral.api.environment.v1.ListEnvironmentsRequest': {
-      /**
-       * filter
-       * @description Filter expression to narrow results. Uses the Admiral filter DSL.
-       *
-       *      Syntax: `field['name'] = 'value'` with AND/OR/NOT, comparison operators
-       *      (=, !=, <, >, <=, >=, ~=), and predicates (IN, BETWEEN, CONTAINS,
-       *      STARTS_WITH, ENDS_WITH, IS NULL, EXISTS).
-       *
-       *      Filterable fields:
-       *        - `application_id` -- filter by parent application (UUID).
-       *        - `name` -- filter by environment name.
-       *        - `runtime_type` -- filter by runtime type (KUBERNETES).
-       *        - `labels.key` -- filter by label key.
-       *
-       *      Example: `field['application_id'] = '<uuid>' AND field['name'] = 'prod'`
-       */
-      filter?: string;
-      /**
-       * page_size
-       * Format: int32
-       * @description Maximum number of environments to return per page.
-       */
-      page_size?: number;
-      /**
-       * page_token
-       * @description Opaque pagination token from a previous response.
-       */
-      page_token?: string;
-    };
-    /**
-     * ListEnvironmentsResponse
-     * @description ListEnvironmentsResponse contains a page of environments.
-     */
-    'admiral.api.environment.v1.ListEnvironmentsResponse': {
-      /**
-       * environments
-       * @description The list of environments.
-       */
-      environments?: components['schemas']['admiral.api.environment.v1.Environment'][];
-      /**
-       * next_page_token
-       * @description Pagination token for the next page. Empty when there are no more results.
-       */
-      next_page_token?: string;
-    };
-    /**
-     * RuntimeType
-     * @description RuntimeType identifies the kind of runtime an environment targets.
-     * @enum {string}
-     */
-    'admiral.api.environment.v1.RuntimeType':
-      | 'RUNTIME_TYPE_UNSPECIFIED'
-      | 'RUNTIME_TYPE_KUBERNETES';
-    /**
-     * UpdateEnvironmentRequest
-     * @description UpdateEnvironmentRequest contains the environment fields to update.
-     */
-    'admiral.api.environment.v1.UpdateEnvironmentRequest': {
-      /**
-       * environment
-       * @description The environment with updated fields.
-       *      Only fields specified in `update_mask` are updated.
-       */
-      environment: components['schemas']['admiral.api.environment.v1.Environment'];
-      /**
-       * update_mask
-       * @description The set of fields to update. If unset, all mutable fields are updated.
-       *      Supported fields: `name`, `description`, `runtime_type`, `kubernetes`,
-       *      `labels`, `infrastructure`.
-       */
-      update_mask?: components['schemas']['google.protobuf.FieldMask'];
-    };
-    /**
-     * UpdateEnvironmentResponse
-     * @description UpdateEnvironmentResponse contains the updated environment.
-     */
-    'admiral.api.environment.v1.UpdateEnvironmentResponse': {
-      /**
-       * environment
-       * @description The updated environment.
-       */
-      environment?: components['schemas']['admiral.api.environment.v1.Environment'];
-    };
-    /**
-     * HealthcheckResponse
-     * @description Empty response indicating the service is healthy.
-     */
-    'admiral.api.healthcheck.v1.HealthcheckResponse': Record<string, never>;
-    /**
-     * ActiveJobInfo
-     * @description ActiveJobInfo summarizes a job currently being executed by a runner instance.
-     *      Included in RunnerStatus to provide real-time job progress via heartbeat.
-     */
-    'admiral.api.runner.v1.ActiveJobInfo': {
-      /**
-       * job_id
-       * Format: uuid
-       * @description The job being executed (UUID).
-       */
-      job_id?: string;
-      /**
-       * phase
-       * @description Current execution phase reported by the worker thread.
-       */
-      phase?: components['schemas']['admiral.api.runner.v1.JobPhase'];
-      /**
-       * started_at
-       * @description When execution of this job started (when the runner claimed it).
-       */
-      started_at?: components['schemas']['google.protobuf.Timestamp'];
-    };
-    /**
-     * ClaimJobRequest
-     * @description ClaimJobRequest is sent by the runner to poll for available work.
-     *      The runner is identified by the AGT's binding -- no runner_id is required.
-     */
-    'admiral.api.runner.v1.ClaimJobRequest': Record<string, never>;
-    /**
-     * ClaimJobResponse
-     * @description ClaimJobResponse contains the next job to execute, if any.
-     */
-    'admiral.api.runner.v1.ClaimJobResponse': {
-      /**
-       * job
-       * @description The job to execute. Absent if no work is available -- the runner should
-       *      wait and poll again after its configured interval.
-       */
-      job?: components['schemas']['admiral.api.runner.v1.Job'];
-    };
-    /**
-     * CreateRunnerRequest
-     * @description CreateRunnerRequest contains the parameters for creating a new runner.
-     */
-    'admiral.api.runner.v1.CreateRunnerRequest': {
-      /**
-       * name
-       * @description URL-safe, human-readable identifier (e.g., "prod-terraform-runner").
-       *      Must be unique within the tenant. Lowercase alphanumeric and hyphens only.
-       */
-      name?: string;
-      /**
-       * description
-       * @description Optional longer-form description of the runner's purpose.
-       */
-      description?: string;
-      /**
-       * kind
-       * @description The type of operations this runner executes.
-       */
-      kind?: components['schemas']['admiral.api.runner.v1.RunnerKind'];
-      /**
-       * labels
-       * @description Arbitrary key-value labels for organizing and filtering runners.
-       */
-      labels?: {
-        [key: string]: string;
-      };
-    };
-    /** LabelsEntry */
-    'admiral.api.runner.v1.CreateRunnerRequest.LabelsEntry': {
-      /** key */
-      key?: string;
-      /** value */
-      value?: string;
-    };
-    /**
-     * CreateRunnerResponse
-     * @description CreateRunnerResponse contains the newly created runner and its initial
-     *      Agent Token (AGT).
-     */
-    'admiral.api.runner.v1.CreateRunnerResponse': {
-      /**
-       * runner
-       * @description The created runner. Health status will be PENDING until the runner
-       *      begins heartbeating.
-       */
-      runner?: components['schemas']['admiral.api.runner.v1.Runner'];
-      /**
-       * plain_text_token
-       * @description The raw Agent Token secret (e.g., "adm_agt_pL2mN5oQ8rS1..."). This value
-       *      is shown exactly once and cannot be retrieved again. Deploy this token to
-       *      the runner binary for authentication.
-       *
-       *      To create additional tokens (e.g., for rotation), use
-       *      CreateRunnerToken (POST /v1/runners/{runner_id}/tokens).
-       */
-      plain_text_token?: string;
-    };
-    /**
-     * CreateRunnerTokenRequest
-     * @description CreateRunnerTokenRequest contains the parameters for creating a new AGT
-     *      bound to a runner.
-     */
-    'admiral.api.runner.v1.CreateRunnerTokenRequest': {
-      /**
-       * runner_id
-       * Format: uuid
-       * @description The runner to bind this token to (UUID).
-       */
-      runner_id?: string;
-      /**
-       * name
-       * @description URL-safe, human-readable identifier for the token (e.g., "prod-runner-key").
-       *      Must be unique within the runner's tokens. Lowercase alphanumeric and
-       *      hyphens only.
-       */
-      name?: string;
-      /**
-       * expires_at
-       * @description Optional expiration time. If unset, the token does not expire.
-       */
-      expires_at?: components['schemas']['google.protobuf.Timestamp'];
-    };
-    /**
-     * CreateRunnerTokenResponse
-     * @description CreateRunnerTokenResponse contains the newly created AGT.
-     */
-    'admiral.api.runner.v1.CreateRunnerTokenResponse': {
-      /**
-       * access_token
-       * @description The created token metadata. Scopes are auto-assigned for runner AGTs.
-       */
-      access_token?: components['schemas']['admiral.common.v1.AccessToken'];
-      /**
-       * plain_text_token
-       * @description The raw token secret (e.g., "adm_agt_pL2mN5oQ8rS1..."). This value is
-       *      shown exactly once and cannot be retrieved again. Store it securely.
-       */
-      plain_text_token?: string;
-    };
-    /**
-     * DeleteRunnerRequest
-     * @description DeleteRunnerRequest identifies a runner to delete.
-     */
-    'admiral.api.runner.v1.DeleteRunnerRequest': {
-      /**
-       * runner_id
-       * Format: uuid
-       * @description The unique identifier of the runner to delete (UUID).
-       *      All associated agent tokens will be revoked.
-       */
-      runner_id?: string;
-    };
-    /**
-     * DeleteRunnerResponse
-     * @description DeleteRunnerResponse is empty on success.
-     */
-    'admiral.api.runner.v1.DeleteRunnerResponse': Record<string, never>;
-    /**
-     * GetJobBundleRequest
-     * @description GetJobBundleRequest identifies a job whose artifact bundle to fetch.
-     */
-    'admiral.api.runner.v1.GetJobBundleRequest': {
-      /**
-       * job_id
-       * Format: uuid
-       * @description The job to fetch the bundle for (UUID).
-       */
-      job_id?: string;
-    };
-    /**
-     * GetJobBundleResponse
-     * @description GetJobBundleResponse contains the rendered artifacts for execution.
-     */
-    'admiral.api.runner.v1.GetJobBundleResponse': {
-      /**
-       * bundle
-       * @description The artifact bundle with everything needed to execute the TF operation.
-       */
-      bundle?: components['schemas']['admiral.api.runner.v1.JobBundle'];
-    };
-    /**
-     * GetRunnerRequest
-     * @description GetRunnerRequest identifies a runner to retrieve.
-     */
-    'admiral.api.runner.v1.GetRunnerRequest': {
-      /**
-       * runner_id
-       * Format: uuid
-       * @description The unique identifier of the runner (UUID).
-       */
-      runner_id?: string;
-    };
-    /**
-     * GetRunnerResponse
-     * @description GetRunnerResponse contains the runner record.
-     */
-    'admiral.api.runner.v1.GetRunnerResponse': {
-      /**
-       * runner
-       * @description The runner record, including server-derived health_status.
-       */
-      runner?: components['schemas']['admiral.api.runner.v1.Runner'];
-    };
-    /**
-     * GetRunnerStatusRequest
-     * @description GetRunnerStatusRequest identifies a runner whose status to retrieve.
-     */
-    'admiral.api.runner.v1.GetRunnerStatusRequest': {
-      /**
-       * runner_id
-       * Format: uuid
-       * @description The unique identifier of the runner (UUID).
-       */
-      runner_id?: string;
-    };
-    /**
-     * GetRunnerStatusResponse
-     * @description GetRunnerStatusResponse contains the server-derived health status and the
-     *      latest capacity snapshot. If no heartbeat has been received yet, the
-     *      health_status will be PENDING and status will be absent.
-     */
-    'admiral.api.runner.v1.GetRunnerStatusResponse': {
-      /**
-       * health_status
-       * @description Server-derived health status based on heartbeat recency and capacity.
-       */
-      health_status?: components['schemas']['admiral.api.runner.v1.RunnerHealthStatus'];
-      /**
-       * status
-       * @description Latest capacity snapshot from the runner. Absent if no heartbeat has
-       *      been received yet.
-       */
-      status?: components['schemas']['admiral.api.runner.v1.RunnerStatus'];
-      /**
-       * reported_at
-       * @description When the latest heartbeat was received.
-       */
-      reported_at?: components['schemas']['google.protobuf.Timestamp'];
-    };
-    /**
-     * GetRunnerTokenRequest
-     * @description GetRunnerTokenRequest identifies a runner AGT to retrieve.
-     */
-    'admiral.api.runner.v1.GetRunnerTokenRequest': {
-      /**
-       * runner_id
-       * Format: uuid
-       * @description The runner the token belongs to (UUID).
-       */
-      runner_id?: string;
-      /**
-       * token_id
-       * Format: uuid
-       * @description The unique identifier of the token (UUID).
-       */
-      token_id?: string;
-    };
-    /**
-     * GetRunnerTokenResponse
-     * @description GetRunnerTokenResponse contains the requested runner AGT metadata.
-     */
-    'admiral.api.runner.v1.GetRunnerTokenResponse': {
-      /**
-       * access_token
-       * @description The token metadata. The token secret is never included.
-       */
-      access_token?: components['schemas']['admiral.common.v1.AccessToken'];
-    };
-    /**
-     * HeartbeatRequest
-     * @description HeartbeatRequest contains the runner's alive signal and current capacity.
-     *      The runner is identified by the AGT's binding -- no runner_id is required.
-     */
-    'admiral.api.runner.v1.HeartbeatRequest': {
-      /**
-       * status
-       * @description Current capacity and telemetry metrics.
-       */
-      status: components['schemas']['admiral.api.runner.v1.RunnerStatus'];
-      /**
-       * instance_id
-       * Format: uuid
-       * @description Random UUID generated at process startup to distinguish multiple runner
-       *      instances sharing the same AGT. The server uses this to track heartbeats
-       *      per instance and aggregate capacity metrics across all instances of the
-       *      same runner. A new instance_id is generated each time the runner process
-       *      starts -- it is not persisted across restarts.
-       */
-      instance_id?: string;
-    };
-    /**
-     * HeartbeatResponse
-     * @description HeartbeatResponse acknowledges the heartbeat.
-     */
-    'admiral.api.runner.v1.HeartbeatResponse': {
-      /**
-       * ack
-       * @description Whether the heartbeat was accepted.
-       */
-      ack?: boolean;
-      /**
-       * next_heartbeat_seconds
-       * Format: int32
-       * @description Server-controlled interval (in seconds) before the runner should send
-       *      its next heartbeat. Allows the server to adjust frequency dynamically.
-       */
-      next_heartbeat_seconds?: number;
-    };
-    /**
-     * Job
-     * @description Job represents an infrastructure execution job assigned to a runner.
-     *      Jobs bridge the Deployment/Revision system and the Runner execution plane.
-     */
-    'admiral.api.runner.v1.Job': {
-      /**
-       * id
-       * Format: uuid
-       * @description Unique identifier for the job (UUID).
-       */
-      id?: string;
-      /**
-       * runner_id
-       * Format: uuid
-       * @description The runner this job is assigned to (UUID).
-       */
-      runner_id?: string;
-      /**
-       * revision_id
-       * Format: uuid
-       * @description The revision this job belongs to (UUID).
-       */
-      revision_id?: string;
-      /**
-       * deployment_id
-       * Format: uuid
-       * @description The deployment this job belongs to (UUID). Denormalized for convenience.
-       */
-      deployment_id?: string;
-      /**
-       * job_type
-       * @description The type of Terraform operation to execute.
-       */
-      job_type?: components['schemas']['admiral.api.runner.v1.JobType'];
-      /**
-       * status
-       * @description Current lifecycle status of the job.
-       */
-      status?: components['schemas']['admiral.api.runner.v1.JobStatus'];
-      /**
-       * created_at
-       * @description When the job was created.
-       */
-      created_at?: components['schemas']['google.protobuf.Timestamp'];
-      /**
-       * started_at
-       * @description When the runner started executing the job.
-       */
-      started_at?: components['schemas']['google.protobuf.Timestamp'];
-      /**
-       * completed_at
-       * @description When the job finished (succeeded, failed, or cancelled).
-       */
-      completed_at?: components['schemas']['google.protobuf.Timestamp'];
-    };
-    /**
-     * JobBundle
-     * @description JobBundle contains everything a runner needs to execute a Terraform operation.
-     *      Fetched separately from ClaimJob to keep the claim response lightweight.
-     */
-    'admiral.api.runner.v1.JobBundle': {
-      /**
-       * artifact_url
-       * @description Signed URL to download the rendered artifact bundle (tar.gz containing
-       *      .tf files, .tfvars, etc.). Time-limited.
-       */
-      artifact_url?: string;
-      /**
-       * artifact_checksum
-       * @description SHA-256 checksum of the artifact bundle for integrity verification.
-       */
-      artifact_checksum?: string;
-      /**
-       * variables
-       * @description Resolved variable values to inject as TF_VAR_* environment variables.
-       *      Sensitive values are included (runner is a trusted execution context).
-       */
-      variables?: {
-        [key: string]: string;
-      };
-      /**
-       * provider_configs
-       * @description Provider configuration blocks (JSON-encoded). Keys are provider names
-       *      (e.g., "aws", "google"), values are JSON objects with provider config.
-       */
-      provider_configs?: {
-        [key: string]: string;
-      };
-      /**
-       * backend_config
-       * @description Terraform backend configuration (JSON-encoded). Contains the backend
-       *      type and its configuration for state storage.
-       */
-      backend_config?: string;
-      /**
-       * terraform_version
-       * @description The Terraform version to use for this operation (e.g., "1.7.5").
-       */
-      terraform_version?: string;
-    };
-    /** ProviderConfigsEntry */
-    'admiral.api.runner.v1.JobBundle.ProviderConfigsEntry': {
-      /** key */
-      key?: string;
-      /** value */
-      value?: string;
-    };
-    /** VariablesEntry */
-    'admiral.api.runner.v1.JobBundle.VariablesEntry': {
-      /** key */
-      key?: string;
-      /** value */
-      value?: string;
-    };
-    /**
-     * JobPhase
-     * @description JobPhase represents the current execution phase of a job as reported by the
-     *      runner's worker thread. Used in heartbeat payloads to give the server
-     *      visibility into job progress between ClaimJob and ReportJobResult.
-     * @enum {string}
-     */
-    'admiral.api.runner.v1.JobPhase':
-      | 'JOB_PHASE_UNSPECIFIED'
-      | 'JOB_PHASE_INITIALIZING'
-      | 'JOB_PHASE_PLANNING'
-      | 'JOB_PHASE_APPLYING'
-      | 'JOB_PHASE_FINALIZING';
-    /**
-     * JobResult
-     * @description JobResult contains the outcome of a completed job, reported by the runner.
-     */
-    'admiral.api.runner.v1.JobResult': {
-      /**
-       * status
-       * @description The final status of the job (SUCCEEDED or FAILED).
-       */
-      status?: components['schemas']['admiral.api.runner.v1.JobStatus'];
-      /**
-       * plan_output
-       * @description (Plan jobs only) The Terraform plan output in human-readable format.
-       */
-      plan_output?: string;
-      /**
-       * plan_summary
-       * @description (Plan jobs only) Summary of resource changes from the plan.
-       */
-      plan_summary?: components['schemas']['admiral.api.deployment.v1.TerraformPlanSummary'];
-      /**
-       * error_message
-       * @description Error message if the job failed. Empty on success.
-       */
-      error_message?: string;
-      /**
-       * logs_url
-       * @description URL to the full execution logs in external storage.
-       */
-      logs_url?: string;
-      /**
-       * duration
-       * @description How long the Terraform operation took to execute.
-       */
-      duration?: components['schemas']['google.protobuf.Duration'];
-    };
-    /**
-     * JobStatus
-     * @description JobStatus represents the lifecycle state of a runner job.
-     * @enum {string}
-     */
-    'admiral.api.runner.v1.JobStatus':
-      | 'JOB_STATUS_UNSPECIFIED'
-      | 'JOB_STATUS_PENDING'
-      | 'JOB_STATUS_ASSIGNED'
-      | 'JOB_STATUS_RUNNING'
-      | 'JOB_STATUS_SUCCEEDED'
-      | 'JOB_STATUS_FAILED'
-      | 'JOB_STATUS_CANCELLED';
-    /**
-     * JobType
-     * @description JobType identifies the kind of Terraform operation a job executes.
-     * @enum {string}
-     */
-    'admiral.api.runner.v1.JobType':
-      | 'JOB_TYPE_UNSPECIFIED'
-      | 'JOB_TYPE_PLAN'
-      | 'JOB_TYPE_APPLY'
-      | 'JOB_TYPE_DESTROY_PLAN'
-      | 'JOB_TYPE_DESTROY_APPLY';
-    /**
-     * ListRunnerJobsRequest
-     * @description ListRunnerJobsRequest contains pagination and filter parameters for listing
-     *      jobs assigned to a specific runner.
-     */
-    'admiral.api.runner.v1.ListRunnerJobsRequest': {
-      /**
-       * runner_id
-       * Format: uuid
-       * @description The runner whose jobs to list (UUID).
-       */
-      runner_id?: string;
-      /**
-       * filter
-       * @description Filter expression to narrow results. Uses the Admiral filter DSL.
-       *
-       *      Filterable fields:
-       *        - `status` -- filter by job status (PENDING, ASSIGNED, RUNNING, etc.).
-       *        - `job_type` -- filter by job type (PLAN, APPLY, DESTROY_PLAN, DESTROY_APPLY).
-       *        - `deployment_id` -- jobs for a specific deployment (UUID).
-       *
-       *      Example: `field['status'] = 'RUNNING'`
-       */
-      filter?: string;
-      /**
-       * page_size
-       * Format: int32
-       * @description Maximum number of jobs to return per page.
-       */
-      page_size?: number;
-      /**
-       * page_token
-       * @description Opaque pagination token from a previous response.
-       */
-      page_token?: string;
-    };
-    /**
-     * ListRunnerJobsResponse
-     * @description ListRunnerJobsResponse contains a page of jobs.
-     */
-    'admiral.api.runner.v1.ListRunnerJobsResponse': {
-      /**
-       * jobs
-       * @description The list of jobs, ordered from newest to oldest.
-       */
-      jobs?: components['schemas']['admiral.api.runner.v1.Job'][];
-      /**
-       * next_page_token
-       * @description Pagination token for the next page. Empty when there are no more results.
-       */
-      next_page_token?: string;
-    };
-    /**
-     * ListRunnerTokensRequest
-     * @description ListRunnerTokensRequest contains pagination and filter parameters.
-     */
-    'admiral.api.runner.v1.ListRunnerTokensRequest': {
-      /**
-       * runner_id
-       * Format: uuid
-       * @description The runner to list tokens for (UUID).
-       */
-      runner_id?: string;
-      /**
-       * filter
-       * @description Filter expression to narrow results. Uses the Admiral filter DSL.
-       *
-       *      Filterable fields:
-       *        - `name` -- filter by token name.
-       *        - `status` -- filter by token status (ACTIVE, REVOKED).
-       *
-       *      Example: `field['status'] = 'ACTIVE'`
-       */
-      filter?: string;
-      /**
-       * page_size
-       * Format: int32
-       * @description Maximum number of tokens to return per page.
-       */
-      page_size?: number;
-      /**
-       * page_token
-       * @description Opaque pagination token from a previous response.
-       */
-      page_token?: string;
-    };
-    /**
-     * ListRunnerTokensResponse
-     * @description ListRunnerTokensResponse contains a page of runner AGT metadata.
-     */
-    'admiral.api.runner.v1.ListRunnerTokensResponse': {
-      /**
-       * access_tokens
-       * @description The list of tokens. Token secrets are never included.
-       */
-      access_tokens?: components['schemas']['admiral.common.v1.AccessToken'][];
-      /**
-       * next_page_token
-       * @description Pagination token for the next page. Empty when there are no more results.
-       */
-      next_page_token?: string;
-    };
-    /**
-     * ListRunnersRequest
-     * @description ListRunnersRequest contains pagination and filter parameters.
-     */
-    'admiral.api.runner.v1.ListRunnersRequest': {
-      /**
-       * filter
-       * @description Filter expression to narrow results. Uses the Admiral filter DSL.
-       *
-       *      Syntax: `field['name'] = 'value'` with AND/OR/NOT, comparison operators
-       *      (=, !=, <, >, <=, >=, ~=), and predicates (IN, BETWEEN, CONTAINS,
-       *      STARTS_WITH, ENDS_WITH, IS NULL, EXISTS).
-       *
-       *      Filterable fields:
-       *        - `name` -- filter by runner name.
-       *        - `kind` -- filter by runner kind (TERRAFORM, WORKFLOW).
-       *        - `health_status` -- filter by health status.
-       *        - `labels.key` -- filter by label key.
-       *
-       *      Example: `field['kind'] = 'TERRAFORM' AND field['health_status'] = 'HEALTHY'`
-       */
-      filter?: string;
-      /**
-       * page_size
-       * Format: int32
-       * @description Maximum number of runners to return per page.
-       */
-      page_size?: number;
-      /**
-       * page_token
-       * @description Opaque pagination token from a previous response.
-       */
-      page_token?: string;
-    };
-    /**
-     * ListRunnersResponse
-     * @description ListRunnersResponse contains a page of runners.
-     */
-    'admiral.api.runner.v1.ListRunnersResponse': {
-      /**
-       * runners
-       * @description The list of runners.
-       */
-      runners?: components['schemas']['admiral.api.runner.v1.Runner'][];
-      /**
-       * next_page_token
-       * @description Pagination token for the next page. Empty when there are no more results.
-       */
-      next_page_token?: string;
-    };
-    /**
-     * ReportJobResultRequest
-     * @description ReportJobResultRequest contains the outcome of a completed job.
-     */
-    'admiral.api.runner.v1.ReportJobResultRequest': {
-      /**
-       * job_id
-       * Format: uuid
-       * @description The job being reported on (UUID).
-       */
-      job_id?: string;
-      /**
-       * result
-       * @description The job result with status, outputs, and error information.
-       */
-      result: components['schemas']['admiral.api.runner.v1.JobResult'];
-    };
-    /**
-     * ReportJobResultResponse
-     * @description ReportJobResultResponse acknowledges the result.
-     */
-    'admiral.api.runner.v1.ReportJobResultResponse': {
-      /**
-       * ack
-       * @description Whether the result was accepted.
-       */
-      ack?: boolean;
-    };
-    /**
-     * RevokeRunnerTokenRequest
-     * @description RevokeRunnerTokenRequest identifies a runner AGT to revoke.
-     */
-    'admiral.api.runner.v1.RevokeRunnerTokenRequest': {
-      /**
-       * runner_id
-       * Format: uuid
-       * @description The runner the token belongs to (UUID).
-       */
-      runner_id?: string;
-      /**
-       * token_id
-       * Format: uuid
-       * @description The unique identifier of the token to revoke (UUID).
-       */
-      token_id?: string;
-    };
-    /**
-     * RevokeRunnerTokenResponse
-     * @description RevokeRunnerTokenResponse contains the revoked runner AGT metadata.
-     */
-    'admiral.api.runner.v1.RevokeRunnerTokenResponse': {
-      /**
-       * access_token
-       * @description The token metadata with updated status.
-       */
-      access_token?: components['schemas']['admiral.common.v1.AccessToken'];
-    };
-    /**
-     * Runner
-     * @description Runner represents a registered infrastructure execution runner within a
-     *      tenant. Runners claim and execute Terraform operations (plan, apply, destroy)
-     *      dispatched by the deployment engine.
-     * @example {
-     *       "id": "b2c3d4e5-6789-0abc-def1-234567890abc",
-     *       "name": "prod-terraform-runner",
-     *       "description": "Terraform runner for production AWS infrastructure provisioning.",
-     *       "kind": "RUNNER_KIND_TERRAFORM",
-     *       "labels": {
-     *         "cloud": "aws",
-     *         "team": "platform"
-     *       },
-     *       "health_status": "RUNNER_HEALTH_STATUS_HEALTHY",
-     *       "created_by": "d290f1ee-6c54-4b01-90e6-d701748f0851",
-     *       "updated_by": "d290f1ee-6c54-4b01-90e6-d701748f0851",
-     *       "created_at": "2025-07-15T10:00:00Z",
-     *       "updated_at": "2025-11-18T08:30:00Z"
-     *     }
-     */
-    'admiral.api.runner.v1.Runner': {
-      /**
-       * id
-       * Format: uuid
-       * @description Unique identifier for the runner (UUID).
-       */
-      id?: string;
-      /**
-       * name
-       * @description URL-safe, human-readable identifier (e.g., "prod-terraform-runner").
-       *      Unique within the tenant. Lowercase alphanumeric and hyphens only,
-       *      must start with a letter and end with an alphanumeric character (1-63 chars).
-       */
-      name?: string;
-      /**
-       * description
-       * @description Optional longer-form description of the runner's purpose
-       *      (e.g., "Terraform runner for production AWS infrastructure").
-       */
-      description?: string;
-      /**
-       * kind
-       * @description The type of operations this runner executes.
-       */
-      kind?: components['schemas']['admiral.api.runner.v1.RunnerKind'];
-      /**
-       * labels
-       * @description Arbitrary key-value labels for organizing and filtering runners
-       *      (e.g., `{"cloud": "aws", "team": "platform"}`).
-       */
-      labels?: {
-        [key: string]: string;
-      };
-      /**
-       * health_status
-       * @description Derived health status based on heartbeat recency and capacity.
-       */
-      health_status?: components['schemas']['admiral.api.runner.v1.RunnerHealthStatus'];
-      /**
-       * created_by
-       * @description The user or agent who created this runner (server-populated from token).
-       */
-      created_by?: components['schemas']['admiral.common.v1.ActorRef'];
-      /**
-       * updated_by
-       * @description The user or agent who last updated this runner (server-populated from token).
-       */
-      updated_by?: components['schemas']['admiral.common.v1.ActorRef'];
-      /**
-       * created_at
-       * @description When the runner record was created.
-       */
-      created_at?: components['schemas']['google.protobuf.Timestamp'];
-      /**
-       * updated_at
-       * @description When the runner record was last updated.
-       */
-      updated_at?: components['schemas']['google.protobuf.Timestamp'];
-    };
-    /** LabelsEntry */
-    'admiral.api.runner.v1.Runner.LabelsEntry': {
-      /** key */
-      key?: string;
-      /** value */
-      value?: string;
-    };
-    /**
-     * RunnerHealthStatus
-     * @description RunnerHealthStatus represents the derived health state of a runner.
-     *      The status is computed from heartbeat recency and capacity metrics.
-     * @enum {string}
-     */
-    'admiral.api.runner.v1.RunnerHealthStatus':
-      | 'RUNNER_HEALTH_STATUS_UNSPECIFIED'
-      | 'RUNNER_HEALTH_STATUS_PENDING'
-      | 'RUNNER_HEALTH_STATUS_HEALTHY'
-      | 'RUNNER_HEALTH_STATUS_DEGRADED'
-      | 'RUNNER_HEALTH_STATUS_UNREACHABLE';
-    /**
-     * RunnerKind
-     * @description RunnerKind identifies the type of operations a runner executes.
-     * @enum {string}
-     */
-    'admiral.api.runner.v1.RunnerKind':
-      | 'RUNNER_KIND_UNSPECIFIED'
-      | 'RUNNER_KIND_TERRAFORM'
-      | 'RUNNER_KIND_WORKFLOW';
-    /**
-     * RunnerStatus
-     * @description RunnerStatus contains capacity and telemetry metrics for a runner, as
-     *      reported via Heartbeat. This message is used in both the push payload
-     *      (HeartbeatRequest) and the read response (GetRunnerStatusResponse).
-     *
-     *      Server-derived fields (health_status) are NOT included here -- they live
-     *      on the Runner record and are returned alongside this message in
-     *      GetRunnerStatusResponse.
-     */
-    'admiral.api.runner.v1.RunnerStatus': {
-      /**
-       * version
-       * @description The runner binary version (e.g., "1.2.0").
-       */
-      version?: string;
-      /**
-       * active_jobs
-       * Format: int32
-       * @description Number of jobs currently being executed by this runner.
-       */
-      active_jobs?: number;
-      /**
-       * max_concurrent_jobs
-       * Format: int32
-       * @description Maximum number of concurrent jobs this runner supports.
-       */
-      max_concurrent_jobs?: number;
-      /**
-       * available_providers
-       * @description Terraform providers available on this runner (e.g., ["aws", "google", "azurerm"]).
-       */
-      available_providers?: string[];
-      /**
-       * tool_versions
-       * @description CLI tool versions installed on this runner, detected at startup and
-       *      reported on every heartbeat. Visible to admins via GetRunnerStatus.
-       *      The server uses tool_versions to match jobs to capable runners (e.g.,
-       *      a job requiring Terraform 1.9.x will only be assigned to a runner
-       *      reporting a compatible version).
-       *      Keys are tool names (e.g., "terraform", "tofu", "helm", "kustomize", "kubectl").
-       *      Values are semantic versions (e.g., "1.7.5", "1.9.0").
-       */
-      tool_versions?: {
-        [key: string]: string;
-      };
-      /**
-       * active_job_details
-       * @description Details of jobs currently being executed by this runner instance. The
-       *      worker thread updates job phase in shared memory; the heartbeat thread
-       *      reads and includes it on each tick. Gives the server visibility into
-       *      job progress for stuck-job detection and admin dashboards.
-       */
-      active_job_details?: components['schemas']['admiral.api.runner.v1.ActiveJobInfo'][];
-    };
-    /** ToolVersionsEntry */
-    'admiral.api.runner.v1.RunnerStatus.ToolVersionsEntry': {
-      /** key */
-      key?: string;
-      /** value */
-      value?: string;
-    };
-    /**
-     * UpdateRunnerRequest
-     * @description UpdateRunnerRequest contains the runner fields to update.
-     */
-    'admiral.api.runner.v1.UpdateRunnerRequest': {
-      /**
-       * runner
-       * @description The runner with updated fields. The `id` field is required.
-       *      Only fields specified in `update_mask` are updated.
-       */
-      runner: components['schemas']['admiral.api.runner.v1.Runner'];
-      /**
-       * update_mask
-       * @description The set of fields to update. If unset, all mutable fields are updated.
-       *      Supported fields: `name`, `description`, `labels`.
-       */
-      update_mask?: components['schemas']['google.protobuf.FieldMask'];
-    };
-    /**
-     * UpdateRunnerResponse
-     * @description UpdateRunnerResponse contains the updated runner.
-     */
-    'admiral.api.runner.v1.UpdateRunnerResponse': {
-      /**
-       * runner
-       * @description The updated runner.
-       */
-      runner?: components['schemas']['admiral.api.runner.v1.Runner'];
-    };
-    /**
-     * ArchiveConfig
-     * @description ArchiveConfig provides additional parameters for archive sources
-     *      (tar.gz, zip) fetched via HTTP, S3, or GCS.
-     */
-    'admiral.api.source.v1.ArchiveConfig': {
-      /**
-       * path
-       * @description Subdirectory within the extracted archive to use. Empty means archive root.
-       */
-      path?: string;
-      /**
-       * checksum
-       * @description Expected checksum for integrity verification (e.g., "sha256:abc123...").
-       *      When set, the fetched archive is verified against this checksum before
-       *      extraction.
-       */
-      checksum?: string;
-    };
-    /**
-     * CreateSourceRequest
-     * @description CreateSourceRequest contains the parameters for creating a new source.
-     */
-    'admiral.api.source.v1.CreateSourceRequest': {
-      /**
-       * name
-       * @description URL-safe, human-readable identifier. Must be unique within the tenant.
-       */
-      name?: string;
-      /**
-       * description
-       * @description Optional description of the source's purpose.
-       */
-      description?: string;
-      /**
-       * type
-       * @description The kind of artifact and fetch protocol.
-       */
-      type?: components['schemas']['admiral.api.source.v1.SourceType'];
-      /**
-       * url
-       * @description Base URL for the source (see Source.url for per-type semantics).
-       */
-      url?: string;
-      /**
-       * connection_id
-       * Format: uuid
-       * @description Reference to the connection providing credentials (UUID). Optional for
-       *      public sources.
-       */
-      connection_id?: string | null;
-      /**
-       * catalog
-       * @description Whether this is a curated catalog entry.
-       */
-      catalog?: boolean;
-      /**
-       * labels
-       * @description Arbitrary key-value labels.
-       */
-      labels?: {
-        [key: string]: string;
-      };
-    } & (
-      | {
-          /** archive */
-          archive: components['schemas']['admiral.api.source.v1.ArchiveConfig'];
-        }
-      | {
-          /** helm_git */
-          helm_git: components['schemas']['admiral.api.source.v1.HelmGitConfig'];
-        }
-      | {
-          /** helm_oci */
-          helm_oci: components['schemas']['admiral.api.source.v1.HelmOCIConfig'];
-        }
-      | {
-          /** helm_repository */
-          helm_repository: components['schemas']['admiral.api.source.v1.HelmRepositoryConfig'];
-        }
-      | {
-          /** kustomize_git */
-          kustomize_git: components['schemas']['admiral.api.source.v1.KustomizeGitConfig'];
-        }
-      | {
-          /** manifest_git */
-          manifest_git: components['schemas']['admiral.api.source.v1.ManifestGitConfig'];
-        }
-      | {
-          /** terraform_git */
-          terraform_git: components['schemas']['admiral.api.source.v1.TerraformGitConfig'];
-        }
-      | {
-          /** terraform_registry */
-          terraform_registry: components['schemas']['admiral.api.source.v1.TerraformRegistryConfig'];
-        }
-    );
-    /** LabelsEntry */
-    'admiral.api.source.v1.CreateSourceRequest.LabelsEntry': {
-      /** key */
-      key?: string;
-      /** value */
-      value?: string;
-    };
-    /**
-     * CreateSourceResponse
-     * @description CreateSourceResponse contains the newly created source.
-     */
-    'admiral.api.source.v1.CreateSourceResponse': {
-      /**
-       * source
-       * @description The created source.
-       */
-      source?: components['schemas']['admiral.api.source.v1.Source'];
-    };
-    /**
-     * DeleteSourceRequest
-     * @description DeleteSourceRequest identifies a source to delete.
-     */
-    'admiral.api.source.v1.DeleteSourceRequest': {
-      /**
-       * source_id
-       * Format: uuid
-       * @description Unique identifier of the source to delete (UUID).
-       *      Fails if any application components still reference this source.
-       */
-      source_id?: string;
-    };
-    /**
-     * DeleteSourceResponse
-     * @description DeleteSourceResponse is empty on success.
-     */
-    'admiral.api.source.v1.DeleteSourceResponse': Record<string, never>;
-    /**
-     * GetSourceInputsRequest
-     * @description GetSourceInputsRequest fetches discoverable inputs for a source at a
-     *      specific version.
-     */
-    'admiral.api.source.v1.GetSourceInputsRequest': {
-      /**
-       * source_id
-       * Format: uuid
-       * @description Unique identifier of the source to inspect (UUID).
-       */
-      source_id?: string;
-      /**
-       * version
-       * @description The version to inspect. For registry sources, a semver string. For Git
-       *      sources, a tag, branch, or commit SHA. Required.
-       */
-      version?: string;
-    };
-    /**
-     * GetSourceInputsResponse
-     * @description GetSourceInputsResponse contains the discovered inputs for the source at
-     *      the requested version.
-     */
-    'admiral.api.source.v1.GetSourceInputsResponse': {
-      /**
-       * inputs
-       * @description Discovered input parameters. Empty for source types that do not support
-       *      input discovery (Kustomize, raw manifests).
-       */
-      inputs?: components['schemas']['admiral.api.source.v1.SourceInput'][];
-      /**
-       * resolved_version
-       * @description The version that was actually inspected (resolved from the requested
-       *      version -- e.g., a branch name resolved to a commit SHA).
-       */
-      resolved_version?: string;
-    };
-    /**
-     * GetSourceOutputsRequest
-     * @description GetSourceOutputsRequest fetches discoverable outputs for a source at a
-     *      specific version.
-     */
-    'admiral.api.source.v1.GetSourceOutputsRequest': {
-      /**
-       * source_id
-       * Format: uuid
-       * @description Unique identifier of the source to inspect (UUID).
-       */
-      source_id?: string;
-      /**
-       * version
-       * @description The version to inspect. Required.
-       */
-      version?: string;
-    };
-    /**
-     * GetSourceOutputsResponse
-     * @description GetSourceOutputsResponse contains the discovered outputs for the source at
-     *      the requested version.
-     */
-    'admiral.api.source.v1.GetSourceOutputsResponse': {
-      /**
-       * outputs
-       * @description Discovered output definitions. Only populated for Terraform module sources.
-       *      Workload sources (Helm, Kustomize, manifests) do not have formal outputs --
-       *      workload component outputs are user-declared at the component level.
-       */
-      outputs?: components['schemas']['admiral.api.source.v1.SourceOutput'][];
-      /**
-       * resolved_version
-       * @description The version that was actually inspected.
-       */
-      resolved_version?: string;
-    };
-    /**
-     * GetSourceRequest
-     * @description GetSourceRequest identifies a source to retrieve.
-     */
-    'admiral.api.source.v1.GetSourceRequest': {
-      /**
-       * source_id
-       * Format: uuid
-       * @description Unique identifier of the source (UUID).
-       */
-      source_id?: string;
-    };
-    /**
-     * GetSourceResponse
-     * @description GetSourceResponse contains the source record.
-     */
-    'admiral.api.source.v1.GetSourceResponse': {
-      /**
-       * source
-       * @description The source record.
-       */
-      source?: components['schemas']['admiral.api.source.v1.Source'];
-    };
-    /**
-     * HelmGitConfig
-     * @description HelmGitConfig provides additional parameters for Helm charts sourced from
-     *      Git repositories.
-     */
-    'admiral.api.source.v1.HelmGitConfig': {
-      /**
-       * path
-       * @description Path within the repository to the chart directory (must contain Chart.yaml).
-       */
-      path?: string;
-      /**
-       * default_ref
-       * @description Default Git ref (branch, tag, or commit SHA).
-       */
-      default_ref?: string;
-    };
-    /**
-     * HelmOCIConfig
-     * @description HelmOCIConfig provides additional parameters for Helm charts stored in
-     *      OCI registries.
-     */
-    'admiral.api.source.v1.HelmOCIConfig': {
-      /**
-       * repository
-       * @description The full OCI repository path (e.g., "ghcr.io/myorg/charts/my-app").
-       *      The url field on the Source message holds the registry host, while this
-       *      field holds the full repository path.
-       */
-      repository?: string;
-    };
-    /**
-     * HelmRepositoryConfig
-     * @description HelmRepositoryConfig provides additional parameters for Helm charts from
-     *      classic HTTP/S chart repositories.
-     */
-    'admiral.api.source.v1.HelmRepositoryConfig': {
-      /**
-       * chart_name
-       * @description The chart name within the repository (e.g., "nginx-ingress", "redis").
-       */
-      chart_name?: string;
-    };
-    /**
-     * KustomizeGitConfig
-     * @description KustomizeGitConfig provides additional parameters for Kustomize overlays
-     *      sourced from Git repositories.
-     */
-    'admiral.api.source.v1.KustomizeGitConfig': {
-      /**
-       * path
-       * @description Path within the repository to the overlay directory (must contain
-       *      kustomization.yaml).
-       */
-      path?: string;
-      /**
-       * default_ref
-       * @description Default Git ref (branch, tag, or commit SHA).
-       */
-      default_ref?: string;
-    };
-    /**
-     * ListSourceVersionsRequest
-     * @description ListSourceVersionsRequest queries available versions for a source.
-     */
-    'admiral.api.source.v1.ListSourceVersionsRequest': {
-      /**
-       * source_id
-       * Format: uuid
-       * @description Unique identifier of the source to query versions for (UUID).
-       */
-      source_id?: string;
-      /**
-       * page_size
-       * Format: int32
-       * @description Maximum number of versions to return. Defaults to 50.
-       */
-      page_size?: number;
-      /**
-       * page_token
-       * @description Opaque pagination token for fetching additional versions.
-       */
-      page_token?: string;
-    };
-    /**
-     * ListSourceVersionsResponse
-     * @description ListSourceVersionsResponse contains available versions from the external system.
-     */
-    'admiral.api.source.v1.ListSourceVersionsResponse': {
-      /**
-       * versions
-       * @description Available versions, ordered from newest to oldest.
-       */
-      versions?: components['schemas']['admiral.api.source.v1.SourceVersion'][];
-      /**
-       * next_page_token
-       * @description Pagination token for the next page. Empty when there are no more results.
-       */
-      next_page_token?: string;
-    };
-    /**
-     * ListSourcesRequest
-     * @description ListSourcesRequest contains pagination and filter parameters.
-     */
-    'admiral.api.source.v1.ListSourcesRequest': {
-      /**
-       * filter
-       * @description Filter expression to narrow results. Uses the Admiral filter DSL.
-       *
-       *      Syntax: `field['name'] = 'value'` with AND/OR/NOT, comparison operators
-       *      (=, !=, <, >, <=, >=, ~=), and predicates (IN, BETWEEN, CONTAINS,
-       *      STARTS_WITH, ENDS_WITH, IS NULL, EXISTS).
-       *
-       *      Filterable fields:
-       *        - `name` -- filter by source name.
-       *        - `type` -- filter by source type (TERRAFORM_REGISTRY, HELM_OCI, etc.).
-       *        - `catalog` -- filter by catalog status (true/false).
-       *        - `labels.key` -- filter by label key.
-       *
-       *      Example: `field['type'] = 'TERRAFORM_REGISTRY' AND field['catalog'] = 'true'`
-       */
-      filter?: string;
-      /**
-       * page_size
-       * Format: int32
-       * @description Maximum number of sources to return per page.
-       */
-      page_size?: number;
-      /**
-       * page_token
-       * @description Opaque pagination token from a previous response.
-       */
-      page_token?: string;
-    };
-    /**
-     * ListSourcesResponse
-     * @description ListSourcesResponse contains a page of sources.
-     */
-    'admiral.api.source.v1.ListSourcesResponse': {
-      /**
-       * sources
-       * @description The list of sources.
-       */
-      sources?: components['schemas']['admiral.api.source.v1.Source'][];
-      /**
-       * next_page_token
-       * @description Pagination token for the next page. Empty when there are no more results.
-       */
-      next_page_token?: string;
-    };
-    /**
-     * ManifestGitConfig
-     * @description ManifestGitConfig provides additional parameters for raw Kubernetes manifests
-     *      sourced from Git repositories.
-     */
-    'admiral.api.source.v1.ManifestGitConfig': {
-      /**
-       * path
-       * @description Path within the repository to the directory containing manifest files.
-       *      All .yaml, .yml, and .json files in this directory are collected.
-       */
-      path?: string;
-      /**
-       * recursive
-       * @description Whether to recursively include files from subdirectories.
-       */
-      recursive?: boolean;
-      /**
-       * default_ref
-       * @description Default Git ref (branch, tag, or commit SHA).
-       */
-      default_ref?: string;
-    };
-    /**
-     * Source
-     * @description Source represents a fetchable artifact definition -- a pointer to an external
-     *      module, chart, or manifest set that Admiral can fetch, inspect, and render
-     *      into deployment snapshots.
-     *
-     *      Sources are tenant-scoped and optionally marked as catalog entries (curated,
-     *      pre-approved artifacts managed by platform engineers).
-     * @example {
-     *       "id": "f6a7b8c9-0123-4def-5678-901234567890",
-     *       "name": "nginx-ingress",
-     *       "description": "NGINX Ingress Controller Helm chart from the official repository.",
-     *       "type": "SOURCE_TYPE_HELM_REPOSITORY",
-     *       "url": "https://kubernetes.github.io/ingress-nginx",
-     *       "catalog": true,
-     *       "labels": {
-     *         "category": "networking",
-     *         "team": "platform"
-     *       },
-     *       "created_by": "d290f1ee-6c54-4b01-90e6-d701748f0851",
-     *       "updated_by": "d290f1ee-6c54-4b01-90e6-d701748f0851",
-     *       "created_at": "2025-08-01T12:00:00Z",
-     *       "updated_at": "2025-10-20T09:00:00Z"
-     *     }
-     */
-    'admiral.api.source.v1.Source': {
-      /**
-       * id
-       * Format: uuid
-       * @description Unique identifier for the source (UUID).
-       */
-      id?: string;
-      /**
-       * name
-       * @description URL-safe, human-readable identifier (e.g., "corporate-rds", "nginx-chart").
-       *      Unique within the tenant. Lowercase alphanumeric and hyphens only, must
-       *      start with a letter and end with an alphanumeric character (1-63 chars).
-       */
-      name?: string;
-      /**
-       * description
-       * @description Optional longer-form description of the source's purpose
-       *      (e.g., "Corporate-approved RDS module with encryption and backups").
-       */
-      description?: string;
-      /**
-       * type
-       * @description The kind of artifact and fetch protocol.
-       */
-      type?: components['schemas']['admiral.api.source.v1.SourceType'];
-      /**
-       * url
-       * @description Base URL for the source. The meaning varies by source type:
-       *        - TERRAFORM_REGISTRY: registry hostname (e.g., "registry.terraform.io")
-       *        - TERRAFORM_GIT, HELM_GIT, KUSTOMIZE_GIT, MANIFEST_GIT: Git repo URL
-       *        - HELM_REPOSITORY: Helm repo URL (e.g., "https://charts.bitnami.com/bitnami")
-       *        - HELM_OCI: OCI registry URL (e.g., "oci://ghcr.io")
-       *        - ARCHIVE: HTTP/S3/GCS URL to the archive
-       */
-      url?: string;
-      /**
-       * connection_id
-       * Format: uuid
-       * @description Reference to the connection providing credentials for this source (UUID).
-       *      Optional -- null for public sources that require no authentication
-       *      (e.g., public Terraform registry, public Helm repos).
-       */
-      connection_id?: string | null;
-      /**
-       * catalog
-       * @description Whether this source is a curated catalog entry. Catalog sources are managed
-       *      by platform engineers and may be the only sources available to developers
-       *      if the organization enforces catalog-only policy.
-       */
-      catalog?: boolean;
-      /**
-       * labels
-       * @description Arbitrary key-value labels for organizing and filtering sources
-       *      (e.g., `{"team": "platform", "category": "database"}`).
-       */
-      labels?: {
-        [key: string]: string;
-      };
-      /**
-       * created_by
-       * @description The user or agent who created this source (server-populated from token).
-       */
-      created_by?: components['schemas']['admiral.common.v1.ActorRef'];
-      /**
-       * updated_by
-       * @description The user or agent who last updated this source (server-populated from token).
-       */
-      updated_by?: components['schemas']['admiral.common.v1.ActorRef'];
-      /**
-       * last_synced_at
-       * @description When the source metadata was last synced from the external system
-       *      (registry, Git, Helm repo). Updated by SyncSource and by automatic
-       *      background refresh when discovery RPCs encounter stale cached data.
-       *      Absent if no sync has occurred yet.
-       */
-      last_synced_at?: components['schemas']['google.protobuf.Timestamp'];
-      /**
-       * created_at
-       * @description When the source was created.
-       */
-      created_at?: components['schemas']['google.protobuf.Timestamp'];
-      /**
-       * updated_at
-       * @description When the source was last updated.
-       */
-      updated_at?: components['schemas']['google.protobuf.Timestamp'];
-    } & (
-      | {
-          /**
-           * archive
-           * @description Archive config (for SOURCE_TYPE_ARCHIVE).
-           */
-          archive: components['schemas']['admiral.api.source.v1.ArchiveConfig'];
-        }
-      | {
-          /**
-           * helm_git
-           * @description Helm Git config (for SOURCE_TYPE_HELM_GIT).
-           */
-          helm_git: components['schemas']['admiral.api.source.v1.HelmGitConfig'];
-        }
-      | {
-          /**
-           * helm_oci
-           * @description Helm OCI config (for SOURCE_TYPE_HELM_OCI).
-           */
-          helm_oci: components['schemas']['admiral.api.source.v1.HelmOCIConfig'];
-        }
-      | {
-          /**
-           * helm_repository
-           * @description Helm HTTP repository config (for SOURCE_TYPE_HELM_REPOSITORY).
-           */
-          helm_repository: components['schemas']['admiral.api.source.v1.HelmRepositoryConfig'];
-        }
-      | {
-          /**
-           * kustomize_git
-           * @description Kustomize Git config (for SOURCE_TYPE_KUSTOMIZE_GIT).
-           */
-          kustomize_git: components['schemas']['admiral.api.source.v1.KustomizeGitConfig'];
-        }
-      | {
-          /**
-           * manifest_git
-           * @description Raw manifest Git config (for SOURCE_TYPE_MANIFEST_GIT).
-           */
-          manifest_git: components['schemas']['admiral.api.source.v1.ManifestGitConfig'];
-        }
-      | {
-          /**
-           * terraform_git
-           * @description Terraform Git module config (for SOURCE_TYPE_TERRAFORM_GIT).
-           */
-          terraform_git: components['schemas']['admiral.api.source.v1.TerraformGitConfig'];
-        }
-      | {
-          /**
-           * terraform_registry
-           * @description Terraform Registry Protocol config (for SOURCE_TYPE_TERRAFORM_REGISTRY).
-           */
-          terraform_registry: components['schemas']['admiral.api.source.v1.TerraformRegistryConfig'];
-        }
-    );
-    /** LabelsEntry */
-    'admiral.api.source.v1.Source.LabelsEntry': {
-      /** key */
-      key?: string;
-      /** value */
-      value?: string;
-    };
-    /**
-     * SourceInput
-     * @description SourceInput represents a configurable parameter discovered from the source
-     *      artifact. For Terraform modules, these are variable blocks. For Helm charts,
-     *      these are entries from values.yaml (with optional type info from
-     *      values.schema.json).
-     */
-    'admiral.api.source.v1.SourceInput': {
-      /**
-       * name
-       * @description Parameter name (e.g., "instance_class", "replicaCount").
-       */
-      name?: string;
-      /**
-       * type
-       * @description Type constraint as a string. For Terraform: HCL type expression
-       *      (e.g., "string", "number", "list(string)", "object({name=string})").
-       *      For Helm: JSON Schema type (e.g., "string", "integer", "object").
-       *      Empty if type cannot be determined.
-       */
-      type?: string;
-      /**
-       * description
-       * @description Human-readable description of the parameter. From Terraform variable
-       *      description or Helm values.schema.json description field.
-       */
-      description?: string;
-      /**
-       * default_value
-       * @description JSON-encoded default value. Null/absent means no default (parameter is
-       *      required). For Terraform, this is the default from the variable block.
-       *      For Helm, this is the value from values.yaml.
-       */
-      default_value?: string | null;
-      /**
-       * required
-       * @description Whether this parameter is required (no default value provided).
-       *      For Terraform: true when the variable has no default.
-       *      For Helm: true when values.schema.json marks it as required.
-       */
-      required?: boolean;
-      /**
-       * sensitive
-       * @description Whether this parameter is sensitive (should be masked in logs and UI).
-       *      For Terraform: from the variable's sensitive attribute.
-       *      For Helm: not typically available.
-       */
-      sensitive?: boolean;
-    };
-    /**
-     * SourceOutput
-     * @description SourceOutput represents a value produced by the source after apply. Only
-     *      meaningful for Terraform modules, which declare formal output blocks.
-     *      Workload sources (Helm, Kustomize, manifests) do not have formal outputs --
-     *      workload component outputs are user-declared at the component level, not
-     *      discovered from the source.
-     */
-    'admiral.api.source.v1.SourceOutput': {
-      /**
-       * name
-       * @description Output name (e.g., "endpoint", "db_arn", "connection_string").
-       */
-      name?: string;
-      /**
-       * type
-       * @description Type of the output value, if declared (e.g., "string", "list(string)").
-       */
-      type?: string;
-      /**
-       * description
-       * @description Human-readable description of the output.
-       */
-      description?: string;
-      /**
-       * sensitive
-       * @description Whether this output is sensitive (masked in logs and CLI output).
-       */
-      sensitive?: boolean;
-    };
-    /**
-     * SourceType
-     * @description SourceType identifies the kind of artifact and the protocol used to fetch it.
-     * @enum {string}
-     */
-    'admiral.api.source.v1.SourceType':
-      | 'SOURCE_TYPE_UNSPECIFIED'
-      | 'SOURCE_TYPE_TERRAFORM_REGISTRY'
-      | 'SOURCE_TYPE_TERRAFORM_GIT'
-      | 'SOURCE_TYPE_HELM_REPOSITORY'
-      | 'SOURCE_TYPE_HELM_OCI'
-      | 'SOURCE_TYPE_HELM_GIT'
-      | 'SOURCE_TYPE_KUSTOMIZE_GIT'
-      | 'SOURCE_TYPE_MANIFEST_GIT'
-      | 'SOURCE_TYPE_ARCHIVE';
-    /**
-     * SourceVersion
-     * @description SourceVersion represents an available version of a source artifact, as
-     *      reported by the external system (registry, repository, Git tags).
-     */
-    'admiral.api.source.v1.SourceVersion': {
-      /**
-       * version
-       * @description Version identifier. For registry sources, this is a semver string
-       *      (e.g., "1.2.3"). For Git sources, this is a tag name (e.g., "v1.2.3").
-       *      For OCI, this is a tag.
-       */
-      version?: string;
-      /**
-       * published_at
-       * @description When this version was published or tagged. May not be available for all
-       *      source types.
-       */
-      published_at?: components['schemas']['google.protobuf.Timestamp'];
-      /**
-       * description
-       * @description Optional description or release notes for this version. Typically only
-       *      available from registry sources.
-       */
-      description?: string;
-    };
-    /**
-     * SyncSourceRequest
-     * @description SyncSourceRequest triggers a metadata refresh for a source.
-     */
-    'admiral.api.source.v1.SyncSourceRequest': {
-      /**
-       * source_id
-       * Format: uuid
-       * @description Unique identifier of the source to sync (UUID).
-       */
-      source_id?: string;
-    };
-    /**
-     * SyncSourceResponse
-     * @description SyncSourceResponse confirms the sync was triggered.
-     */
-    'admiral.api.source.v1.SyncSourceResponse': {
-      /**
-       * source
-       * @description The source with refreshed metadata.
-       */
-      source?: components['schemas']['admiral.api.source.v1.Source'];
-    };
-    /**
-     * TerraformGitConfig
-     * @description TerraformGitConfig provides additional parameters for Terraform modules
-     *      sourced from Git repositories.
-     */
-    'admiral.api.source.v1.TerraformGitConfig': {
-      /**
-       * path
-       * @description Subdirectory within the repository containing the module root.
-       *      Uses double-slash convention (e.g., "modules/vpc"). Empty means repo root.
-       */
-      path?: string;
-      /**
-       * default_ref
-       * @description Default Git ref (branch, tag, or commit SHA) to use when no version is
-       *      specified. Typically a branch name like "main" or a tag like "v1.0.0".
-       */
-      default_ref?: string;
-    };
-    /**
-     * TerraformRegistryConfig
-     * @description TerraformRegistryConfig provides additional parameters for Terraform module
-     *      registry sources.
-     */
-    'admiral.api.source.v1.TerraformRegistryConfig': {
-      /**
-       * namespace
-       * @description Module namespace in the registry (e.g., "hashicorp", "myorg").
-       */
-      namespace?: string;
-      /**
-       * module_name
-       * @description Module name in the registry (e.g., "consul", "rds").
-       */
-      module_name?: string;
-      /**
-       * system
-       * @description Target system / provider (e.g., "aws", "azurerm", "google").
-       */
-      system?: string;
-    };
-    /**
-     * UpdateSourceRequest
-     * @description UpdateSourceRequest contains the source fields to update.
-     */
-    'admiral.api.source.v1.UpdateSourceRequest': {
-      /**
-       * source
-       * @description The source with updated fields. Only fields specified in `update_mask`
-       *      are updated.
-       */
-      source: components['schemas']['admiral.api.source.v1.Source'];
-      /**
-       * update_mask
-       * @description The set of fields to update. If unset, all mutable fields are updated.
-       *      Supported fields: `name`, `description`, `url`, `connection_id`, `catalog`,
-       *      `source_config`, `labels`.
-       */
-      update_mask?: components['schemas']['google.protobuf.FieldMask'];
-    };
-    /**
-     * UpdateSourceResponse
-     * @description UpdateSourceResponse contains the updated source.
-     */
-    'admiral.api.source.v1.UpdateSourceResponse': {
-      /**
-       * source
-       * @description The updated source.
-       */
-      source?: components['schemas']['admiral.api.source.v1.Source'];
-    };
-    /**
-     * DeleteStateRequest
-     * @description DeleteStateRequest identifies a state record to permanently delete.
-     */
-    'admiral.api.state.v1.DeleteStateRequest': {
-      /**
-       * state_id
-       * Format: uuid
-       * @description The unique identifier of the state record to delete (UUID).
-       *      Fails if the state is currently locked -- force-unlock first.
-       */
-      state_id?: string;
-    };
-    /**
-     * DeleteStateResponse
-     * @description DeleteStateResponse is empty on success.
-     */
-    'admiral.api.state.v1.DeleteStateResponse': Record<string, never>;
-    /**
-     * ForceUnlockStateRequest
-     * @description ForceUnlockStateRequest identifies a state to force-unlock.
-     */
-    'admiral.api.state.v1.ForceUnlockStateRequest': {
-      /**
-       * state_id
-       * Format: uuid
-       * @description The state record to force-unlock (UUID).
-       */
-      state_id?: string;
-      /**
-       * reason
-       * @description Reason for force-unlocking (audited). Recommended to provide context
-       *      for why the lock is being broken (e.g., "runner crashed during apply").
-       */
-      reason?: string;
-    };
-    /**
-     * ForceUnlockStateResponse
-     * @description ForceUnlockStateResponse confirms the lock was forcefully released.
-     */
-    'admiral.api.state.v1.ForceUnlockStateResponse': Record<string, never>;
-    /**
-     * GetCurrentStateRequest
-     * @description GetCurrentStateRequest identifies a state record to retrieve.
-     */
-    'admiral.api.state.v1.GetCurrentStateRequest': {
-      /**
-       * state_id
-       * Format: uuid
-       * @description The unique identifier of the state record (UUID).
-       */
-      state_id?: string;
-    };
-    /**
-     * GetCurrentStateResponse
-     * @description GetCurrentStateResponse contains the state record with current data and
-     *      lock info.
-     */
-    'admiral.api.state.v1.GetCurrentStateResponse': {
-      /**
-       * state
-       * @description The state record including current data and any active lock.
-       */
-      state?: components['schemas']['admiral.api.state.v1.State'];
-    };
-    /**
-     * GetStateRequest
-     * @description GetStateRequest fetches the current state for a job.
-     */
-    'admiral.api.state.v1.GetStateRequest': {
-      /**
-       * job_id
-       * Format: uuid
-       * @description The job to fetch state for (UUID). The server resolves the component
-       *      and environment from the job's binding.
-       */
-      job_id?: string;
-    };
-    /**
-     * GetStateResponse
-     * @description GetStateResponse contains the current state data.
-     */
-    'admiral.api.state.v1.GetStateResponse': {
-      /**
-       * data
-       * Format: byte
-       * @description The raw Terraform state data (JSON-encoded). Empty if no state exists
-       *      yet (fresh init -- Terraform handles this gracefully).
-       */
-      data?: string;
-    };
-    /**
-     * GetStateVersionRequest
-     * @description GetStateVersionRequest identifies a specific historical state version.
-     */
-    'admiral.api.state.v1.GetStateVersionRequest': {
-      /**
-       * state_id
-       * Format: uuid
-       * @description The state record (UUID).
-       */
-      state_id?: string;
-      /**
-       * serial
-       * Format: int64
-       * @description The serial number of the version to retrieve.
-       */
-      serial?: number | string;
-    };
-    /**
-     * GetStateVersionResponse
-     * @description GetStateVersionResponse contains the full state data at a historical serial.
-     *      Returns both the version metadata and the raw data separately -- the
-     *      StateVersion message intentionally omits data to keep ListStateVersions
-     *      lightweight.
-     */
-    'admiral.api.state.v1.GetStateVersionResponse': {
-      /**
-       * version
-       * @description The state version metadata.
-       */
-      version?: components['schemas']['admiral.api.state.v1.StateVersion'];
-      /**
-       * data
-       * Format: byte
-       * @description The raw Terraform state data (JSON-encoded) at this serial.
-       */
-      data?: string;
-    };
-    /**
-     * ListStateVersionsRequest
-     * @description ListStateVersionsRequest contains pagination parameters for version history.
-     */
-    'admiral.api.state.v1.ListStateVersionsRequest': {
-      /**
-       * state_id
-       * Format: uuid
-       * @description The state record to list versions for (UUID).
-       */
-      state_id?: string;
-      /**
-       * page_size
-       * Format: int32
-       * @description Maximum number of versions to return per page.
-       */
-      page_size?: number;
-      /**
-       * page_token
-       * @description Opaque pagination token from a previous response.
-       */
-      page_token?: string;
-    };
-    /**
-     * ListStateVersionsResponse
-     * @description ListStateVersionsResponse contains a page of state version metadata.
-     */
-    'admiral.api.state.v1.ListStateVersionsResponse': {
-      /**
-       * versions
-       * @description The list of state versions, ordered from newest to oldest.
-       */
-      versions?: components['schemas']['admiral.api.state.v1.StateVersion'][];
-      /**
-       * next_page_token
-       * @description Pagination token for the next page. Empty when there are no more results.
-       */
-      next_page_token?: string;
-    };
-    /**
-     * ListStatesRequest
-     * @description ListStatesRequest contains pagination and filter parameters.
-     */
-    'admiral.api.state.v1.ListStatesRequest': {
-      /**
-       * filter
-       * @description Filter expression using the PEG filter DSL.
-       *
-       *      Common filter fields:
-       *        - `component_id` -- states for a specific component (UUID).
-       *        - `environment_id` -- states for a specific environment (UUID).
-       *        - `application_id` -- states for all components belonging to an
-       *          application (UUID). The server resolves the application's components
-       *          and returns states for all of them. Can be combined with
-       *          `environment_id`.
-       */
-      filter?: string;
-      /**
-       * page_size
-       * Format: int32
-       * @description Maximum number of states to return per page.
-       */
-      page_size?: number;
-      /**
-       * page_token
-       * @description Opaque pagination token from a previous response.
-       */
-      page_token?: string;
-    };
-    /**
-     * ListStatesResponse
-     * @description ListStatesResponse contains a page of state metadata.
-     */
-    'admiral.api.state.v1.ListStatesResponse': {
-      /**
-       * states
-       * @description The list of state summaries (metadata only, no state data blob).
-       *      Use GetCurrentState to fetch full data for a specific record.
-       */
-      states?: components['schemas']['admiral.api.state.v1.StateSummary'][];
-      /**
-       * next_page_token
-       * @description Pagination token for the next page. Empty when there are no more results.
-       */
-      next_page_token?: string;
-    };
-    /**
-     * LockStateRequest
-     * @description LockStateRequest acquires an exclusive lock on the job's state.
-     */
-    'admiral.api.state.v1.LockStateRequest': {
-      /**
-       * job_id
-       * Format: uuid
-       * @description The job requesting the lock (UUID).
-       */
-      job_id?: string;
-      /**
-       * lock_id
-       * Format: uuid
-       * @description Terraform-generated lock ID (UUID).
-       */
-      lock_id?: string;
-      /**
-       * operation
-       * @description The Terraform operation requesting the lock.
-       */
-      operation?: string;
-      /**
-       * who
-       * @description Identifier of who is requesting the lock.
-       */
-      who?: string;
-      /**
-       * version
-       * @description Terraform/OpenTofu version of the client requesting the lock.
-       */
-      version?: string;
-    };
-    /**
-     * LockStateResponse
-     * @description LockStateResponse confirms the lock was acquired.
-     */
-    'admiral.api.state.v1.LockStateResponse': Record<string, never>;
-    /**
-     * PushStateRequest
-     * @description PushStateRequest stores a new state version.
-     */
-    'admiral.api.state.v1.PushStateRequest': {
-      /**
-       * job_id
-       * Format: uuid
-       * @description The job pushing state (UUID).
-       */
-      job_id?: string;
-      /**
-       * data
-       * Format: byte
-       * @description The raw Terraform state data (JSON-encoded). Maximum 64 MiB.
-       */
-      data?: string;
-      /**
-       * md5
-       * @description MD5 hash of the state data.
-       */
-      md5?: string;
-      /**
-       * serial
-       * Format: int64
-       * @description Terraform state serial number. Must be greater than the current serial.
-       */
-      serial?: number | string;
-      /**
-       * lineage
-       * @description Terraform state lineage. Must match the existing lineage if the state
-       *      record already exists.
-       */
-      lineage?: string;
-    };
-    /**
-     * PushStateResponse
-     * @description PushStateResponse acknowledges the state was stored.
-     */
-    'admiral.api.state.v1.PushStateResponse': Record<string, never>;
-    /**
-     * State
-     * @description State represents the full Terraform state for an infrastructure component
-     *      in a specific environment, including the raw state data blob. Each
-     *      component + environment combination has at most one state record. The
-     *      server creates the record on first PushState.
-     *
-     *      This message is returned by GetCurrentState. For list operations, see
-     *      StateSummary which omits the data blob.
-     */
-    'admiral.api.state.v1.State': {
-      /**
-       * id
-       * Format: uuid
-       * @description Unique identifier for the state record (UUID, server-generated).
-       */
-      id?: string;
-      /**
-       * component_id
-       * Format: uuid
-       * @description The infrastructure component this state belongs to (UUID).
-       */
-      component_id?: string;
-      /**
-       * environment_id
-       * Format: uuid
-       * @description The environment this state is scoped to (UUID).
-       */
-      environment_id?: string;
-      /**
-       * serial
-       * Format: int64
-       * @description Terraform state serial number. Monotonically increasing with each
-       *      successful apply. Used for optimistic concurrency control.
-       */
-      serial?: number | string;
-      /**
-       * data
-       * Format: byte
-       * @description The raw Terraform state data (JSON-encoded). This is the opaque
-       *      `.tfstate` blob managed by Terraform. Can be several megabytes for
-       *      large workspaces.
-       */
-      data?: string;
-      /**
-       * md5
-       * @description MD5 hash of the state data. Used by Terraform for integrity checks
-       *      and conditional updates.
-       */
-      md5?: string;
-      /**
-       * lineage
-       * @description Terraform state lineage -- a UUID generated on first init. All
-       *      subsequent writes must match this lineage to prevent cross-state
-       *      contamination.
-       */
-      lineage?: string;
-      /**
-       * lock
-       * @description Active lock on this state, if any. Absent when the state is unlocked.
-       */
-      lock?: components['schemas']['admiral.api.state.v1.StateLock'];
-      /**
-       * created_at
-       * @description When the state record was first created.
-       */
-      created_at?: components['schemas']['google.protobuf.Timestamp'];
-      /**
-       * updated_at
-       * @description When the state data was last updated (last successful PushState).
-       */
-      updated_at?: components['schemas']['google.protobuf.Timestamp'];
-    };
-    /**
-     * StateLock
-     * @description StateLock represents an exclusive lock on a state record. Terraform acquires
-     *      locks before plan/apply to prevent concurrent modifications. The lock_id is
-     *      generated by Terraform (as a UUID) and included in all lock/unlock requests.
-     */
-    'admiral.api.state.v1.StateLock': {
-      /**
-       * lock_id
-       * Format: uuid
-       * @description Unique identifier for the lock (UUID, generated by Terraform/OpenTofu).
-       */
-      lock_id?: string;
-      /**
-       * operation
-       * @description The Terraform operation holding the lock. Common values:
-       *        - "OperationTypePlan"
-       *        - "OperationTypeApply"
-       *      This value is set by the Terraform client and is informational only.
-       */
-      operation?: string;
-      /**
-       * who
-       * @description Identifier of who holds the lock. Populated by Terraform -- typically
-       *      the format "username@hostname" (e.g., "deploy@prod-runner-01").
-       *      This field is informational only; its format is controlled by Terraform.
-       */
-      who?: string;
-      /**
-       * version
-       * @description Terraform/OpenTofu version string of the client holding the lock
-       *      (e.g., "1.7.5").
-       */
-      version?: string;
-      /**
-       * acquired_at
-       * @description When the lock was acquired.
-       */
-      acquired_at?: components['schemas']['google.protobuf.Timestamp'];
-    };
-    /**
-     * StateSummary
-     * @description StateSummary contains state metadata without the raw data blob. Used in
-     *      ListStates to keep list responses lightweight. Use GetCurrentState to
-     *      fetch the full state data for a specific record.
-     */
-    'admiral.api.state.v1.StateSummary': {
-      /**
-       * id
-       * Format: uuid
-       * @description Unique identifier for the state record (UUID).
-       */
-      id?: string;
-      /**
-       * component_id
-       * Format: uuid
-       * @description The infrastructure component this state belongs to (UUID).
-       */
-      component_id?: string;
-      /**
-       * environment_id
-       * Format: uuid
-       * @description The environment this state is scoped to (UUID).
-       */
-      environment_id?: string;
-      /**
-       * serial
-       * Format: int64
-       * @description Terraform state serial number.
-       */
-      serial?: number | string;
-      /**
-       * md5
-       * @description MD5 hash of the current state data.
-       */
-      md5?: string;
-      /**
-       * lineage
-       * @description Terraform state lineage.
-       */
-      lineage?: string;
-      /**
-       * size_bytes
-       * Format: int64
-       * @description Size of the current state data in bytes.
-       */
-      size_bytes?: number | string;
-      /**
-       * lock
-       * @description Active lock on this state, if any. Absent when the state is unlocked.
-       */
-      lock?: components['schemas']['admiral.api.state.v1.StateLock'];
-      /**
-       * created_at
-       * @description When the state record was first created.
-       */
-      created_at?: components['schemas']['google.protobuf.Timestamp'];
-      /**
-       * updated_at
-       * @description When the state data was last updated (last successful PushState).
-       */
-      updated_at?: components['schemas']['google.protobuf.Timestamp'];
-    };
-    /**
-     * StateVersion
-     * @description StateVersion contains metadata about a historical state version. Used in
-     *      ListStateVersions to provide version history without the full state data
-     *      blob.
-     */
-    'admiral.api.state.v1.StateVersion': {
-      /**
-       * serial
-       * Format: int64
-       * @description Terraform state serial number for this version.
-       */
-      serial?: number | string;
-      /**
-       * md5
-       * @description MD5 hash of the state data at this version.
-       */
-      md5?: string;
-      /**
-       * lineage
-       * @description Terraform state lineage.
-       */
-      lineage?: string;
-      /**
-       * size_bytes
-       * Format: int64
-       * @description Size of the state data in bytes.
-       */
-      size_bytes?: number | string;
-      /**
-       * job_id
-       * Format: uuid
-       * @description The job that produced this state version (UUID). Absent for state that
-       *      was written outside the normal job lifecycle -- for example, state
-       *      uploaded directly via an admin migration tool, or state that existed
-       *      before Admiral began managing the component.
-       */
-      job_id?: string | null;
-      /**
-       * created_at
-       * @description When this state version was created.
-       */
-      created_at?: components['schemas']['google.protobuf.Timestamp'];
-    };
-    /**
-     * UnlockStateRequest
-     * @description UnlockStateRequest releases the lock on the job's state.
-     */
-    'admiral.api.state.v1.UnlockStateRequest': {
-      /**
-       * job_id
-       * Format: uuid
-       * @description The job releasing the lock (UUID).
-       */
-      job_id?: string;
-      /**
-       * lock_id
-       * Format: uuid
-       * @description The lock_id to release (UUID). Must match the currently held lock.
-       */
-      lock_id?: string;
-    };
-    /**
-     * UnlockStateResponse
-     * @description UnlockStateResponse confirms the lock was released.
-     */
-    'admiral.api.state.v1.UnlockStateResponse': Record<string, never>;
-    /**
-     * CreatePersonalAccessTokenRequest
-     * @description CreatePersonalAccessTokenRequest contains the parameters for creating a new PAT.
-     */
-    'admiral.api.user.v1.CreatePersonalAccessTokenRequest': {
-      /**
-       * name
-       * @description URL-safe, human-readable identifier for the token (e.g., "postman-testing").
-       *      Must be unique per user within the tenant. Lowercase alphanumeric and
-       *      hyphens only.
-       */
-      name?: string;
-      /**
-       * scopes
-       * @description The scopes to grant this token. Must be valid scopes allowed for PATs.
-       *      The server enforces that issued scopes are a subset of the caller's own
-       *      scopes -- a token cannot grant more access than the user holds.
-       */
-      scopes?: string[];
-      /**
-       * expires_at
-       * @description Optional expiration time. If unset, the token does not expire.
-       *      Tenant policies may enforce a maximum lifetime.
-       */
-      expires_at?: components['schemas']['google.protobuf.Timestamp'];
-    };
-    /**
-     * CreatePersonalAccessTokenResponse
-     * @description CreatePersonalAccessTokenResponse contains the newly created PAT.
-     */
-    'admiral.api.user.v1.CreatePersonalAccessTokenResponse': {
-      /**
-       * access_token
-       * @description The created token metadata.
-       */
-      access_token?: components['schemas']['admiral.common.v1.AccessToken'];
-      /**
-       * plain_text_token
-       * @description The raw token secret (e.g., "adm_pat_7kH3mNqR2xFb..."). This value is
-       *      shown exactly once and cannot be retrieved again. Store it securely.
-       */
-      plain_text_token?: string;
-    };
-    /**
-     * GetMeRequest
-     * @description GetMeRequest is the request message for GetMe.
-     *      No parameters are required as the user is identified by the auth token.
-     */
-    'admiral.api.user.v1.GetMeRequest': Record<string, never>;
-    /**
-     * GetMeResponse
-     * @description GetMeResponse contains the authenticated user's profile.
-     */
-    'admiral.api.user.v1.GetMeResponse': {
-      /**
-       * user
-       * @description The user profile.
-       */
-      user?: components['schemas']['admiral.api.user.v1.User'];
-    };
-    /**
-     * GetPersonalAccessTokenRequest
-     * @description GetPersonalAccessTokenRequest identifies a PAT to retrieve.
-     */
-    'admiral.api.user.v1.GetPersonalAccessTokenRequest': {
-      /**
-       * token_id
-       * Format: uuid
-       * @description The unique identifier of the token (UUID).
-       */
-      token_id?: string;
-    };
-    /**
-     * GetPersonalAccessTokenResponse
-     * @description GetPersonalAccessTokenResponse contains the requested PAT metadata.
-     */
-    'admiral.api.user.v1.GetPersonalAccessTokenResponse': {
-      /**
-       * access_token
-       * @description The token metadata. The token secret is never included.
-       */
-      access_token?: components['schemas']['admiral.common.v1.AccessToken'];
-    };
-    /**
-     * GetUserRequest
-     * @description GetUserRequest identifies a user to retrieve by ID.
-     */
-    'admiral.api.user.v1.GetUserRequest': {
-      /**
-       * user_id
-       * Format: uuid
-       * @description The unique identifier of the user (UUID).
-       */
-      user_id?: string;
-    };
-    /**
-     * GetUserResponse
-     * @description GetUserResponse contains the requested user's profile.
-     */
-    'admiral.api.user.v1.GetUserResponse': {
-      /**
-       * user
-       * @description The user profile.
-       */
-      user?: components['schemas']['admiral.api.user.v1.User'];
-    };
-    /**
-     * ListPersonalAccessTokensRequest
-     * @description ListPersonalAccessTokensRequest contains pagination and filter parameters.
-     */
-    'admiral.api.user.v1.ListPersonalAccessTokensRequest': {
-      /**
-       * filter
-       * @description Filter expression to narrow results. Uses the Admiral filter DSL.
-       *
-       *      Filterable fields:
-       *        - `name` -- filter by token name.
-       *        - `status` -- filter by token status (ACTIVE, REVOKED, EXPIRED).
-       *
-       *      Example: `field['status'] = 'ACTIVE'`
-       */
-      filter?: string;
-      /**
-       * page_size
-       * Format: int32
-       * @description Maximum number of tokens to return per page.
-       */
-      page_size?: number;
-      /**
-       * page_token
-       * @description Opaque pagination token from a previous response.
-       */
-      page_token?: string;
-    };
-    /**
-     * ListPersonalAccessTokensResponse
-     * @description ListPersonalAccessTokensResponse contains a page of PAT metadata.
-     */
-    'admiral.api.user.v1.ListPersonalAccessTokensResponse': {
-      /**
-       * access_tokens
-       * @description The list of tokens. Token secrets are never included.
-       */
-      access_tokens?: components['schemas']['admiral.common.v1.AccessToken'][];
-      /**
-       * next_page_token
-       * @description Pagination token for the next page. Empty when there are no more results.
-       */
-      next_page_token?: string;
-    };
-    /**
-     * RevokePersonalAccessTokenRequest
-     * @description RevokePersonalAccessTokenRequest identifies a PAT to revoke.
-     */
-    'admiral.api.user.v1.RevokePersonalAccessTokenRequest': {
-      /**
-       * token_id
-       * Format: uuid
-       * @description The unique identifier of the token to revoke (UUID).
-       */
-      token_id?: string;
-    };
-    /**
-     * RevokePersonalAccessTokenResponse
-     * @description RevokePersonalAccessTokenResponse contains the revoked PAT metadata.
-     */
-    'admiral.api.user.v1.RevokePersonalAccessTokenResponse': {
-      /**
-       * access_token
-       * @description The token metadata with updated status.
-       */
-      access_token?: components['schemas']['admiral.common.v1.AccessToken'];
-    };
-    /**
-     * User
-     * @description User represents a user's profile information.
-     * @example {
-     *       "id": "d290f1ee-6c54-4b01-90e6-d701748f0851",
-     *       "email": "alex.chen@example.com",
-     *       "display_name": "Alex Chen",
-     *       "given_name": "Alex",
-     *       "family_name": "Chen",
-     *       "avatar_url": "https://avatars.example.com/alex-chen.jpg",
-     *       "created_at": "2025-06-01T09:00:00Z",
-     *       "updated_at": "2025-11-15T11:00:00Z"
-     *     }
-     */
-    'admiral.api.user.v1.User': {
-      /**
-       * id
-       * Format: uuid
-       * @description Unique identifier for the user (UUID).
-       */
-      id?: string;
-      /**
-       * email
-       * @description User's email address.
-       */
-      email?: string;
-      /**
-       * email_verified
-       * @description Whether the email has been verified by the IdP.
-       */
-      email_verified?: boolean;
-      /**
-       * display_name
-       * @description User's display name for UI purposes.
-       */
-      display_name?: string | null;
-      /**
-       * given_name
-       * @description User's given (first) name.
-       */
-      given_name?: string | null;
-      /**
-       * family_name
-       * @description User's family (last) name.
-       */
-      family_name?: string | null;
-      /**
-       * avatar_url
-       * @description URL to the user's avatar image.
-       */
-      avatar_url?: string | null;
-      /**
-       * created_at
-       * @description When the user was created.
-       */
-      created_at?: components['schemas']['google.protobuf.Timestamp'];
-      /**
-       * updated_at
-       * @description When the user was last updated.
-       */
-      updated_at?: components['schemas']['google.protobuf.Timestamp'];
-    };
-    /**
-     * CreateVariableRequest
-     * @description CreateVariableRequest contains the parameters for creating a new variable.
-     *      The variable's scope is derived from the presence of application_id and
-     *      environment_id: neither means global, application_id only means app-scoped,
-     *      both means environment-scoped.
-     */
-    'admiral.api.variable.v1.CreateVariableRequest': {
-      /**
-       * key
-       * @description The variable name. Must be a valid environment variable identifier
-       *      (e.g., "DATABASE_URL", "API_KEY").
-       */
-      key?: string;
-      /**
-       * value
-       * @description The variable value. For COMPLEX type, must be valid JSON.
-       */
-      value?: string;
-      /**
-       * sensitive
-       * @description Whether the variable value should be encrypted at rest and masked in
-       *      API responses.
-       */
-      sensitive?: boolean;
-      /**
-       * type
-       * @description How the value should be interpreted. Defaults to STRING if not specified.
-       */
-      type?: components['schemas']['admiral.api.variable.v1.VariableType'];
-      /**
-       * description
-       * @description Optional description of the variable's purpose.
-       */
-      description?: string;
-      /**
-       * application_id
-       * Format: uuid
-       * @description The application to scope this variable to (UUID). When set without
-       *      environment_id, the variable applies to all environments in the app.
-       */
-      application_id?: string | null;
-      /**
-       * environment_id
-       * Format: uuid
-       * @description The environment to scope this variable to (UUID). Requires application_id.
-       *      When set, the variable applies only to this specific environment.
-       */
-      environment_id?: string | null;
-    };
-    /**
-     * CreateVariableResponse
-     * @description CreateVariableResponse contains the newly created variable.
-     */
-    'admiral.api.variable.v1.CreateVariableResponse': {
-      /**
-       * variable
-       * @description The created variable.
-       */
-      variable?: components['schemas']['admiral.api.variable.v1.Variable'];
-    };
-    /**
-     * DeleteVariableRequest
-     * @description DeleteVariableRequest identifies a variable to delete.
-     */
-    'admiral.api.variable.v1.DeleteVariableRequest': {
-      /**
-       * variable_id
-       * Format: uuid
-       * @description The unique identifier of the variable to delete (UUID).
-       */
-      variable_id?: string;
-    };
-    /**
-     * DeleteVariableResponse
-     * @description DeleteVariableResponse is empty on success.
-     */
-    'admiral.api.variable.v1.DeleteVariableResponse': Record<string, never>;
-    /**
-     * GetVariableRequest
-     * @description GetVariableRequest identifies a variable to retrieve.
-     */
-    'admiral.api.variable.v1.GetVariableRequest': {
-      /**
-       * variable_id
-       * Format: uuid
-       * @description The unique identifier of the variable (UUID).
-       */
-      variable_id?: string;
-    };
-    /**
-     * GetVariableResponse
-     * @description GetVariableResponse contains the variable record.
-     */
-    'admiral.api.variable.v1.GetVariableResponse': {
-      /**
-       * variable
-       * @description The variable record. Sensitive variable values are masked.
-       */
-      variable?: components['schemas']['admiral.api.variable.v1.Variable'];
-    };
-    /**
-     * ListVariablesRequest
-     * @description ListVariablesRequest contains filters and pagination parameters.
-     *
-     *      The filter determines which variables are included in the merged view
-     *      based on the presence of `application_id` and `environment_id` fields:
-     *        - Neither field in filter: global variables only.
-     *        - `application_id` in filter: global + app-level variables merged.
-     *        - `application_id` + `environment_id` in filter: global + app + environment
-     *          variables merged.
-     *
-     *      When variables with the same key exist at multiple levels, all are returned
-     *      so clients can determine precedence.
-     */
-    'admiral.api.variable.v1.ListVariablesRequest': {
-      /**
-       * filter
-       * @description Filter expression using the PEG filter DSL.
-       *
-       *      Common filter fields:
-       *        - `application_id` -- scope to an application (triggers merge with
-       *          app-level variables alongside global variables).
-       *        - `environment_id` -- scope to an environment (requires application_id;
-       *          triggers merge with environment-level variables).
-       *        - `sensitive` -- filter by sensitivity.
-       *        - `type` -- filter by variable type.
-       *        - `key` -- filter by variable key (supports prefix matching).
-       */
-      filter?: string;
-      /**
-       * page_size
-       * Format: int32
-       * @description Maximum number of variables to return per page.
-       */
-      page_size?: number;
-      /**
-       * page_token
-       * @description Opaque pagination token from a previous response.
-       */
-      page_token?: string;
-    };
-    /**
-     * ListVariablesResponse
-     * @description ListVariablesResponse contains a page of variables.
-     */
-    'admiral.api.variable.v1.ListVariablesResponse': {
-      /**
-       * variables
-       * @description The list of variables from all applicable levels.
-       */
-      variables?: components['schemas']['admiral.api.variable.v1.Variable'][];
-      /**
-       * next_page_token
-       * @description Pagination token for the next page. Empty when there are no more results.
-       */
-      next_page_token?: string;
-    };
-    /**
-     * UpdateVariableRequest
-     * @description UpdateVariableRequest contains the variable fields to update.
-     */
-    'admiral.api.variable.v1.UpdateVariableRequest': {
-      /**
-       * variable
-       * @description The variable with updated fields.
-       *      Only fields specified in `update_mask` are updated.
-       */
-      variable: components['schemas']['admiral.api.variable.v1.Variable'];
-      /**
-       * update_mask
-       * @description The set of fields to update. If unset, all mutable fields are updated.
-       *      Supported fields: `value`, `sensitive`, `type`, `description`.
-       */
-      update_mask?: components['schemas']['google.protobuf.FieldMask'];
-    };
-    /**
-     * UpdateVariableResponse
-     * @description UpdateVariableResponse contains the updated variable.
-     */
-    'admiral.api.variable.v1.UpdateVariableResponse': {
-      /**
-       * variable
-       * @description The updated variable.
-       */
-      variable?: components['schemas']['admiral.api.variable.v1.Variable'];
-    };
-    /**
-     * Variable
-     * @description Variable represents a configuration key-value pair scoped to a tenant,
-     *      application, or application+environment. Variables are resolved at deployment
-     *      time into immutable deployment snapshots.
-     *
-     *      Variables are user-managed configuration values, distinct from component
-     *      outputs which are system-managed values produced by apply (e.g., Terraform
-     *      outputs). Component outputs are resolved at render time and referenced via
-     *      a separate namespace ({{ .component.<name>.<output> }}).
-     * @example {
-     *       "id": "1a2b3c4d-5e6f-7890-abcd-ef0123456789",
-     *       "key": "DATABASE_URL",
-     *       "value": "postgresql://db.internal:5432/inventory",
-     *       "sensitive": false,
-     *       "type": "VARIABLE_TYPE_STRING",
-     *       "scope": "VARIABLE_SCOPE_ENVIRONMENT",
-     *       "description": "Primary database connection string for the inventory service.",
-     *       "application_id": "a1b2c3d4-5678-9abc-def0-1234567890ab",
-     *       "environment_id": "e5f6a7b8-9012-3cde-f456-789012345678",
-     *       "created_by": "d290f1ee-6c54-4b01-90e6-d701748f0851",
-     *       "updated_by": "d290f1ee-6c54-4b01-90e6-d701748f0851",
-     *       "created_at": "2025-09-16T12:00:00Z",
-     *       "updated_at": "2025-10-30T15:00:00Z"
-     *     }
-     */
-    'admiral.api.variable.v1.Variable': {
-      /**
-       * id
-       * Format: uuid
-       * @description Unique identifier for the variable (UUID).
-       */
-      id?: string;
-      /**
-       * key
-       * @description The variable name. Must be a valid environment variable identifier
-       *      (e.g., "DATABASE_URL", "API_KEY"). Alphanumeric and underscores
-       *      (uppercase conventional but lowercase accepted), must start with a letter
-       *      or underscore (max 255 chars).
-       */
-      key?: string;
-      /**
-       * value
-       * @description The variable value. Always stored as a string -- use `type` to indicate
-       *      how to interpret it. Masked or empty for sensitive variables in responses.
-       *
-       *      For COMPLEX type, this is a JSON-encoded string (e.g., '["a","b"]' or
-       *      '{"key":"value"}'). The rendering engine converts it to the target format
-       *      (HCL for Terraform, YAML for Helm).
-       */
-      value?: string;
-      /**
-       * sensitive
-       * @description Whether the variable value is encrypted at rest and masked in API responses.
-       */
-      sensitive?: boolean;
-      /**
-       * type
-       * @description How the value should be interpreted by the rendering engine and displayed
-       *      in the UI. Defaults to STRING if not specified.
-       */
-      type?: components['schemas']['admiral.api.variable.v1.VariableType'];
-      /**
-       * description
-       * @description Optional description of the variable's purpose (e.g., "Maximum replica
-       *      count for production scaling" or "RDS instance class per environment").
-       */
-      description?: string;
-      /**
-       * application_id
-       * Format: uuid
-       * @description The application this variable is scoped to (UUID). When set, the variable
-       *      is scoped to this application. When both application_id and environment_id
-       *      are set, the variable is scoped to that specific environment.
-       *      Absent means the variable is global (tenant-wide).
-       */
-      application_id?: string | null;
-      /**
-       * environment_id
-       * Format: uuid
-       * @description The environment this variable is scoped to (UUID). Requires application_id.
-       *      When set alongside application_id, the variable applies only to this
-       *      specific environment within the application.
-       */
-      environment_id?: string | null;
-      /**
-       * created_by
-       * @description The user or agent who created this variable (server-populated from token).
-       */
-      created_by?: components['schemas']['admiral.common.v1.ActorRef'];
-      /**
-       * updated_by
-       * @description The user or agent who last updated this variable (server-populated from token).
-       */
-      updated_by?: components['schemas']['admiral.common.v1.ActorRef'];
-      /**
-       * created_at
-       * @description When the variable was created.
-       */
-      created_at?: components['schemas']['google.protobuf.Timestamp'];
-      /**
-       * updated_at
-       * @description When the variable was last updated.
-       */
-      updated_at?: components['schemas']['google.protobuf.Timestamp'];
-    };
-    /**
-     * VariableType
-     * @description VariableType indicates how the variable value should be interpreted by the
-     *      rendering engine and displayed in the UI. The value is always stored as a
-     *      string regardless of type.
-     * @enum {string}
-     */
-    'admiral.api.variable.v1.VariableType':
-      | 'VARIABLE_TYPE_UNSPECIFIED'
-      | 'VARIABLE_TYPE_STRING'
-      | 'VARIABLE_TYPE_NUMBER'
-      | 'VARIABLE_TYPE_BOOLEAN'
-      | 'VARIABLE_TYPE_COMPLEX';
-    /**
-     * AccessToken
-     * @description AccessToken contains token metadata common to all token types (PAT, AGT).
-     *      The raw token secret is never included in this message — it is only returned
-     *      once at creation time via the `plain_text_token` field in Create responses.
-     *
-     *      Token CRUD is managed by each parent resource's API:
-     *        - PATs:         UserAPI    (/v1/user/tokens)
-     *        - Cluster AGTs: ClusterAPI (/v1/clusters/{id}/tokens)
-     *        - Runner AGTs:  RunnerAPI  (/v1/runners/{id}/tokens)
-     * @example {
-     *       "id": "9f8e7d6c-5b4a-3210-fedc-ba0987654321",
-     *       "name": "ci-deploy-key",
-     *       "token_type": "TOKEN_TYPE_PAT",
-     *       "scopes": [
-     *         "deploy:write",
-     *         "app:read",
-     *         "env:read"
-     *       ],
-     *       "status": "ACCESS_TOKEN_STATUS_ACTIVE",
-     *       "binding_type": "BINDING_TYPE_USER",
-     *       "binding_id": "d290f1ee-6c54-4b01-90e6-d701748f0851",
-     *       "created_by": "d290f1ee-6c54-4b01-90e6-d701748f0851",
-     *       "expires_at": "2026-06-01T00:00:00Z",
-     *       "last_used_at": "2025-11-20T14:30:00Z",
-     *       "created_at": "2025-09-01T10:00:00Z"
-     *     }
-     */
-    'admiral.common.v1.AccessToken': {
-      /**
-       * id
-       * Format: uuid
-       * @description Unique identifier for the token (UUID).
-       */
-      id?: string;
-      /**
-       * name
-       * @description URL-safe, human-readable identifier for the token (e.g., "ci-deploy-key").
-       *      Unique within the parent resource. Lowercase alphanumeric and hyphens only,
-       *      must start with a letter and end with an alphanumeric character (1-63 chars).
-       */
-      name?: string;
-      /**
-       * token_type
-       * @description The category of this token.
-       */
-      token_type?: components['schemas']['admiral.common.v1.TokenType'];
-      /**
-       * scopes
-       * @description The scopes granted to this token. For PATs, these are user-selected.
-       *      For AGTs, these are auto-assigned based on the resource type.
-       */
-      scopes?: string[];
-      /**
-       * status
-       * @description Current lifecycle status of the token.
-       */
-      status?: components['schemas']['admiral.common.v1.AccessTokenStatus'];
-      /**
-       * binding_type
-       * @description The kind of resource this token is bound to.
-       */
-      binding_type?: components['schemas']['admiral.common.v1.BindingType'];
-      /**
-       * binding_id
-       * @description The ID of the resource this token is bound to (UUID).
-       */
-      binding_id?: string;
-      /**
-       * created_by
-       * @description The user who created this token. For PATs, this is the token owner.
-       *      For AGTs, this is the administrator who issued the token.
-       */
-      created_by?: components['schemas']['admiral.common.v1.ActorRef'];
-      /**
-       * expires_at
-       * @description When the token expires. If unset, the token does not expire.
-       */
-      expires_at?: components['schemas']['google.protobuf.Timestamp'];
-      /**
-       * last_used_at
-       * @description When the token was last used to authenticate an API request.
-       */
-      last_used_at?: components['schemas']['google.protobuf.Timestamp'];
-      /**
-       * created_at
-       * @description When the token was created.
-       */
-      created_at?: components['schemas']['google.protobuf.Timestamp'];
-      /**
-       * revoked_at
-       * @description When the token was revoked. Only set when status is REVOKED.
-       */
-      revoked_at?: components['schemas']['google.protobuf.Timestamp'];
-    };
-    /**
-     * AccessTokenStatus
-     * @description AccessTokenStatus represents the lifecycle state of an access token.
-     * @enum {string}
-     */
-    'admiral.common.v1.AccessTokenStatus':
-      | 'ACCESS_TOKEN_STATUS_UNSPECIFIED'
-      | 'ACCESS_TOKEN_STATUS_ACTIVE'
-      | 'ACCESS_TOKEN_STATUS_REVOKED'
-      | 'ACCESS_TOKEN_STATUS_ROTATING';
-    /**
-     * ActorRef
-     * @description ActorRef is a lightweight reference to the user or agent that performed an action.
-     *      Server-populated on all resource responses. Clients should never send this;
-     *      use the plain string `created_by` UUID on request messages instead.
-     */
-    'admiral.common.v1.ActorRef': {
-      /**
-       * id
-       * @description UUID of the user or agent token.
-       */
-      id?: string;
-      /**
-       * display_name
-       * @description Human-readable name (e.g., "John Smith", "cluster-prod-agent").
-       */
-      display_name?: string;
-      /**
-       * email
-       * @description Email address (empty for non-human actors).
-       */
-      email?: string;
-    };
-    /**
-     * BindingType
-     * @description BindingType identifies the kind of resource an access token is bound to.
-     * @enum {string}
-     */
-    'admiral.common.v1.BindingType':
-      | 'BINDING_TYPE_UNSPECIFIED'
-      | 'BINDING_TYPE_USER'
-      | 'BINDING_TYPE_CLUSTER'
-      | 'BINDING_TYPE_RUNNER';
-    /**
-     * TokenType
-     * @description TokenType identifies the category of an access token issued by Admiral's token system.
-     *      IDP-issued JWTs (OAuth2/OIDC sessions) are NOT represented here — they are
-     *      resolved by separate middleware and can be referenced as "session" in
-     *      AuthRule.allowed_token_types when needed.
-     * @enum {string}
-     */
-    'admiral.common.v1.TokenType': 'TOKEN_TYPE_UNSPECIFIED' | 'TOKEN_TYPE_PAT' | 'TOKEN_TYPE_AGT';
-    /**
-     * Format: duration
-     * @description A Duration represents a signed, fixed-length span of time represented
-     *      as a count of seconds and fractions of seconds at nanosecond
-     *      resolution. It is independent of any calendar and concepts like "day"
-     *      or "month". It is related to Timestamp in that the difference between
-     *      two Timestamp values is a Duration and it can be added or subtracted
-     *      from a Timestamp. Range is approximately +-10,000 years.
-     *
-     *      # Examples
-     *
-     *      Example 1: Compute Duration from two Timestamps in pseudo code.
-     *
-     *          Timestamp start = ...;
-     *          Timestamp end = ...;
-     *          Duration duration = ...;
-     *
-     *          duration.seconds = end.seconds - start.seconds;
-     *          duration.nanos = end.nanos - start.nanos;
-     *
-     *          if (duration.seconds < 0 && duration.nanos > 0) {
-     *            duration.seconds += 1;
-     *            duration.nanos -= 1000000000;
-     *          } else if (duration.seconds > 0 && duration.nanos < 0) {
-     *            duration.seconds -= 1;
-     *            duration.nanos += 1000000000;
-     *          }
-     *
-     *      Example 2: Compute Timestamp from Timestamp + Duration in pseudo code.
-     *
-     *          Timestamp start = ...;
-     *          Duration duration = ...;
-     *          Timestamp end = ...;
-     *
-     *          end.seconds = start.seconds + duration.seconds;
-     *          end.nanos = start.nanos + duration.nanos;
-     *
-     *          if (end.nanos < 0) {
-     *            end.seconds -= 1;
-     *            end.nanos += 1000000000;
-     *          } else if (end.nanos >= 1000000000) {
-     *            end.seconds += 1;
-     *            end.nanos -= 1000000000;
-     *          }
-     *
-     *      Example 3: Compute Duration from datetime.timedelta in Python.
-     *
-     *          td = datetime.timedelta(days=3, minutes=10)
-     *          duration = Duration()
-     *          duration.FromTimedelta(td)
-     *
-     *      # JSON Mapping
-     *
-     *      In JSON format, the Duration type is encoded as a string rather than an
-     *      object, where the string ends in the suffix "s" (indicating seconds) and
-     *      is preceded by the number of seconds, with nanoseconds expressed as
-     *      fractional seconds. For example, 3 seconds with 0 nanoseconds should be
-     *      encoded in JSON format as "3s", while 3 seconds and 1 nanosecond should
-     *      be expressed in JSON format as "3.000000001s", and 3 seconds and 1
-     *      microsecond should be expressed in JSON format as "3.000001s".
-     */
-    'google.protobuf.Duration': string;
-    /**
-     * @description `FieldMask` represents a set of symbolic field paths, for example:
-     *
-     *          paths: "f.a"
-     *          paths: "f.b.d"
-     *
-     *      Here `f` represents a field in some root message, `a` and `b`
-     *      fields in the message found in `f`, and `d` a field found in the
-     *      message in `f.b`.
-     *
-     *      Field masks are used to specify a subset of fields that should be
-     *      returned by a get operation or modified by an update operation.
-     *      Field masks also have a custom JSON encoding (see below).
-     *
-     *      # Field Masks in Projections
-     *
-     *      When used in the context of a projection, a response message or
-     *      sub-message is filtered by the API to only contain those fields as
-     *      specified in the mask. For example, if the mask in the previous
-     *      example is applied to a response message as follows:
-     *
-     *          f {
-     *            a : 22
-     *            b {
-     *              d : 1
-     *              x : 2
-     *            }
-     *            y : 13
-     *          }
-     *          z: 8
-     *
-     *      The result will not contain specific values for fields x,y and z
-     *      (their value will be set to the default, and omitted in proto text
-     *      output):
-     *
-     *
-     *          f {
-     *            a : 22
-     *            b {
-     *              d : 1
-     *            }
-     *          }
-     *
-     *      A repeated field is not allowed except at the last position of a
-     *      paths string.
-     *
-     *      If a FieldMask object is not present in a get operation, the
-     *      operation applies to all fields (as if a FieldMask of all fields
-     *      had been specified).
-     *
-     *      Note that a field mask does not necessarily apply to the
-     *      top-level response message. In case of a REST get operation, the
-     *      field mask applies directly to the response, but in case of a REST
-     *      list operation, the mask instead applies to each individual message
-     *      in the returned resource list. In case of a REST custom method,
-     *      other definitions may be used. Where the mask applies will be
-     *      clearly documented together with its declaration in the API.  In
-     *      any case, the effect on the returned resource/resources is required
-     *      behavior for APIs.
-     *
-     *      # Field Masks in Update Operations
-     *
-     *      A field mask in update operations specifies which fields of the
-     *      targeted resource are going to be updated. The API is required
-     *      to only change the values of the fields as specified in the mask
-     *      and leave the others untouched. If a resource is passed in to
-     *      describe the updated values, the API ignores the values of all
-     *      fields not covered by the mask.
-     *
-     *      If a repeated field is specified for an update operation, new values will
-     *      be appended to the existing repeated field in the target resource. Note that
-     *      a repeated field is only allowed in the last position of a `paths` string.
-     *
-     *      If a sub-message is specified in the last position of the field mask for an
-     *      update operation, then new value will be merged into the existing sub-message
-     *      in the target resource.
-     *
-     *      For example, given the target message:
-     *
-     *          f {
-     *            b {
-     *              d: 1
-     *              x: 2
-     *            }
-     *            c: [1]
-     *          }
-     *
-     *      And an update message:
-     *
-     *          f {
-     *            b {
-     *              d: 10
-     *            }
-     *            c: [2]
-     *          }
-     *
-     *      then if the field mask is:
-     *
-     *       paths: ["f.b", "f.c"]
-     *
-     *      then the result will be:
-     *
-     *          f {
-     *            b {
-     *              d: 10
-     *              x: 2
-     *            }
-     *            c: [1, 2]
-     *          }
-     *
-     *      An implementation may provide options to override this default behavior for
-     *      repeated and message fields.
-     *
-     *      In order to reset a field's value to the default, the field must
-     *      be in the mask and set to the default value in the provided resource.
-     *      Hence, in order to reset all fields of a resource, provide a default
-     *      instance of the resource and set all fields in the mask, or do
-     *      not provide a mask as described below.
-     *
-     *      If a field mask is not present on update, the operation applies to
-     *      all fields (as if a field mask of all fields has been specified).
-     *      Note that in the presence of schema evolution, this may mean that
-     *      fields the client does not know and has therefore not filled into
-     *      the request will be reset to their default. If this is unwanted
-     *      behavior, a specific service may require a client to always specify
-     *      a field mask, producing an error if not.
-     *
-     *      As with get operations, the location of the resource which
-     *      describes the updated values in the request message depends on the
-     *      operation kind. In any case, the effect of the field mask is
-     *      required to be honored by the API.
-     *
-     *      ## Considerations for HTTP REST
-     *
-     *      The HTTP kind of an update operation which uses a field mask must
-     *      be set to PATCH instead of PUT in order to satisfy HTTP semantics
-     *      (PUT must only be used for full updates).
-     *
-     *      # JSON Encoding of Field Masks
-     *
-     *      In JSON, a field mask is encoded as a single string where paths are
-     *      separated by a comma. Fields name in each path are converted
-     *      to/from lower-camel naming conventions.
-     *
-     *      As an example, consider the following message declarations:
-     *
-     *          message Profile {
-     *            User user = 1;
-     *            Photo photo = 2;
-     *          }
-     *          message User {
-     *            string display_name = 1;
-     *            string address = 2;
-     *          }
-     *
-     *      In proto a field mask for `Profile` may look as such:
-     *
-     *          mask {
-     *            paths: "user.display_name"
-     *            paths: "photo"
-     *          }
-     *
-     *      In JSON, the same mask is represented as below:
-     *
-     *          {
-     *            mask: "user.displayName,photo"
-     *          }
-     *
-     *      # Field Masks and Oneof Fields
-     *
-     *      Field masks treat fields in oneofs just as regular fields. Consider the
-     *      following message:
-     *
-     *          message SampleMessage {
-     *            oneof test_oneof {
-     *              string name = 4;
-     *              SubMessage sub_message = 9;
-     *            }
-     *          }
-     *
-     *      The field mask can be:
-     *
-     *          mask {
-     *            paths: "name"
-     *          }
-     *
-     *      Or:
-     *
-     *          mask {
-     *            paths: "sub_message"
-     *          }
-     *
-     *      Note that oneof type names ("test_oneof" in this case) cannot be used in
-     *      paths.
-     *
-     *      ## Field Mask Verification
-     *
-     *      The implementation of any API method which has a FieldMask type field in the
-     *      request should verify the included field paths, and return an
-     *      `INVALID_ARGUMENT` error if any path is unmappable.
-     */
-    'google.protobuf.FieldMask': string;
-    /**
-     * Format: date-time
-     * @description A Timestamp represents a point in time independent of any time zone or local
-     *      calendar, encoded as a count of seconds and fractions of seconds at
-     *      nanosecond resolution. The count is relative to an epoch at UTC midnight on
-     *      January 1, 1970, in the proleptic Gregorian calendar which extends the
-     *      Gregorian calendar backwards to year one.
-     *
-     *      All minutes are 60 seconds long. Leap seconds are "smeared" so that no leap
-     *      second table is needed for interpretation, using a [24-hour linear
-     *      smear](https://developers.google.com/time/smear).
-     *
-     *      The range is from 0001-01-01T00:00:00Z to 9999-12-31T23:59:59.999999999Z. By
-     *      restricting to that range, we ensure that we can convert to and from [RFC
-     *      3339](https://www.ietf.org/rfc/rfc3339.txt) date strings.
-     *
-     *      # Examples
-     *
-     *      Example 1: Compute Timestamp from POSIX `time()`.
-     *
-     *          Timestamp timestamp;
-     *          timestamp.set_seconds(time(NULL));
-     *          timestamp.set_nanos(0);
-     *
-     *      Example 2: Compute Timestamp from POSIX `gettimeofday()`.
-     *
-     *          struct timeval tv;
-     *          gettimeofday(&tv, NULL);
-     *
-     *          Timestamp timestamp;
-     *          timestamp.set_seconds(tv.tv_sec);
-     *          timestamp.set_nanos(tv.tv_usec * 1000);
-     *
-     *      Example 3: Compute Timestamp from Win32 `GetSystemTimeAsFileTime()`.
-     *
-     *          FILETIME ft;
-     *          GetSystemTimeAsFileTime(&ft);
-     *          UINT64 ticks = (((UINT64)ft.dwHighDateTime) << 32) | ft.dwLowDateTime;
-     *
-     *          // A Windows tick is 100 nanoseconds. Windows epoch 1601-01-01T00:00:00Z
-     *          // is 11644473600 seconds before Unix epoch 1970-01-01T00:00:00Z.
-     *          Timestamp timestamp;
-     *          timestamp.set_seconds((INT64) ((ticks / 10000000) - 11644473600LL));
-     *          timestamp.set_nanos((INT32) ((ticks % 10000000) * 100));
-     *
-     *      Example 4: Compute Timestamp from Java `System.currentTimeMillis()`.
-     *
-     *          long millis = System.currentTimeMillis();
-     *
-     *          Timestamp timestamp = Timestamp.newBuilder().setSeconds(millis / 1000)
-     *              .setNanos((int) ((millis % 1000) * 1000000)).build();
-     *
-     *      Example 5: Compute Timestamp from Java `Instant.now()`.
-     *
-     *          Instant now = Instant.now();
-     *
-     *          Timestamp timestamp =
-     *              Timestamp.newBuilder().setSeconds(now.getEpochSecond())
-     *                  .setNanos(now.getNano()).build();
-     *
-     *      Example 6: Compute Timestamp from current time in Python.
-     *
-     *          timestamp = Timestamp()
-     *          timestamp.GetCurrentTime()
-     *
-     *      # JSON Mapping
-     *
-     *      In JSON format, the Timestamp type is encoded as a string in the
-     *      [RFC 3339](https://www.ietf.org/rfc/rfc3339.txt) format. That is, the
-     *      format is "{year}-{month}-{day}T{hour}:{min}:{sec}[.{frac_sec}]Z"
-     *      where {year} is always expressed using four digits while {month}, {day},
-     *      {hour}, {min}, and {sec} are zero-padded to two digits each. The fractional
-     *      seconds, which can go up to 9 digits (i.e. up to 1 nanosecond resolution),
-     *      are optional. The "Z" suffix indicates the timezone ("UTC"); the timezone
-     *      is required. A proto3 JSON serializer should always use UTC (as indicated by
-     *      "Z") when printing the Timestamp type and a proto3 JSON parser should be
-     *      able to accept both UTC and other timezones (as indicated by an offset).
-     *
-     *      For example, "2017-01-15T01:30:15.01Z" encodes 15.01 seconds past
-     *      01:30 UTC on January 15, 2017.
-     *
-     *      In JavaScript, one can convert a Date object to this format using the
-     *      standard
-     *      [toISOString()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/toISOString)
-     *      method. In Python, a standard `datetime.datetime` object can be converted
-     *      to this format using
-     *      [`strftime`](https://docs.python.org/2/library/time.html#time.strftime) with
-     *      the time format spec '%Y-%m-%dT%H:%M:%S.%fZ'. Likewise, in Java, one can use
-     *      the Joda Time's [`ISODateTimeFormat.dateTime()`](
-     *      http://joda-time.sourceforge.net/apidocs/org/joda/time/format/ISODateTimeFormat.html#dateTime()
-     *      ) to obtain a formatter capable of generating timestamps in this format.
-     * @example 2023-01-15T01:30:15.01Z
-     * @example 2024-12-25T12:00:00Z
-     */
-    'google.protobuf.Timestamp': string;
-  };
-  responses: never;
-  parameters: never;
-  requestBodies: never;
-  headers: never;
-  pathItems: never;
+    schemas: {
+        /**
+         * Application
+         * @description Application represents a deployable unit within a tenant. An application
+         *      groups manifests, dependencies, and environment configuration into a single
+         *      entity that Admiral orchestrates across environments.
+         * @example {
+         *       "id": "a1b2c3d4-5678-9abc-def0-1234567890ab",
+         *       "name": "inventory-api",
+         *       "description": "Core inventory management service for tracking warehouse stock levels and fulfillment.",
+         *       "labels": {
+         *         "team": "logistics",
+         *         "tier": "critical"
+         *       },
+         *       "created_by": "d290f1ee-6c54-4b01-90e6-d701748f0851",
+         *       "updated_by": "d290f1ee-6c54-4b01-90e6-d701748f0851",
+         *       "created_at": "2025-09-15T10:30:00Z",
+         *       "updated_at": "2025-11-02T14:22:00Z"
+         *     }
+         */
+        "admiral.application.v1.Application": {
+            /**
+             * id
+             * Format: uuid
+             * @description Unique identifier for the application (UUID).
+             */
+            id?: string;
+            /**
+             * name
+             * @description URL-safe, human-readable identifier (e.g., "inventory-api"). Unique within
+             *      the tenant. Lowercase alphanumeric and hyphens only, must start with a
+             *      letter and end with an alphanumeric character (1-63 chars).
+             */
+            name?: string;
+            /**
+             * description
+             * @description Optional longer-form description of the application's purpose
+             *      (e.g., "Core inventory service tracking warehouse stock and fulfillment").
+             */
+            description?: string;
+            /**
+             * labels
+             * @description Arbitrary key-value labels for organizing and filtering applications
+             *      (e.g., `{"team": "logistics", "tier": "critical"}`).
+             */
+            labels?: {
+                [key: string]: string;
+            };
+            /**
+             * created_by
+             * @description The user or agent who created this application (server-populated from token).
+             */
+            created_by?: components["schemas"]["admiral.common.v1.ActorRef"];
+            /**
+             * updated_by
+             * @description The user or agent who last updated this application (server-populated from token).
+             */
+            updated_by?: components["schemas"]["admiral.common.v1.ActorRef"];
+            /**
+             * created_at
+             * @description When the application was created.
+             */
+            created_at?: components["schemas"]["google.protobuf.Timestamp"];
+            /**
+             * updated_at
+             * @description When the application was last updated.
+             */
+            updated_at?: components["schemas"]["google.protobuf.Timestamp"];
+        };
+        /** LabelsEntry */
+        "admiral.application.v1.Application.LabelsEntry": {
+            /** key */
+            key?: string;
+            /** value */
+            value?: string;
+        };
+        /**
+         * CreateApplicationRequest
+         * @description CreateApplicationRequest contains the parameters for creating a new application.
+         */
+        "admiral.application.v1.CreateApplicationRequest": {
+            /**
+             * name
+             * @description URL-safe, human-readable identifier (e.g., "inventory-api"). Must be unique
+             *      within the tenant. Lowercase alphanumeric and hyphens only.
+             */
+            name?: string;
+            /**
+             * description
+             * @description Optional longer-form description of the application's purpose.
+             */
+            description?: string | null;
+            /**
+             * labels
+             * @description Arbitrary key-value labels for organizing and filtering applications.
+             */
+            labels?: {
+                [key: string]: string;
+            };
+        };
+        /** LabelsEntry */
+        "admiral.application.v1.CreateApplicationRequest.LabelsEntry": {
+            /** key */
+            key?: string;
+            /** value */
+            value?: string;
+        };
+        /**
+         * CreateApplicationResponse
+         * @description CreateApplicationResponse contains the newly created application.
+         */
+        "admiral.application.v1.CreateApplicationResponse": {
+            /**
+             * application
+             * @description The created application.
+             */
+            application?: components["schemas"]["admiral.application.v1.Application"];
+        };
+        /**
+         * DeleteApplicationRequest
+         * @description DeleteApplicationRequest identifies an application to delete.
+         */
+        "admiral.application.v1.DeleteApplicationRequest": {
+            /**
+             * application_id
+             * Format: uuid
+             * @description The unique identifier of the application to delete (UUID).
+             */
+            application_id?: string;
+        };
+        /**
+         * DeleteApplicationResponse
+         * @description DeleteApplicationResponse is empty on success.
+         */
+        "admiral.application.v1.DeleteApplicationResponse": Record<string, never>;
+        /**
+         * GetApplicationRequest
+         * @description GetApplicationRequest identifies an application to retrieve.
+         */
+        "admiral.application.v1.GetApplicationRequest": {
+            /**
+             * application_id
+             * Format: uuid
+             * @description The unique identifier of the application (UUID).
+             */
+            application_id?: string;
+        };
+        /**
+         * GetApplicationResponse
+         * @description GetApplicationResponse contains the application record.
+         */
+        "admiral.application.v1.GetApplicationResponse": {
+            /**
+             * application
+             * @description The application record.
+             */
+            application?: components["schemas"]["admiral.application.v1.Application"];
+        };
+        /**
+         * ListApplicationsRequest
+         * @description ListApplicationsRequest contains pagination and filter parameters.
+         */
+        "admiral.application.v1.ListApplicationsRequest": {
+            /**
+             * filter
+             * @description Filter expression to narrow results. Uses the Admiral filter DSL.
+             *
+             *      Syntax: `field['name'] = 'value'` with AND/OR/NOT, comparison operators
+             *      (=, !=, <, >, <=, >=, ~=), and predicates (IN, BETWEEN, CONTAINS,
+             *      STARTS_WITH, ENDS_WITH, IS NULL, EXISTS).
+             *
+             *      Filterable fields:
+             *        - `name` -- filter by application name.
+             *        - `labels.key` -- filter by label key.
+             *
+             *      Example: `field['name'] = 'inventory-api' AND field['labels.team'] = 'logistics'`
+             */
+            filter?: string;
+            /**
+             * page_size
+             * Format: int32
+             * @description Maximum number of applications to return per page.
+             */
+            page_size?: number;
+            /**
+             * page_token
+             * @description Opaque pagination token from a previous response.
+             */
+            page_token?: string;
+        };
+        /**
+         * ListApplicationsResponse
+         * @description ListApplicationsResponse contains a page of applications.
+         */
+        "admiral.application.v1.ListApplicationsResponse": {
+            /**
+             * applications
+             * @description The list of applications.
+             */
+            applications?: components["schemas"]["admiral.application.v1.Application"][];
+            /**
+             * next_page_token
+             * @description Pagination token for the next page. Empty when there are no more results.
+             */
+            next_page_token?: string;
+        };
+        /**
+         * UpdateApplicationRequest
+         * @description UpdateApplicationRequest contains the application fields to update.
+         */
+        "admiral.application.v1.UpdateApplicationRequest": {
+            /**
+             * application
+             * @description The application with updated fields.
+             *      Only fields specified in `update_mask` are updated.
+             */
+            application: components["schemas"]["admiral.application.v1.Application"];
+            /**
+             * update_mask
+             * @description The set of fields to update. If unset, all mutable fields are updated.
+             *      Supported fields: `name`, `description`, `labels`.
+             */
+            update_mask?: components["schemas"]["google.protobuf.FieldMask"];
+        };
+        /**
+         * UpdateApplicationResponse
+         * @description UpdateApplicationResponse contains the updated application.
+         */
+        "admiral.application.v1.UpdateApplicationResponse": {
+            /**
+             * application
+             * @description The updated application.
+             */
+            application?: components["schemas"]["admiral.application.v1.Application"];
+        };
+        /**
+         * CallbackRequest
+         * @description CallbackRequest contains the OAuth2 callback parameters from the IdP.
+         */
+        "admiral.authentication.v1.CallbackRequest": {
+            /**
+             * code
+             * @description The authorization code from the IdP.
+             */
+            code?: string;
+            /**
+             * state
+             * @description The state nonce (signed JWT) from the login request.
+             */
+            state?: string;
+            /**
+             * error
+             * @description OAuth error code (set by IdP on failure).
+             */
+            error?: string;
+            /**
+             * error_description
+             * @description Human-readable error description from the IdP.
+             */
+            error_description?: string;
+        };
+        /**
+         * CallbackResponse
+         * @description CallbackResponse is empty on success. The server sets a session cookie
+         *      and redirects the browser to the original redirect_url.
+         */
+        "admiral.authentication.v1.CallbackResponse": Record<string, never>;
+        /**
+         * LoginRequest
+         * @description LoginRequest contains parameters for initiating the OAuth2 flow.
+         */
+        "admiral.authentication.v1.LoginRequest": {
+            /**
+             * redirect_url
+             * @description The URL to redirect to after successful authentication. Must be a relative
+             *      path (no scheme or host). Baked into the signed state nonce.
+             */
+            redirect_url?: string;
+        };
+        /**
+         * LoginResponse
+         * @description LoginResponse contains the IdP authorization URL for the client to redirect to.
+         */
+        "admiral.authentication.v1.LoginResponse": {
+            /**
+             * auth_url
+             * @description The IdP authorization URL. The client should redirect the browser here.
+             */
+            auth_url?: string;
+        };
+        /**
+         * Cluster
+         * @description Cluster represents a registered Kubernetes cluster within a tenant.
+         * @example {
+         *       "id": "c3d4e5f6-7890-1abc-def0-abcdef012345",
+         *       "name": "prod-us-east-1",
+         *       "description": "Primary production cluster serving US East traffic.",
+         *       "labels": {
+         *         "region": "us-east-1",
+         *         "cloud": "aws",
+         *         "tier": "production"
+         *       },
+         *       "cluster_uid": "kube-system-uid-9f8e7d6c",
+         *       "health_status": "CLUSTER_HEALTH_STATUS_HEALTHY",
+         *       "created_by": "d290f1ee-6c54-4b01-90e6-d701748f0851",
+         *       "updated_by": "d290f1ee-6c54-4b01-90e6-d701748f0851",
+         *       "created_at": "2025-06-10T08:00:00Z",
+         *       "updated_at": "2025-11-20T16:45:00Z"
+         *     }
+         */
+        "admiral.cluster.v1.Cluster": {
+            /**
+             * id
+             * Format: uuid
+             * @description Unique identifier for the cluster (UUID).
+             */
+            id?: string;
+            /**
+             * name
+             * @description URL-safe, human-readable identifier (e.g., "prod-us-east-1"). Unique
+             *      within the tenant. Lowercase alphanumeric and hyphens only, must start
+             *      with a letter and end with an alphanumeric character (1-63 chars).
+             */
+            name?: string;
+            /**
+             * description
+             * @description Optional longer-form description of the cluster's purpose
+             *      (e.g., "Primary production cluster serving US East traffic").
+             */
+            description?: string;
+            /**
+             * labels
+             * @description Arbitrary key-value labels for organizing and filtering clusters
+             *      (e.g., `{"region": "us-east-1", "cloud": "aws"}`).
+             */
+            labels?: {
+                [key: string]: string;
+            };
+            /**
+             * cluster_uid
+             * @description The Kubernetes kube-system namespace UID, bound at agent registration
+             *      using a first-write-wins strategy. Used to detect when a token is
+             *      accidentally deployed to a different physical cluster.
+             */
+            cluster_uid?: string;
+            /**
+             * health_status
+             * @description Derived health status based on agent connectivity and workload state.
+             */
+            health_status?: components["schemas"]["admiral.cluster.v1.ClusterHealthStatus"];
+            /**
+             * created_by
+             * @description The user or agent who created this cluster (server-populated from token).
+             */
+            created_by?: components["schemas"]["admiral.common.v1.ActorRef"];
+            /**
+             * updated_by
+             * @description The user or agent who last updated this cluster (server-populated from token).
+             */
+            updated_by?: components["schemas"]["admiral.common.v1.ActorRef"];
+            /**
+             * created_at
+             * @description When the cluster record was created.
+             */
+            created_at?: components["schemas"]["google.protobuf.Timestamp"];
+            /**
+             * updated_at
+             * @description When the cluster record was last updated.
+             */
+            updated_at?: components["schemas"]["google.protobuf.Timestamp"];
+        };
+        /** LabelsEntry */
+        "admiral.cluster.v1.Cluster.LabelsEntry": {
+            /** key */
+            key?: string;
+            /** value */
+            value?: string;
+        };
+        /**
+         * ClusterHealthStatus
+         * @description ClusterHealthStatus represents the derived health state of a cluster.
+         *      The status is computed from agent connectivity, node readiness, and workload health.
+         * @enum {string}
+         */
+        "admiral.cluster.v1.ClusterHealthStatus": "CLUSTER_HEALTH_STATUS_UNSPECIFIED" | "CLUSTER_HEALTH_STATUS_PENDING" | "CLUSTER_HEALTH_STATUS_HEALTHY" | "CLUSTER_HEALTH_STATUS_DEGRADED" | "CLUSTER_HEALTH_STATUS_ERROR" | "CLUSTER_HEALTH_STATUS_UNREACHABLE";
+        /**
+         * ClusterStatus
+         * @description ClusterStatus contains the raw telemetry metrics for a cluster, as reported
+         *      by the K8s agent. This message is used in both the push payload
+         *      (ReportClusterStatusRequest) and the read response (GetClusterStatusResponse).
+         *
+         *      Server-derived fields (health_status, agent connectivity) are NOT included
+         *      here -- they live on the Cluster and Agent records respectively, and are
+         *      returned alongside this message in GetClusterStatusResponse.
+         */
+        "admiral.cluster.v1.ClusterStatus": {
+            /**
+             * k8s_version
+             * @description Kubernetes version reported by the agent (e.g., "1.29.2").
+             */
+            k8s_version?: string;
+            /**
+             * node_count
+             * Format: int32
+             * @description Total number of nodes in the cluster.
+             */
+            node_count?: number;
+            /**
+             * nodes_ready
+             * Format: int32
+             * @description Number of nodes in Ready condition.
+             */
+            nodes_ready?: number;
+            /**
+             * pod_capacity
+             * Format: int32
+             * @description Maximum number of pods the cluster can schedule.
+             */
+            pod_capacity?: number;
+            /**
+             * pod_count
+             * Format: int32
+             * @description Total number of pods across all namespaces.
+             */
+            pod_count?: number;
+            /**
+             * pods_running
+             * Format: int32
+             * @description Number of pods in Running phase.
+             */
+            pods_running?: number;
+            /**
+             * pods_pending
+             * Format: int32
+             * @description Number of pods in Pending phase.
+             */
+            pods_pending?: number;
+            /**
+             * pods_failed
+             * Format: int32
+             * @description Number of pods in Failed phase.
+             */
+            pods_failed?: number;
+            /**
+             * cpu_capacity_millicores
+             * Format: int64
+             * @description Total CPU capacity across all nodes, in millicores.
+             */
+            cpu_capacity_millicores?: number | string;
+            /**
+             * cpu_used_millicores
+             * Format: int64
+             * @description Current CPU usage across all nodes, in millicores.
+             */
+            cpu_used_millicores?: number | string;
+            /**
+             * memory_capacity_bytes
+             * Format: int64
+             * @description Total memory capacity across all nodes, in bytes.
+             */
+            memory_capacity_bytes?: number | string;
+            /**
+             * memory_used_bytes
+             * Format: int64
+             * @description Current memory usage across all nodes, in bytes.
+             */
+            memory_used_bytes?: number | string;
+            /**
+             * workloads_total
+             * Format: int32
+             * @description Total number of tracked workloads.
+             */
+            workloads_total?: number;
+            /**
+             * workloads_healthy
+             * Format: int32
+             * @description Number of workloads in healthy state.
+             */
+            workloads_healthy?: number;
+            /**
+             * workloads_degraded
+             * Format: int32
+             * @description Number of workloads in degraded state.
+             */
+            workloads_degraded?: number;
+            /**
+             * workloads_error
+             * Format: int32
+             * @description Number of workloads in error state.
+             */
+            workloads_error?: number;
+        };
+        /**
+         * ContainerStatus
+         * @description ContainerStatus describes the current state of a single container.
+         */
+        "admiral.cluster.v1.ContainerStatus": {
+            /**
+             * name
+             * @description Container name within the pod spec.
+             */
+            name?: string;
+            /**
+             * image
+             * @description Container image reference (e.g., "registry.example.com/api:v2.1.4").
+             */
+            image?: string;
+            /**
+             * restart_count
+             * Format: int32
+             * @description Cumulative number of container restarts.
+             */
+            restart_count?: number;
+            /**
+             * state
+             * @description Current container state (e.g., "running", "waiting", "terminated").
+             */
+            state?: string;
+            /**
+             * ready
+             * @description Whether the container's readiness probe is passing.
+             */
+            ready?: boolean;
+        };
+        /**
+         * CreateClusterRequest
+         * @description CreateClusterRequest contains the parameters for creating a new cluster.
+         */
+        "admiral.cluster.v1.CreateClusterRequest": {
+            /**
+             * name
+             * @description URL-safe, human-readable identifier (e.g., "prod-us-east-1"). Must be
+             *      unique within the tenant. Lowercase alphanumeric and hyphens only.
+             */
+            name?: string;
+            /**
+             * description
+             * @description Optional longer-form description of the cluster's purpose.
+             */
+            description?: string;
+            /**
+             * labels
+             * @description Arbitrary key-value labels for organizing and filtering clusters
+             *      (e.g., `{"region": "us-east-1", "cloud": "aws"}`).
+             */
+            labels?: {
+                [key: string]: string;
+            };
+        };
+        /** LabelsEntry */
+        "admiral.cluster.v1.CreateClusterRequest.LabelsEntry": {
+            /** key */
+            key?: string;
+            /** value */
+            value?: string;
+        };
+        /**
+         * CreateClusterResponse
+         * @description CreateClusterResponse contains the newly created cluster and its initial
+         *      Service Access Token (SAT).
+         */
+        "admiral.cluster.v1.CreateClusterResponse": {
+            /**
+             * cluster
+             * @description The created cluster. Health status will be PENDING until an agent connects
+             *      and calls AgentAPI.RegisterAgent.
+             */
+            cluster?: components["schemas"]["admiral.cluster.v1.Cluster"];
+            /**
+             * plain_text_token
+             * @description The raw Agent Token secret (e.g., "adms_pL2mN5oQ8rS1..."). This value
+             *      is shown exactly once and cannot be retrieved again. Deploy this token to
+             *      the K8s agent for authentication.
+             *
+             *      To create additional tokens (e.g., for rotation), use
+             *      CreateClusterToken (POST /v1/clusters/{cluster_id}/tokens).
+             */
+            plain_text_token?: string;
+        };
+        /**
+         * CreateClusterTokenRequest
+         * @description CreateClusterTokenRequest contains the parameters for creating a new SAT
+         *      bound to a cluster.
+         */
+        "admiral.cluster.v1.CreateClusterTokenRequest": {
+            /**
+             * cluster_id
+             * Format: uuid
+             * @description The cluster to bind this token to (UUID).
+             */
+            cluster_id?: string;
+            /**
+             * name
+             * @description URL-safe, human-readable identifier for the token (e.g., "prod-agent-key").
+             *      Must be unique within the cluster's tokens. Lowercase alphanumeric and
+             *      hyphens only.
+             */
+            name?: string;
+            /**
+             * expires_at
+             * @description Optional expiration time. If unset, the token does not expire.
+             */
+            expires_at?: components["schemas"]["google.protobuf.Timestamp"];
+        };
+        /**
+         * CreateClusterTokenResponse
+         * @description CreateClusterTokenResponse contains the newly created SAT.
+         */
+        "admiral.cluster.v1.CreateClusterTokenResponse": {
+            /**
+             * access_token
+             * @description The created token metadata. Scopes are auto-assigned for cluster SATs.
+             */
+            access_token?: components["schemas"]["admiral.common.v1.AccessToken"];
+            /**
+             * plain_text_token
+             * @description The raw token secret (e.g., "adms_pL2mN5oQ8rS1..."). This value is
+             *      shown exactly once and cannot be retrieved again. Store it securely.
+             */
+            plain_text_token?: string;
+        };
+        /**
+         * DeleteClusterRequest
+         * @description DeleteClusterRequest identifies a cluster to delete.
+         */
+        "admiral.cluster.v1.DeleteClusterRequest": {
+            /**
+             * cluster_id
+             * Format: uuid
+             * @description The unique identifier of the cluster to delete (UUID).
+             *      All associated service access tokens will be revoked.
+             */
+            cluster_id?: string;
+        };
+        /**
+         * DeleteClusterResponse
+         * @description DeleteClusterResponse is empty on success.
+         */
+        "admiral.cluster.v1.DeleteClusterResponse": Record<string, never>;
+        /**
+         * GetClusterRequest
+         * @description GetClusterRequest identifies a cluster to retrieve.
+         */
+        "admiral.cluster.v1.GetClusterRequest": {
+            /**
+             * cluster_id
+             * Format: uuid
+             * @description The unique identifier of the cluster (UUID).
+             */
+            cluster_id?: string;
+        };
+        /**
+         * GetClusterResponse
+         * @description GetClusterResponse contains the cluster record.
+         */
+        "admiral.cluster.v1.GetClusterResponse": {
+            /**
+             * cluster
+             * @description The cluster record, including server-derived health_status.
+             */
+            cluster?: components["schemas"]["admiral.cluster.v1.Cluster"];
+        };
+        /**
+         * GetClusterStatusRequest
+         * @description GetClusterStatusRequest identifies a cluster whose telemetry status to retrieve.
+         */
+        "admiral.cluster.v1.GetClusterStatusRequest": {
+            /**
+             * cluster_id
+             * Format: uuid
+             * @description The unique identifier of the cluster (UUID).
+             */
+            cluster_id?: string;
+        };
+        /**
+         * GetClusterStatusResponse
+         * @description GetClusterStatusResponse contains the server-derived health status and the
+         *      latest telemetry snapshot. If no agent has reported telemetry yet, the
+         *      health_status will be PENDING and status will be absent.
+         */
+        "admiral.cluster.v1.GetClusterStatusResponse": {
+            /**
+             * health_status
+             * @description Server-derived health status based on agent connectivity, node readiness,
+             *      and workload health.
+             */
+            health_status?: components["schemas"]["admiral.cluster.v1.ClusterHealthStatus"];
+            /**
+             * status
+             * @description Latest telemetry snapshot from the agent. Absent if no telemetry has
+             *      been reported yet.
+             */
+            status?: components["schemas"]["admiral.cluster.v1.ClusterStatus"];
+            /**
+             * reported_at
+             * @description When the latest telemetry was reported by the agent.
+             */
+            reported_at?: components["schemas"]["google.protobuf.Timestamp"];
+        };
+        /**
+         * GetClusterTokenRequest
+         * @description GetClusterTokenRequest identifies a cluster SAT to retrieve.
+         */
+        "admiral.cluster.v1.GetClusterTokenRequest": {
+            /**
+             * cluster_id
+             * Format: uuid
+             * @description The cluster the token belongs to (UUID).
+             */
+            cluster_id?: string;
+            /**
+             * token_id
+             * Format: uuid
+             * @description The unique identifier of the token (UUID).
+             */
+            token_id?: string;
+        };
+        /**
+         * GetClusterTokenResponse
+         * @description GetClusterTokenResponse contains the requested cluster SAT metadata.
+         */
+        "admiral.cluster.v1.GetClusterTokenResponse": {
+            /**
+             * access_token
+             * @description The token metadata. The token secret is never included.
+             */
+            access_token?: components["schemas"]["admiral.common.v1.AccessToken"];
+        };
+        /**
+         * GetRevisionBundleRequest
+         * @description GetRevisionBundleRequest identifies a revision whose artifact bundle to fetch.
+         */
+        "admiral.cluster.v1.GetRevisionBundleRequest": {
+            /**
+             * revision_id
+             * Format: uuid
+             * @description The revision to fetch the bundle for (UUID).
+             */
+            revision_id?: string;
+        };
+        /**
+         * GetRevisionBundleResponse
+         * @description GetRevisionBundleResponse contains the rendered manifests for the revision.
+         */
+        "admiral.cluster.v1.GetRevisionBundleResponse": {
+            /**
+             * bundle
+             * @description The artifact bundle with everything needed to apply the workload.
+             */
+            bundle?: components["schemas"]["admiral.cluster.v1.RevisionBundle"];
+        };
+        /**
+         * ListClusterTokensRequest
+         * @description ListClusterTokensRequest contains pagination and filter parameters.
+         */
+        "admiral.cluster.v1.ListClusterTokensRequest": {
+            /**
+             * cluster_id
+             * Format: uuid
+             * @description The cluster to list tokens for (UUID).
+             */
+            cluster_id?: string;
+            /**
+             * filter
+             * @description Filter expression to narrow results. Uses the Admiral filter DSL.
+             *
+             *      Filterable fields:
+             *        - `name` -- filter by token name.
+             *        - `status` -- filter by token status (ACTIVE, REVOKED).
+             *
+             *      Example: `field['status'] = 'ACTIVE'`
+             */
+            filter?: string;
+            /**
+             * page_size
+             * Format: int32
+             * @description Maximum number of tokens to return per page.
+             */
+            page_size?: number;
+            /**
+             * page_token
+             * @description Opaque pagination token from a previous response.
+             */
+            page_token?: string;
+        };
+        /**
+         * ListClusterTokensResponse
+         * @description ListClusterTokensResponse contains a page of cluster SAT metadata.
+         */
+        "admiral.cluster.v1.ListClusterTokensResponse": {
+            /**
+             * access_tokens
+             * @description The list of tokens. Token secrets are never included.
+             */
+            access_tokens?: components["schemas"]["admiral.common.v1.AccessToken"][];
+            /**
+             * next_page_token
+             * @description Pagination token for the next page. Empty when there are no more results.
+             */
+            next_page_token?: string;
+        };
+        /**
+         * ListClustersRequest
+         * @description ListClustersRequest contains pagination and filter parameters.
+         */
+        "admiral.cluster.v1.ListClustersRequest": {
+            /**
+             * filter
+             * @description Filter expression to narrow results. Uses the Admiral filter DSL.
+             *
+             *      Syntax: `field['name'] = 'value'` with AND/OR/NOT, comparison operators
+             *      (=, !=, <, >, <=, >=, ~=), and predicates (IN, BETWEEN, CONTAINS,
+             *      STARTS_WITH, ENDS_WITH, IS NULL, EXISTS).
+             *
+             *      Filterable fields:
+             *        - `name` -- filter by cluster name.
+             *        - `health_status` -- filter by health status.
+             *        - `labels.key` -- filter by label key.
+             *
+             *      Example: `field['health_status'] = 'HEALTHY' AND field['labels.region'] = 'us-east-1'`
+             */
+            filter?: string;
+            /**
+             * page_size
+             * Format: int32
+             * @description Maximum number of clusters to return per page.
+             */
+            page_size?: number;
+            /**
+             * page_token
+             * @description Opaque pagination token from a previous response.
+             */
+            page_token?: string;
+        };
+        /**
+         * ListClustersResponse
+         * @description ListClustersResponse contains a page of clusters.
+         */
+        "admiral.cluster.v1.ListClustersResponse": {
+            /**
+             * clusters
+             * @description The list of clusters.
+             */
+            clusters?: components["schemas"]["admiral.cluster.v1.Cluster"][];
+            /**
+             * next_page_token
+             * @description Pagination token for the next page. Empty when there are no more results.
+             */
+            next_page_token?: string;
+        };
+        /**
+         * ListWorkloadsRequest
+         * @description ListWorkloadsRequest contains pagination and filter parameters for listing
+         *      workloads in a specific cluster.
+         */
+        "admiral.cluster.v1.ListWorkloadsRequest": {
+            /**
+             * cluster_id
+             * Format: uuid
+             * @description The cluster whose workloads to list (UUID).
+             */
+            cluster_id?: string;
+            /**
+             * filter
+             * @description Filter expression to narrow results. Uses the Admiral filter DSL.
+             *
+             *      Filterable fields:
+             *        - `namespace` -- filter by Kubernetes namespace.
+             *        - `kind` -- filter by workload kind (Deployment, StatefulSet, DaemonSet).
+             *        - `name` -- filter by workload name.
+             *        - `health_status` -- filter by workload health status.
+             *
+             *      Example: `field['namespace'] = 'production' AND field['health_status'] = 'DEGRADED'`
+             */
+            filter?: string;
+            /**
+             * page_size
+             * Format: int32
+             * @description Maximum number of workloads to return per page.
+             */
+            page_size?: number;
+            /**
+             * page_token
+             * @description Opaque pagination token from a previous response.
+             */
+            page_token?: string;
+        };
+        /**
+         * ListWorkloadsResponse
+         * @description ListWorkloadsResponse contains a page of workloads.
+         */
+        "admiral.cluster.v1.ListWorkloadsResponse": {
+            /**
+             * workloads
+             * @description The list of workloads.
+             */
+            workloads?: components["schemas"]["admiral.cluster.v1.Workload"][];
+            /**
+             * next_page_token
+             * @description Pagination token for the next page. Empty when there are no more results.
+             */
+            next_page_token?: string;
+        };
+        /**
+         * ObjectReference
+         * @description ObjectReference is a lightweight reference to a Kubernetes object.
+         */
+        "admiral.cluster.v1.ObjectReference": {
+            /**
+             * kind
+             * @description Kubernetes resource kind (e.g., "Pod", "ReplicaSet").
+             */
+            kind?: string;
+            /**
+             * namespace
+             * @description Kubernetes namespace.
+             */
+            namespace?: string;
+            /**
+             * name
+             * @description Object name.
+             */
+            name?: string;
+        };
+        /**
+         * ReportClusterStatusRequest
+         * @description ReportClusterStatusRequest contains a combined telemetry payload from a K8s agent.
+         *      Admiral splits this into three storage tiers: current snapshot, time-series
+         *      metrics, and events.
+         *
+         *      The cluster is identified by the service access token's binding -- no cluster_id is
+         *      required. The server resolves the cluster from the SAT.
+         */
+        "admiral.cluster.v1.ReportClusterStatusRequest": {
+            /**
+             * status
+             * @description Cluster-level telemetry snapshot.
+             */
+            status: components["schemas"]["admiral.cluster.v1.ClusterStatus"];
+            /**
+             * workloads
+             * @description Per-workload status snapshots.
+             */
+            workloads?: components["schemas"]["admiral.cluster.v1.WorkloadStatus"][];
+            /**
+             * events
+             * @description Kubernetes events observed since the last push.
+             */
+            events?: components["schemas"]["admiral.cluster.v1.WorkloadEvent"][];
+            /**
+             * reported_at
+             * @description When the agent generated this report.
+             */
+            reported_at?: components["schemas"]["google.protobuf.Timestamp"];
+        };
+        /**
+         * ReportClusterStatusResponse
+         * @description ReportClusterStatusResponse acknowledges a telemetry push.
+         */
+        "admiral.cluster.v1.ReportClusterStatusResponse": {
+            /**
+             * ack
+             * @description Whether the report was accepted.
+             */
+            ack?: boolean;
+            /**
+             * next_push_seconds
+             * Format: int32
+             * @description Server-controlled interval (in seconds) before the agent should send
+             *      its next status push. Allows the server to adjust push frequency dynamically.
+             */
+            next_push_seconds?: number;
+        };
+        /**
+         * ReportRevisionResultRequest
+         * @description ReportRevisionResultRequest contains the outcome of applying a workload
+         *      revision to the cluster.
+         */
+        "admiral.cluster.v1.ReportRevisionResultRequest": {
+            /**
+             * revision_id
+             * Format: uuid
+             * @description The revision being reported on (UUID).
+             */
+            revision_id?: string;
+            /**
+             * result
+             * @description The result of applying the revision.
+             */
+            result: components["schemas"]["admiral.cluster.v1.RevisionResult"];
+        };
+        /**
+         * ReportRevisionResultResponse
+         * @description ReportRevisionResultResponse acknowledges the result.
+         */
+        "admiral.cluster.v1.ReportRevisionResultResponse": {
+            /**
+             * ack
+             * @description Whether the result was accepted.
+             */
+            ack?: boolean;
+        };
+        /**
+         * ReportWorkloadStatusRequest
+         * @description ReportWorkloadStatusRequest contains incremental workload telemetry from a K8s agent.
+         */
+        "admiral.cluster.v1.ReportWorkloadStatusRequest": {
+            /**
+             * cluster_id
+             * Format: uuid
+             * @description The cluster these workloads belong to (UUID).
+             */
+            cluster_id?: string;
+            /**
+             * workloads
+             * @description Per-workload status snapshots.
+             */
+            workloads?: components["schemas"]["admiral.cluster.v1.WorkloadStatus"][];
+            /**
+             * reported_at
+             * @description When the agent generated this report.
+             */
+            reported_at?: components["schemas"]["google.protobuf.Timestamp"];
+        };
+        /**
+         * ReportWorkloadStatusResponse
+         * @description ReportWorkloadStatusResponse acknowledges a workload telemetry push.
+         */
+        "admiral.cluster.v1.ReportWorkloadStatusResponse": {
+            /**
+             * ack
+             * @description Whether the report was accepted.
+             */
+            ack?: boolean;
+        };
+        /**
+         * RevisionBundle
+         * @description RevisionBundle contains pre-rendered Kubernetes manifests for a workload
+         *      revision, ready for server-side apply by the K8s agent.
+         */
+        "admiral.cluster.v1.RevisionBundle": {
+            /**
+             * artifact_url
+             * @description Signed URL to download the rendered manifest bundle (tar.gz containing
+             *      ordered Kubernetes YAML manifests). Time-limited.
+             */
+            artifact_url?: string;
+            /**
+             * artifact_checksum
+             * @description SHA-256 checksum of the artifact bundle for integrity verification.
+             */
+            artifact_checksum?: string;
+            /**
+             * namespace
+             * @description The Kubernetes namespace to apply manifests into. Resolved from the
+             *      environment's KubernetesConfig.namespace (or defaults to the environment
+             *      name).
+             */
+            namespace?: string;
+            /**
+             * component_name
+             * @description Component name for logging and status tracking.
+             */
+            component_name?: string;
+            /**
+             * version
+             * @description The source version being deployed (e.g., chart version, git ref).
+             */
+            version?: string;
+        };
+        /**
+         * RevisionResult
+         * @description RevisionResult contains the outcome of applying a workload revision,
+         *      reported by the K8s agent.
+         */
+        "admiral.cluster.v1.RevisionResult": {
+            /**
+             * success
+             * @description Whether the revision was applied successfully.
+             */
+            success?: boolean;
+            /**
+             * error_message
+             * @description Error message if the revision failed. Empty on success.
+             */
+            error_message?: string;
+            /**
+             * resources_applied
+             * Format: int32
+             * @description Number of Kubernetes resources applied.
+             */
+            resources_applied?: number;
+            /**
+             * resources_failed
+             * Format: int32
+             * @description Number of Kubernetes resources that failed to apply.
+             */
+            resources_failed?: number;
+        };
+        /**
+         * RevokeClusterTokenRequest
+         * @description RevokeClusterTokenRequest identifies a cluster SAT to revoke.
+         */
+        "admiral.cluster.v1.RevokeClusterTokenRequest": {
+            /**
+             * cluster_id
+             * Format: uuid
+             * @description The cluster the token belongs to (UUID).
+             */
+            cluster_id?: string;
+            /**
+             * token_id
+             * Format: uuid
+             * @description The unique identifier of the token to revoke (UUID).
+             */
+            token_id?: string;
+        };
+        /**
+         * RevokeClusterTokenResponse
+         * @description RevokeClusterTokenResponse contains the revoked cluster SAT metadata.
+         */
+        "admiral.cluster.v1.RevokeClusterTokenResponse": {
+            /**
+             * access_token
+             * @description The token metadata with updated status.
+             */
+            access_token?: components["schemas"]["admiral.common.v1.AccessToken"];
+        };
+        /**
+         * UpdateClusterRequest
+         * @description UpdateClusterRequest contains the cluster fields to update.
+         */
+        "admiral.cluster.v1.UpdateClusterRequest": {
+            /**
+             * cluster
+             * @description The cluster with updated fields. The `id` field is required.
+             *      Only fields specified in `update_mask` are updated.
+             */
+            cluster: components["schemas"]["admiral.cluster.v1.Cluster"];
+            /**
+             * update_mask
+             * @description The set of fields to update. If unset, all mutable fields are updated.
+             *      Supported fields: `name`, `description`, `labels`.
+             */
+            update_mask?: components["schemas"]["google.protobuf.FieldMask"];
+        };
+        /**
+         * UpdateClusterResponse
+         * @description UpdateClusterResponse contains the updated cluster.
+         */
+        "admiral.cluster.v1.UpdateClusterResponse": {
+            /**
+             * cluster
+             * @description The updated cluster.
+             */
+            cluster?: components["schemas"]["admiral.cluster.v1.Cluster"];
+        };
+        /**
+         * Workload
+         * @description Workload represents a Kubernetes workload (Deployment, StatefulSet,
+         *      DaemonSet, etc.) as observed by the agent.
+         */
+        "admiral.cluster.v1.Workload": {
+            /**
+             * id
+             * @description Unique identifier for the workload within Admiral (UUID).
+             */
+            id?: string;
+            /**
+             * cluster_id
+             * @description The cluster this workload belongs to (UUID).
+             */
+            cluster_id?: string;
+            /**
+             * namespace
+             * @description Kubernetes namespace.
+             */
+            namespace?: string;
+            /**
+             * name
+             * @description Workload name.
+             */
+            name?: string;
+            /**
+             * kind
+             * @description Kubernetes resource kind (e.g., "Deployment", "StatefulSet", "DaemonSet").
+             */
+            kind?: string;
+            /**
+             * labels
+             * @description Kubernetes labels on the workload.
+             */
+            labels?: {
+                [key: string]: string;
+            };
+            /**
+             * health_status
+             * @description Derived health status.
+             */
+            health_status?: components["schemas"]["admiral.cluster.v1.WorkloadHealthStatus"];
+            /**
+             * status_reason
+             * @description Human-readable reason for the current status (e.g., "MinimumReplicasUnavailable").
+             */
+            status_reason?: string;
+            /**
+             * replicas_desired
+             * Format: int32
+             * @description Number of desired replicas.
+             */
+            replicas_desired?: number;
+            /**
+             * replicas_ready
+             * Format: int32
+             * @description Number of ready replicas.
+             */
+            replicas_ready?: number;
+            /**
+             * replicas_available
+             * Format: int32
+             * @description Number of available replicas.
+             */
+            replicas_available?: number;
+            /**
+             * cpu_requests_millicores
+             * Format: int64
+             * @description CPU requests across all containers, in millicores.
+             */
+            cpu_requests_millicores?: number | string;
+            /**
+             * cpu_limits_millicores
+             * Format: int64
+             * @description CPU limits across all containers, in millicores.
+             */
+            cpu_limits_millicores?: number | string;
+            /**
+             * cpu_used_millicores
+             * Format: int64
+             * @description Current CPU usage across all containers, in millicores.
+             */
+            cpu_used_millicores?: number | string;
+            /**
+             * memory_requests_bytes
+             * Format: int64
+             * @description Memory requests across all containers, in bytes.
+             */
+            memory_requests_bytes?: number | string;
+            /**
+             * memory_limits_bytes
+             * Format: int64
+             * @description Memory limits across all containers, in bytes.
+             */
+            memory_limits_bytes?: number | string;
+            /**
+             * memory_used_bytes
+             * Format: int64
+             * @description Current memory usage across all containers, in bytes.
+             */
+            memory_used_bytes?: number | string;
+            /**
+             * containers
+             * @description Status of individual containers in this workload.
+             */
+            containers?: components["schemas"]["admiral.cluster.v1.ContainerStatus"][];
+            /**
+             * last_updated_at
+             * @description When this workload's status was last updated.
+             */
+            last_updated_at?: components["schemas"]["google.protobuf.Timestamp"];
+        };
+        /** LabelsEntry */
+        "admiral.cluster.v1.Workload.LabelsEntry": {
+            /** key */
+            key?: string;
+            /** value */
+            value?: string;
+        };
+        /**
+         * WorkloadEvent
+         * @description WorkloadEvent represents a Kubernetes event related to a workload or its
+         *      child objects (pods, replicasets). Events are deduplicated by their K8s UID.
+         */
+        "admiral.cluster.v1.WorkloadEvent": {
+            /**
+             * uid
+             * @description Kubernetes event UID, used for deduplication.
+             */
+            uid?: string;
+            /**
+             * type
+             * @description Event type: "Normal" or "Warning".
+             */
+            type?: string;
+            /**
+             * reason
+             * @description Short machine-readable reason (e.g., "BackOff", "FailedScheduling").
+             */
+            reason?: string;
+            /**
+             * regarding
+             * @description The Kubernetes object this event is about.
+             */
+            regarding?: components["schemas"]["admiral.cluster.v1.ObjectReference"];
+            /**
+             * message
+             * @description Human-readable event message.
+             */
+            message?: string;
+            /**
+             * first_seen
+             * @description When this event was first observed.
+             */
+            first_seen?: components["schemas"]["google.protobuf.Timestamp"];
+            /**
+             * last_seen
+             * @description When this event was most recently observed.
+             */
+            last_seen?: components["schemas"]["google.protobuf.Timestamp"];
+            /**
+             * count
+             * Format: int32
+             * @description Number of times this event has occurred.
+             */
+            count?: number;
+        };
+        /**
+         * WorkloadHealthStatus
+         * @description WorkloadHealthStatus represents the derived health state of a single workload.
+         * @enum {string}
+         */
+        "admiral.cluster.v1.WorkloadHealthStatus": "WORKLOAD_HEALTH_STATUS_UNSPECIFIED" | "WORKLOAD_HEALTH_STATUS_HEALTHY" | "WORKLOAD_HEALTH_STATUS_DEGRADED" | "WORKLOAD_HEALTH_STATUS_ERROR";
+        /**
+         * WorkloadStatus
+         * @description WorkloadStatus is the agent-reported status for a single workload within
+         *      a telemetry push payload.
+         */
+        "admiral.cluster.v1.WorkloadStatus": {
+            /**
+             * namespace
+             * @description Kubernetes namespace.
+             */
+            namespace?: string;
+            /**
+             * name
+             * @description Workload name.
+             */
+            name?: string;
+            /**
+             * kind
+             * @description Kubernetes resource kind (e.g., "Deployment", "StatefulSet").
+             */
+            kind?: string;
+            /**
+             * labels
+             * @description Kubernetes labels on the workload.
+             */
+            labels?: {
+                [key: string]: string;
+            };
+            /**
+             * replicas_desired
+             * Format: int32
+             * @description Number of desired replicas.
+             */
+            replicas_desired?: number;
+            /**
+             * replicas_ready
+             * Format: int32
+             * @description Number of ready replicas.
+             */
+            replicas_ready?: number;
+            /**
+             * replicas_available
+             * Format: int32
+             * @description Number of available replicas.
+             */
+            replicas_available?: number;
+            /**
+             * cpu_requests_millicores
+             * Format: int64
+             * @description CPU requests across all containers, in millicores.
+             */
+            cpu_requests_millicores?: number | string;
+            /**
+             * cpu_limits_millicores
+             * Format: int64
+             * @description CPU limits across all containers, in millicores.
+             */
+            cpu_limits_millicores?: number | string;
+            /**
+             * cpu_used_millicores
+             * Format: int64
+             * @description Current CPU usage across all containers, in millicores.
+             */
+            cpu_used_millicores?: number | string;
+            /**
+             * memory_requests_bytes
+             * Format: int64
+             * @description Memory requests across all containers, in bytes.
+             */
+            memory_requests_bytes?: number | string;
+            /**
+             * memory_limits_bytes
+             * Format: int64
+             * @description Memory limits across all containers, in bytes.
+             */
+            memory_limits_bytes?: number | string;
+            /**
+             * memory_used_bytes
+             * Format: int64
+             * @description Current memory usage across all containers, in bytes.
+             */
+            memory_used_bytes?: number | string;
+            /**
+             * health_status
+             * @description Derived health status.
+             */
+            health_status?: components["schemas"]["admiral.cluster.v1.WorkloadHealthStatus"];
+            /**
+             * containers
+             * @description Status of individual containers.
+             */
+            containers?: components["schemas"]["admiral.cluster.v1.ContainerStatus"][];
+        };
+        /** LabelsEntry */
+        "admiral.cluster.v1.WorkloadStatus.LabelsEntry": {
+            /** key */
+            key?: string;
+            /** value */
+            value?: string;
+        };
+        /**
+         * AccessToken
+         * @description AccessToken contains token metadata common to all token types (PAT, SAT).
+         *      The raw token secret is never included in this message — it is only returned
+         *      once at creation time via the `plain_text_token` field in Create responses.
+         *
+         *      Token CRUD is managed by each parent resource's API:
+         *        - PATs:         UserAPI    (/v1/user/tokens)
+         *        - Cluster SATs: ClusterAPI (/v1/clusters/{id}/tokens)
+         *        - Runner SATs:  RunnerAPI  (/v1/runners/{id}/tokens)
+         * @example {
+         *       "id": "9f8e7d6c-5b4a-3210-fedc-ba0987654321",
+         *       "name": "ci-deploy-key",
+         *       "token_type": "TOKEN_TYPE_PAT",
+         *       "scopes": [
+         *         "deploy:write",
+         *         "app:read",
+         *         "env:read"
+         *       ],
+         *       "status": "ACCESS_TOKEN_STATUS_ACTIVE",
+         *       "binding_type": "BINDING_TYPE_USER",
+         *       "binding_id": "d290f1ee-6c54-4b01-90e6-d701748f0851",
+         *       "created_by": "d290f1ee-6c54-4b01-90e6-d701748f0851",
+         *       "expires_at": "2026-06-01T00:00:00Z",
+         *       "last_used_at": "2025-11-20T14:30:00Z",
+         *       "created_at": "2025-09-01T10:00:00Z"
+         *     }
+         */
+        "admiral.common.v1.AccessToken": {
+            /**
+             * id
+             * Format: uuid
+             * @description Unique identifier for the token (UUID).
+             */
+            id?: string;
+            /**
+             * name
+             * @description URL-safe, human-readable identifier for the token (e.g., "ci-deploy-key").
+             *      Unique within the parent resource. Lowercase alphanumeric and hyphens only,
+             *      must start with a letter and end with an alphanumeric character (1-63 chars).
+             */
+            name?: string;
+            /**
+             * token_type
+             * @description The category of this token.
+             */
+            token_type?: components["schemas"]["admiral.common.v1.TokenType"];
+            /**
+             * scopes
+             * @description The scopes granted to this token. For PATs, these are user-selected.
+             *      For SATs, these are auto-assigned based on the resource type.
+             */
+            scopes?: string[];
+            /**
+             * status
+             * @description Current lifecycle status of the token.
+             */
+            status?: components["schemas"]["admiral.common.v1.AccessTokenStatus"];
+            /**
+             * binding_type
+             * @description The kind of resource this token is bound to.
+             */
+            binding_type?: components["schemas"]["admiral.common.v1.BindingType"];
+            /**
+             * binding_id
+             * @description The ID of the resource this token is bound to (UUID).
+             */
+            binding_id?: string;
+            /**
+             * created_by
+             * @description The user who created this token. For PATs, this is the token owner.
+             *      For SATs, this is the administrator who issued the token.
+             */
+            created_by?: components["schemas"]["admiral.common.v1.ActorRef"];
+            /**
+             * expires_at
+             * @description When the token expires. If unset, the token does not expire.
+             */
+            expires_at?: components["schemas"]["google.protobuf.Timestamp"];
+            /**
+             * last_used_at
+             * @description When the token was last used to authenticate an API request.
+             */
+            last_used_at?: components["schemas"]["google.protobuf.Timestamp"];
+            /**
+             * created_at
+             * @description When the token was created.
+             */
+            created_at?: components["schemas"]["google.protobuf.Timestamp"];
+            /**
+             * revoked_at
+             * @description When the token was revoked. Only set when status is REVOKED.
+             */
+            revoked_at?: components["schemas"]["google.protobuf.Timestamp"];
+        };
+        /**
+         * AccessTokenStatus
+         * @description AccessTokenStatus represents the lifecycle state of an access token.
+         * @enum {string}
+         */
+        "admiral.common.v1.AccessTokenStatus": "ACCESS_TOKEN_STATUS_UNSPECIFIED" | "ACCESS_TOKEN_STATUS_ACTIVE" | "ACCESS_TOKEN_STATUS_REVOKED" | "ACCESS_TOKEN_STATUS_ROTATING";
+        /**
+         * ActorRef
+         * @description ActorRef is a lightweight reference to the user or agent that performed an action.
+         *      Server-populated on all resource responses. Clients should never send this;
+         *      use the plain string `created_by` UUID on request messages instead.
+         */
+        "admiral.common.v1.ActorRef": {
+            /**
+             * id
+             * @description UUID of the user or service access token.
+             */
+            id?: string;
+            /**
+             * display_name
+             * @description Human-readable name (e.g., "John Smith", "cluster-prod-agent").
+             */
+            display_name?: string;
+            /**
+             * email
+             * @description Email address (empty for non-human actors).
+             */
+            email?: string;
+        };
+        /**
+         * AuthRule
+         * @description AuthRule defines the authorization requirements for an RPC method.
+         *      Applied as a custom method option and enforced at runtime by a Connect interceptor.
+         *
+         *      The presence of the option means the RPC requires authentication.
+         *      An empty scope means any authenticated request is sufficient.
+         */
+        "admiral.common.v1.AuthRule": {
+            /**
+             * scope
+             * @description The scope required to call this RPC (e.g., "cluster:read").
+             *      Empty string means any valid token is sufficient — no specific scope required.
+             */
+            scope?: string;
+            /**
+             * allowed_token_types
+             * @description Restrict to specific token types ("pat", "sat", "session").
+             *      Empty means all token types are allowed.
+             */
+            allowed_token_types?: string[];
+        };
+        /**
+         * BindingType
+         * @description BindingType identifies the kind of resource an access token is bound to.
+         * @enum {string}
+         */
+        "admiral.common.v1.BindingType": "BINDING_TYPE_UNSPECIFIED" | "BINDING_TYPE_USER" | "BINDING_TYPE_CLUSTER" | "BINDING_TYPE_RUNNER";
+        /**
+         * TokenType
+         * @description TokenType identifies the category of an access token issued by Admiral's token system.
+         *      IDP-issued JWTs (OAuth2/OIDC sessions) are NOT represented here — they are
+         *      resolved by separate middleware and can be referenced as "session" in
+         *      AuthRule.allowed_token_types when needed.
+         * @enum {string}
+         */
+        "admiral.common.v1.TokenType": "TOKEN_TYPE_UNSPECIFIED" | "TOKEN_TYPE_PAT" | "TOKEN_TYPE_SAT";
+        /**
+         * Component
+         * @description Component represents a named, deployable unit within an application. It
+         *      binds a source artifact to an application with configuration (values
+         *      template) that maps variables and other component outputs into the source's
+         *      expected inputs.
+         *
+         *      Components are the nodes in Admiral's dependency graph. Infrastructure
+         *      components produce auto-discovered outputs (Terraform outputs). Workload
+         *      components declare outputs explicitly. Other components consume these via
+         *      template expressions. The deployment engine resolves this DAG to determine
+         *      execution order.
+         * @example {
+         *       "id": "d4e5f6a7-8901-2bcd-ef34-567890123456",
+         *       "application_id": "a1b2c3d4-5678-9abc-def0-1234567890ab",
+         *       "name": "api-server",
+         *       "description": "Main API server deployed via Helm chart.",
+         *       "category": "COMPONENT_CATEGORY_WORKLOAD",
+         *       "source_id": "f6a7b8c9-0123-4def-5678-901234567890",
+         *       "version": "2.4.1",
+         *       "values_template": "{\"replicaCount\": \"{{ .var.REPLICA_COUNT }}\", \"image.tag\": \"{{ .var.IMAGE_TAG }}\"}",
+         *       "labels": {
+         *         "component-type": "service"
+         *       },
+         *       "depends_on": [
+         *         "vpc",
+         *         "redis"
+         *       ],
+         *       "created_by": "d290f1ee-6c54-4b01-90e6-d701748f0851",
+         *       "updated_by": "d290f1ee-6c54-4b01-90e6-d701748f0851",
+         *       "created_at": "2025-09-16T09:00:00Z",
+         *       "updated_at": "2025-10-28T11:30:00Z"
+         *     }
+         */
+        "admiral.component.v1.Component": {
+            /**
+             * id
+             * Format: uuid
+             * @description Unique identifier for the component (UUID).
+             */
+            id?: string;
+            /**
+             * application_id
+             * Format: uuid
+             * @description The application this component belongs to (UUID).
+             */
+            application_id?: string;
+            /**
+             * name
+             * @description Human-readable name for this component within the application
+             *      (e.g., "vpc", "redis", "api-server"). Unique within the application.
+             *      Lowercase alphanumeric and hyphens only (1-63 chars). This name is used
+             *      in template expressions: `{{ .component.<name>.<output> }}`.
+             */
+            name?: string;
+            /**
+             * description
+             * @description Optional description of the component's purpose
+             *      (e.g., "Primary VPC for all environments" or "Redis cache layer").
+             */
+            description?: string;
+            /**
+             * category
+             * @description Whether this is an infrastructure or workload component. Derived from
+             *      the source type when the component is created, but stored explicitly
+             *      for filtering and to determine execution behavior.
+             */
+            category?: components["schemas"]["admiral.component.v1.ComponentCategory"];
+            /**
+             * source_id
+             * Format: uuid
+             * @description The source artifact this component deploys (UUID). References a Source
+             *      defined via the SourceAPI.
+             */
+            source_id?: string;
+            /**
+             * version
+             * @description Pinned version of the source artifact. For registry sources, a semver
+             *      string (e.g., "1.2.3"). For Git sources, a tag, branch, or commit SHA.
+             *      Required -- components always pin a version. Use UpdateComponent to
+             *      change the version (rolling update).
+             */
+            version?: string;
+            /**
+             * values_template
+             * @description Values template that maps configuration into the source's expected inputs.
+             *      This is a JSON-encoded object where keys are the source input names and
+             *      values are either literal values or template expressions.
+             *
+             *      Template expressions can reference:
+             *        - Variables: `{{ .var.DATABASE_URL }}`
+             *        - Component outputs: `{{ .component.vpc.vpc_id }}`
+             *        - Environment metadata: `{{ .env.name }}`
+             *
+             *      Example for a Terraform RDS module:
+             *        {
+             *          "vpc_id": "{{ .component.vpc.vpc_id }}",
+             *          "subnet_ids": "{{ .component.vpc.private_subnet_ids }}",
+             *          "instance_class": "{{ .var.RDS_INSTANCE_CLASS }}",
+             *          "engine_version": "15.4"
+             *        }
+             *
+             *      Example for a Helm chart:
+             *        {
+             *          "replicaCount": "{{ .var.REPLICA_COUNT }}",
+             *          "image.repository": "myorg/api-server",
+             *          "image.tag": "{{ .var.IMAGE_TAG }}"
+             *        }
+             *
+             *      The rendering engine resolves all expressions at deployment time using
+             *      the environment's variables and the outputs of upstream components.
+             */
+            values_template?: string;
+            /**
+             * depends_on
+             * @description Component IDs that must complete successfully before this component can
+             *      be deployed (UUIDs). Must reference components within the same
+             *      application. The deployment engine uses these, combined with implicit
+             *      dependencies from template expressions, to build the execution DAG.
+             *
+             *      Explicit depends_on is useful when there is a deployment-order dependency
+             *      that is not captured by output references (e.g., cert-manager must be
+             *      installed before any workload that uses TLS certificates).
+             */
+            depends_on?: string[];
+            /**
+             * outputs
+             * @description Declared outputs for this component. For infrastructure components
+             *      (Terraform), outputs are auto-discovered from the module and this field
+             *      is ignored. For workload components, outputs must be declared here to
+             *      be available for template expressions in other components.
+             *
+             *      See ComponentOutput for examples.
+             */
+            outputs?: components["schemas"]["admiral.component.v1.ComponentOutput"][];
+            /**
+             * disabled
+             * @description Whether this component is disabled in the resolved environment context.
+             *      Always false on the application-level component. Set to true when
+             *      ListComponents is called with an environment_id and the component has
+             *      a disabled override for that environment.
+             */
+            disabled?: boolean;
+            /**
+             * has_override
+             * @description Whether any field on this component has been overridden in the resolved
+             *      environment context. Always false when ListComponents is called without
+             *      an environment_id.
+             */
+            has_override?: boolean;
+            /**
+             * created_by
+             * @description The user or agent who created this component (server-populated from token).
+             */
+            created_by?: components["schemas"]["admiral.common.v1.ActorRef"];
+            /**
+             * updated_by
+             * @description The user or agent who last updated this component (server-populated from token).
+             */
+            updated_by?: components["schemas"]["admiral.common.v1.ActorRef"];
+            /**
+             * created_at
+             * @description When the component was created.
+             */
+            created_at?: components["schemas"]["google.protobuf.Timestamp"];
+            /**
+             * updated_at
+             * @description When the component was last updated.
+             */
+            updated_at?: components["schemas"]["google.protobuf.Timestamp"];
+        };
+        /**
+         * ComponentCategory
+         * @description ComponentCategory indicates whether the component provisions infrastructure
+         *      or deploys workloads. This is derived from the source type but stored
+         *      explicitly for filtering and to determine rendering and execution behavior.
+         * @enum {string}
+         */
+        "admiral.component.v1.ComponentCategory": "COMPONENT_CATEGORY_UNSPECIFIED" | "COMPONENT_CATEGORY_INFRASTRUCTURE" | "COMPONENT_CATEGORY_WORKLOAD";
+        /**
+         * ComponentOutput
+         * @description ComponentOutput declares a named output value produced by a component.
+         *
+         *      For infrastructure components (Terraform), outputs are auto-discovered from
+         *      the module's output blocks and this field is ignored -- do not declare
+         *      outputs manually for Terraform components.
+         *
+         *      For workload components (Helm, Kustomize, manifests), outputs must be
+         *      declared explicitly here to make them available for template expressions
+         *      in other components (e.g., `{{ .component.cache.service_host }}`).
+         *
+         *      Output values are template expressions resolved after the component is
+         *      deployed. They typically reference well-known patterns from the deployed
+         *      resources (e.g., Kubernetes service DNS names, ConfigMap keys).
+         */
+        "admiral.component.v1.ComponentOutput": {
+            /**
+             * name
+             * @description Output name used in template references. Must be a valid identifier
+             *      (lowercase alphanumeric and underscores, e.g., "service_host",
+             *      "connection_string"). Other components reference this as
+             *      `{{ .component.<component_name>.<output_name> }}`.
+             */
+            name?: string;
+            /**
+             * value_template
+             * @description Template expression that resolves to the output value after deployment.
+             *      Can reference environment metadata and the component's own release info.
+             *
+             *      Examples:
+             *        "{{ .release.name }}-redis-master.{{ .env.namespace }}.svc.cluster.local"
+             *        "{{ .release.name }}-redis:6379"
+             *        "http://{{ .release.name }}-grafana.{{ .env.namespace }}:3000"
+             */
+            value_template?: string;
+            /**
+             * description
+             * @description Optional description of the output's purpose.
+             */
+            description?: string;
+        };
+        /**
+         * ComponentOverride
+         * @description ComponentOverride provides environment-level customization for a component.
+         *      When an override exists for a component + environment combination, the
+         *      override fields take precedence over the application-level component
+         *      defaults during deployment.
+         *
+         *      This enables patterns like:
+         *        - Different sources per environment (Helm Redis in dev, Terraform
+         *          ElastiCache in prod)
+         *        - Different versions per environment (canary version in staging)
+         *        - Different values per environment (smaller instance in dev)
+         *        - Disabling a component in certain environments
+         */
+        "admiral.component.v1.ComponentOverride": {
+            /**
+             * component_id
+             * Format: uuid
+             * @description The component this override applies to (UUID).
+             */
+            component_id?: string;
+            /**
+             * environment_id
+             * Format: uuid
+             * @description The environment this override applies to (UUID).
+             */
+            environment_id?: string;
+            /**
+             * disabled
+             * @description When true, the component is not deployed in this environment.
+             *      All other override fields are ignored when disabled.
+             */
+            disabled?: boolean;
+            /**
+             * source_id
+             * Format: uuid
+             * @description Override source for this environment (UUID). When set, this source is
+             *      used instead of the component's default source. This may also change the
+             *      component's effective category (e.g., switching from a Helm source to a
+             *      Terraform source changes the component from workload to infrastructure
+             *      in this environment).
+             */
+            source_id?: string | null;
+            /**
+             * version
+             * @description Override version for this environment. When set, this version is used
+             *      instead of the component's default version.
+             */
+            version?: string | null;
+            /**
+             * values_template
+             * @description Override values template for this environment. When set, this template
+             *      completely replaces the component's default values template -- there is
+             *      no merge.
+             */
+            values_template?: string | null;
+            /**
+             * depends_on
+             * @description Override depends_on for this environment (component UUIDs). When set,
+             *      replaces the component's default depends_on list for this environment.
+             */
+            depends_on?: string[];
+            /**
+             * outputs
+             * @description Override outputs for this environment. When set, replaces the component's
+             *      declared outputs. Useful when an override changes the source type
+             *      (e.g., Helm → Terraform) and the output templates need to change.
+             */
+            outputs?: components["schemas"]["admiral.component.v1.ComponentOutput"][];
+            /**
+             * created_by
+             * @description The user or agent who created this override (server-populated from token).
+             */
+            created_by?: components["schemas"]["admiral.common.v1.ActorRef"];
+            /**
+             * updated_by
+             * @description The user or agent who last updated this override (server-populated from token).
+             */
+            updated_by?: components["schemas"]["admiral.common.v1.ActorRef"];
+            /**
+             * created_at
+             * @description When the override was created.
+             */
+            created_at?: components["schemas"]["google.protobuf.Timestamp"];
+            /**
+             * updated_at
+             * @description When the override was last updated.
+             */
+            updated_at?: components["schemas"]["google.protobuf.Timestamp"];
+        };
+        /**
+         * CreateComponentRequest
+         * @description CreateComponentRequest contains the parameters for adding a component to
+         *      an application.
+         */
+        "admiral.component.v1.CreateComponentRequest": {
+            /**
+             * application_id
+             * Format: uuid
+             * @description The application to add this component to (UUID).
+             */
+            application_id?: string;
+            /**
+             * name
+             * @description Human-readable name for this component. Must be unique within the
+             *      application. This name is used in template expressions.
+             */
+            name?: string;
+            /**
+             * description
+             * @description Optional description of the component's purpose.
+             */
+            description?: string;
+            /**
+             * source_id
+             * Format: uuid
+             * @description The source artifact for this component (UUID).
+             */
+            source_id?: string;
+            /**
+             * version
+             * @description Pinned version of the source artifact.
+             */
+            version?: string;
+            /**
+             * values_template
+             * @description Values template mapping configuration into the source's inputs.
+             *      See Component.values_template for template expression syntax.
+             */
+            values_template?: string;
+            /**
+             * depends_on
+             * @description Explicit deployment-order dependencies (component UUIDs).
+             */
+            depends_on?: string[];
+            /**
+             * outputs
+             * @description Declared outputs for workload components.
+             *      Ignored for infrastructure components (Terraform outputs are
+             *      auto-discovered).
+             */
+            outputs?: components["schemas"]["admiral.component.v1.ComponentOutput"][];
+        };
+        /**
+         * CreateComponentResponse
+         * @description CreateComponentResponse contains the newly created component.
+         */
+        "admiral.component.v1.CreateComponentResponse": {
+            /**
+             * component
+             * @description The created component.
+             */
+            component?: components["schemas"]["admiral.component.v1.Component"];
+        };
+        /**
+         * DeleteComponentOverrideRequest
+         * @description DeleteComponentOverrideRequest removes an environment-level override.
+         */
+        "admiral.component.v1.DeleteComponentOverrideRequest": {
+            /**
+             * component_id
+             * Format: uuid
+             * @description The component (UUID).
+             */
+            component_id?: string;
+            /**
+             * environment_id
+             * Format: uuid
+             * @description The environment (UUID).
+             */
+            environment_id?: string;
+        };
+        /**
+         * DeleteComponentOverrideResponse
+         * @description DeleteComponentOverrideResponse is empty on success.
+         */
+        "admiral.component.v1.DeleteComponentOverrideResponse": Record<string, never>;
+        /**
+         * DeleteComponentRequest
+         * @description DeleteComponentRequest identifies a component to delete.
+         */
+        "admiral.component.v1.DeleteComponentRequest": {
+            /**
+             * component_id
+             * Format: uuid
+             * @description Unique identifier of the component to delete (UUID).
+             *      Fails if other components depend on this component (via depends_on
+             *      or output references in values_template).
+             */
+            component_id?: string;
+        };
+        /**
+         * DeleteComponentResponse
+         * @description DeleteComponentResponse is empty on success.
+         */
+        "admiral.component.v1.DeleteComponentResponse": Record<string, never>;
+        /**
+         * GetComponentOverrideRequest
+         * @description GetComponentOverrideRequest identifies a specific component + environment
+         *      override.
+         */
+        "admiral.component.v1.GetComponentOverrideRequest": {
+            /**
+             * component_id
+             * Format: uuid
+             * @description The component (UUID).
+             */
+            component_id?: string;
+            /**
+             * environment_id
+             * Format: uuid
+             * @description The environment (UUID).
+             */
+            environment_id?: string;
+        };
+        /**
+         * GetComponentOverrideResponse
+         * @description GetComponentOverrideResponse contains the override record.
+         */
+        "admiral.component.v1.GetComponentOverrideResponse": {
+            /**
+             * override
+             * @description The override record. Empty/not-found if no override exists.
+             */
+            override?: components["schemas"]["admiral.component.v1.ComponentOverride"];
+        };
+        /**
+         * GetComponentRequest
+         * @description GetComponentRequest identifies a component to retrieve.
+         */
+        "admiral.component.v1.GetComponentRequest": {
+            /**
+             * component_id
+             * Format: uuid
+             * @description Unique identifier of the component (UUID).
+             */
+            component_id?: string;
+        };
+        /**
+         * GetComponentResponse
+         * @description GetComponentResponse contains the component record.
+         */
+        "admiral.component.v1.GetComponentResponse": {
+            /**
+             * component
+             * @description The component record (application-level defaults).
+             */
+            component?: components["schemas"]["admiral.component.v1.Component"];
+        };
+        /**
+         * ListComponentOverridesRequest
+         * @description ListComponentOverridesRequest lists all overrides for a component.
+         */
+        "admiral.component.v1.ListComponentOverridesRequest": {
+            /**
+             * component_id
+             * Format: uuid
+             * @description Unique identifier of the component to list overrides for (UUID).
+             */
+            component_id?: string;
+            /**
+             * page_size
+             * Format: int32
+             * @description Maximum number of overrides to return per page.
+             */
+            page_size?: number;
+            /**
+             * page_token
+             * @description Opaque pagination token from a previous response.
+             */
+            page_token?: string;
+        };
+        /**
+         * ListComponentOverridesResponse
+         * @description ListComponentOverridesResponse contains all overrides for a component.
+         */
+        "admiral.component.v1.ListComponentOverridesResponse": {
+            /**
+             * overrides
+             * @description The list of environment-level overrides for the component.
+             */
+            overrides?: components["schemas"]["admiral.component.v1.ComponentOverride"][];
+            /**
+             * next_page_token
+             * @description Pagination token for the next page. Empty when there are no more results.
+             */
+            next_page_token?: string;
+        };
+        /**
+         * ListComponentsRequest
+         * @description ListComponentsRequest contains pagination and filter parameters.
+         *
+         *      The filter controls both scoping and response behavior:
+         *        - `application_id` in filter: returns application-level component
+         *          definitions (defaults).
+         *        - `application_id` + `environment_id` in filter: returns the resolved
+         *          view with environment overrides applied. Each component reflects its
+         *          effective source, version, values_template, depends_on, and outputs.
+         *          Disabled components are included with `disabled=true`. Components with
+         *          any overridden field have `has_override=true`.
+         */
+        "admiral.component.v1.ListComponentsRequest": {
+            /**
+             * filter
+             * @description Filter expression using the PEG filter DSL.
+             *
+             *      Common filter fields:
+             *        - `application_id` -- scope to an application (required for meaningful
+             *          results since components always belong to an application).
+             *        - `environment_id` -- when present, triggers the resolved view with
+             *          environment overrides applied to each component.
+             *        - `category` -- filter by component category (INFRASTRUCTURE, WORKLOAD).
+             *        - `name` -- filter by component name.
+             */
+            filter?: string;
+            /**
+             * page_size
+             * Format: int32
+             * @description Maximum number of components to return per page.
+             */
+            page_size?: number;
+            /**
+             * page_token
+             * @description Opaque pagination token from a previous response.
+             */
+            page_token?: string;
+        };
+        /**
+         * ListComponentsResponse
+         * @description ListComponentsResponse contains a page of components.
+         */
+        "admiral.component.v1.ListComponentsResponse": {
+            /**
+             * components
+             * @description The list of components. When `environment_id` is present in the filter,
+             *      each component reflects the resolved view with overrides applied.
+             */
+            components?: components["schemas"]["admiral.component.v1.Component"][];
+            /**
+             * next_page_token
+             * @description Pagination token for the next page. Empty when there are no more results.
+             */
+            next_page_token?: string;
+        };
+        /**
+         * SetComponentOverrideRequest
+         * @description SetComponentOverrideRequest creates or replaces an environment-level override.
+         */
+        "admiral.component.v1.SetComponentOverrideRequest": {
+            /**
+             * component_id
+             * Format: uuid
+             * @description The component to override (UUID).
+             */
+            component_id?: string;
+            /**
+             * environment_id
+             * Format: uuid
+             * @description The environment this override applies to (UUID).
+             */
+            environment_id?: string;
+            /**
+             * disabled
+             * @description When true, the component is not deployed in this environment.
+             */
+            disabled?: boolean;
+            /**
+             * source_id
+             * Format: uuid
+             * @description Override source (UUID). When set, replaces the component's default source.
+             */
+            source_id?: string | null;
+            /**
+             * version
+             * @description Override version. When set, replaces the component's default version.
+             */
+            version?: string | null;
+            /**
+             * values_template
+             * @description Override values template. When set, completely replaces the component's
+             *      default values template (no merge).
+             */
+            values_template?: string | null;
+            /**
+             * depends_on
+             * @description Override depends_on (component UUIDs). When set, replaces the component's
+             *      default depends_on.
+             */
+            depends_on?: string[];
+            /**
+             * outputs
+             * @description Override outputs. When set, replaces the component's declared outputs.
+             */
+            outputs?: components["schemas"]["admiral.component.v1.ComponentOutput"][];
+        };
+        /**
+         * SetComponentOverrideResponse
+         * @description SetComponentOverrideResponse contains the override record.
+         */
+        "admiral.component.v1.SetComponentOverrideResponse": {
+            /**
+             * override
+             * @description The created or updated override.
+             */
+            override?: components["schemas"]["admiral.component.v1.ComponentOverride"];
+        };
+        /**
+         * UpdateComponentRequest
+         * @description UpdateComponentRequest contains the component fields to update.
+         */
+        "admiral.component.v1.UpdateComponentRequest": {
+            /**
+             * component
+             * @description The component with updated fields. Only fields specified in
+             *      `update_mask` are updated.
+             */
+            component: components["schemas"]["admiral.component.v1.Component"];
+            /**
+             * update_mask
+             * @description The set of fields to update. If unset, all mutable fields are updated.
+             *      Supported fields: `name`, `description`, `source_id`, `version`,
+             *      `values_template`, `depends_on`, `outputs`.
+             */
+            update_mask?: components["schemas"]["google.protobuf.FieldMask"];
+        };
+        /**
+         * UpdateComponentResponse
+         * @description UpdateComponentResponse contains the updated component.
+         */
+        "admiral.component.v1.UpdateComponentResponse": {
+            /**
+             * component
+             * @description The updated component.
+             */
+            component?: components["schemas"]["admiral.component.v1.Component"];
+        };
+        /**
+         * AWSFederationConfig
+         * @description AWSFederationConfig holds the IAM role configuration for OIDC-based
+         *      authentication to AWS services (ECR, S3, Terraform provider).
+         *
+         *      Setup: Create an IAM Role with a trust policy that accepts Admiral's OIDC
+         *      issuer (https://oidc.admiral.io) and conditions on the `tenant_id` claim
+         *      matching your Admiral tenant.
+         */
+        "admiral.connection.v1.AWSFederationConfig": {
+            /**
+             * role_arn
+             * @description The ARN of the IAM Role to assume (e.g., "arn:aws:iam::123456789012:role/admiral-ecr").
+             */
+            role_arn?: string;
+            /**
+             * external_id
+             * @description Optional external ID for additional assume-role protection.
+             */
+            external_id?: string;
+            /**
+             * region
+             * @description AWS region for regional service endpoints (e.g., "us-east-1").
+             */
+            region?: string;
+        };
+        /**
+         * AWSStaticAuth
+         * @description AWSStaticAuth holds static AWS credentials. Prefer AWSFederationConfig
+         *      (OIDC) instead. Static credentials require manual rotation and present a
+         *      security risk if compromised.
+         */
+        "admiral.connection.v1.AWSStaticAuth": {
+            /**
+             * access_key_id
+             * @description AWS access key ID.
+             */
+            access_key_id?: string;
+            /**
+             * secret_access_key
+             * @description AWS secret access key.
+             *      Write-only: masked in responses.
+             */
+            secret_access_key?: string;
+            /**
+             * region
+             * @description AWS region for regional service endpoints.
+             */
+            region?: string;
+        };
+        /**
+         * AzureFederationConfig
+         * @description AzureFederationConfig holds the federated credential configuration for
+         *      OIDC-based authentication to Azure services (ACR, Terraform).
+         *
+         *      Setup: Create a Federated Identity Credential on your Azure AD app
+         *      registration that trusts Admiral's OIDC issuer with your tenant_id claim.
+         */
+        "admiral.connection.v1.AzureFederationConfig": {
+            /**
+             * azure_tenant_id
+             * @description Azure AD tenant ID (directory ID).
+             */
+            azure_tenant_id?: string;
+            /**
+             * client_id
+             * @description Application (client) ID of the Azure AD app registration.
+             */
+            client_id?: string;
+        };
+        /**
+         * AzureStaticAuth
+         * @description AzureStaticAuth holds static Azure service principal credentials. Prefer
+         *      AzureFederationConfig (Federated Credential) instead.
+         */
+        "admiral.connection.v1.AzureStaticAuth": {
+            /**
+             * azure_tenant_id
+             * @description Azure AD tenant ID (directory ID).
+             */
+            azure_tenant_id?: string;
+            /**
+             * client_id
+             * @description Application (client) ID.
+             */
+            client_id?: string;
+            /**
+             * client_secret
+             * @description Client secret.
+             *      Write-only: masked in responses.
+             */
+            client_secret?: string;
+        };
+        /**
+         * BasicAuth
+         * @description BasicAuth holds username/password credentials for OCI registries and other
+         *      systems that use basic authentication.
+         */
+        "admiral.connection.v1.BasicAuth": {
+            /**
+             * username
+             * @description Username for authentication.
+             */
+            username?: string;
+            /**
+             * password
+             * @description Password or token for authentication.
+             *      Write-only: masked in responses.
+             */
+            password?: string;
+        };
+        /**
+         * BearerTokenAuth
+         * @description BearerTokenAuth holds a bearer token for systems that use token-based
+         *      authentication (e.g., private Terraform registries).
+         */
+        "admiral.connection.v1.BearerTokenAuth": {
+            /**
+             * token
+             * @description Bearer token value.
+             *      Write-only: masked in responses.
+             */
+            token?: string;
+        };
+        /**
+         * Connection
+         * @description Connection represents stored credentials for accessing an external system.
+         *      Connections are tenant-scoped and referenced by sources when fetching artifacts.
+         *
+         *      Sensitive fields within auth_config are write-only -- they are accepted on
+         *      create and update but never returned in API responses.
+         * @example {
+         *       "id": "b8c9d0e1-2345-6fab-cdef-0123456789ab",
+         *       "name": "ecr-prod",
+         *       "description": "Read-only access to production ECR registry for container image pulls.",
+         *       "type": "CONNECTION_TYPE_DOCKER_REGISTRY",
+         *       "status": "CONNECTION_STATUS_ACTIVE",
+         *       "labels": {
+         *         "cloud": "aws",
+         *         "team": "platform"
+         *       },
+         *       "created_by": "d290f1ee-6c54-4b01-90e6-d701748f0851",
+         *       "updated_by": "d290f1ee-6c54-4b01-90e6-d701748f0851",
+         *       "created_at": "2025-07-20T14:00:00Z",
+         *       "updated_at": "2025-10-15T10:30:00Z",
+         *       "last_tested_at": "2025-11-01T08:00:00Z"
+         *     }
+         */
+        "admiral.connection.v1.Connection": {
+            /**
+             * id
+             * Format: uuid
+             * @description Unique identifier for the connection (UUID).
+             */
+            id?: string;
+            /**
+             * name
+             * @description URL-safe, human-readable identifier (e.g., "github-org", "ecr-prod").
+             *      Unique within the tenant. Lowercase alphanumeric and hyphens only, must
+             *      start with a letter and end with an alphanumeric character (1-63 chars).
+             */
+            name?: string;
+            /**
+             * description
+             * @description Optional longer-form description of what this connection is for
+             *      (e.g., "Read-only access to the platform team's GitHub org").
+             */
+            description?: string;
+            /**
+             * type
+             * @description The type of external system and authentication mechanism.
+             */
+            type?: components["schemas"]["admiral.connection.v1.ConnectionType"];
+            /**
+             * status
+             * @description Current health status of the connection's credentials.
+             */
+            status?: components["schemas"]["admiral.connection.v1.ConnectionStatus"];
+            /**
+             * status_message
+             * @description Human-readable message when status is ERROR (e.g., "401 Unauthorized:
+             *      token expired"). Empty when status is ACTIVE or UNTESTED.
+             */
+            status_message?: string;
+            /**
+             * labels
+             * @description Arbitrary key-value labels for organizing and filtering connections
+             *      (e.g., `{"team": "platform", "environment": "prod"}`).
+             */
+            labels?: {
+                [key: string]: string;
+            };
+            /**
+             * created_by
+             * @description The user or agent who created this connection (server-populated from token).
+             */
+            created_by?: components["schemas"]["admiral.common.v1.ActorRef"];
+            /**
+             * updated_by
+             * @description The user or agent who last updated this connection (server-populated from token).
+             */
+            updated_by?: components["schemas"]["admiral.common.v1.ActorRef"];
+            /**
+             * created_at
+             * @description When the connection was created.
+             */
+            created_at?: components["schemas"]["google.protobuf.Timestamp"];
+            /**
+             * updated_at
+             * @description When the connection was last updated.
+             */
+            updated_at?: components["schemas"]["google.protobuf.Timestamp"];
+            /**
+             * last_tested_at
+             * @description When the connection was last tested (via TestConnection or auto-validation).
+             *      Absent if never tested.
+             */
+            last_tested_at?: components["schemas"]["google.protobuf.Timestamp"];
+        } & ({
+            /**
+             * aws_federation
+             * @description AWS OIDC federation (for CONNECTION_TYPE_CLOUD_AWS).
+             */
+            aws_federation: components["schemas"]["admiral.connection.v1.AWSFederationConfig"];
+        } | {
+            /**
+             * aws_static
+             * @deprecated
+             * @description AWS static credentials (for CONNECTION_TYPE_CLOUD_AWS_STATIC, deprecated).
+             */
+            aws_static: components["schemas"]["admiral.connection.v1.AWSStaticAuth"];
+        } | {
+            /**
+             * azure_federation
+             * @description Azure Federated Credential (for CONNECTION_TYPE_CLOUD_AZURE).
+             */
+            azure_federation: components["schemas"]["admiral.connection.v1.AzureFederationConfig"];
+        } | {
+            /**
+             * azure_static
+             * @deprecated
+             * @description Azure static credentials (for CONNECTION_TYPE_CLOUD_AZURE_STATIC, deprecated).
+             */
+            azure_static: components["schemas"]["admiral.connection.v1.AzureStaticAuth"];
+        } | {
+            /**
+             * bearer_token
+             * @description Bearer token (for CONNECTION_TYPE_TERRAFORM_REGISTRY).
+             */
+            bearer_token: components["schemas"]["admiral.connection.v1.BearerTokenAuth"];
+        } | {
+            /**
+             * gcp_federation
+             * @description GCP Workload Identity (for CONNECTION_TYPE_CLOUD_GCP).
+             */
+            gcp_federation: components["schemas"]["admiral.connection.v1.GCPFederationConfig"];
+        } | {
+            /**
+             * gcp_static
+             * @deprecated
+             * @description GCP static credentials (for CONNECTION_TYPE_CLOUD_GCP_STATIC, deprecated).
+             */
+            gcp_static: components["schemas"]["admiral.connection.v1.GCPStaticAuth"];
+        } | {
+            /**
+             * git_github_app
+             * @description GitHub App credentials (for CONNECTION_TYPE_GIT_GITHUB_APP).
+             */
+            git_github_app: components["schemas"]["admiral.connection.v1.GitHubAppAuth"];
+        } | {
+            /**
+             * git_ssh
+             * @description Git SSH key (for CONNECTION_TYPE_GIT_SSH).
+             */
+            git_ssh: components["schemas"]["admiral.connection.v1.GitSSHAuth"];
+        } | {
+            /**
+             * git_token
+             * @description Git HTTPS token (for CONNECTION_TYPE_GIT_TOKEN).
+             */
+            git_token: components["schemas"]["admiral.connection.v1.GitTokenAuth"];
+        } | {
+            /**
+             * helm_http
+             * @description Helm HTTP basic auth (for CONNECTION_TYPE_HELM_HTTP).
+             */
+            helm_http: components["schemas"]["admiral.connection.v1.HelmHTTPAuth"];
+        } | {
+            /**
+             * oci_basic
+             * @description OCI registry basic auth (for CONNECTION_TYPE_OCI_BASIC).
+             */
+            oci_basic: components["schemas"]["admiral.connection.v1.BasicAuth"];
+        });
+        /** LabelsEntry */
+        "admiral.connection.v1.Connection.LabelsEntry": {
+            /** key */
+            key?: string;
+            /** value */
+            value?: string;
+        };
+        /**
+         * ConnectionStatus
+         * @description ConnectionStatus represents the health state of a connection's credentials.
+         * @enum {string}
+         */
+        "admiral.connection.v1.ConnectionStatus": "CONNECTION_STATUS_UNSPECIFIED" | "CONNECTION_STATUS_ACTIVE" | "CONNECTION_STATUS_ERROR" | "CONNECTION_STATUS_UNTESTED";
+        /**
+         * ConnectionType
+         * @description ConnectionType identifies the kind of external system and authentication
+         *      mechanism a connection uses.
+         * @enum {string}
+         */
+        "admiral.connection.v1.ConnectionType": "CONNECTION_TYPE_UNSPECIFIED" | "CONNECTION_TYPE_GIT_TOKEN" | "CONNECTION_TYPE_GIT_SSH" | "CONNECTION_TYPE_GIT_GITHUB_APP" | "CONNECTION_TYPE_HELM_HTTP" | "CONNECTION_TYPE_OCI_BASIC" | "CONNECTION_TYPE_CLOUD_AWS" | "CONNECTION_TYPE_CLOUD_GCP" | "CONNECTION_TYPE_CLOUD_AZURE" | "CONNECTION_TYPE_CLOUD_AWS_STATIC" | "CONNECTION_TYPE_CLOUD_GCP_STATIC" | "CONNECTION_TYPE_CLOUD_AZURE_STATIC" | "CONNECTION_TYPE_TERRAFORM_REGISTRY" | "CONNECTION_TYPE_S3" | "CONNECTION_TYPE_GCS";
+        /**
+         * CreateConnectionRequest
+         * @description CreateConnectionRequest contains the parameters for creating a new connection.
+         */
+        "admiral.connection.v1.CreateConnectionRequest": {
+            /**
+             * name
+             * @description URL-safe, human-readable identifier (e.g., "github-org", "ecr-prod").
+             *      Must be unique within the tenant.
+             */
+            name?: string;
+            /**
+             * description
+             * @description Optional description of the connection's purpose.
+             */
+            description?: string;
+            /**
+             * type
+             * @description The type of external system and authentication mechanism.
+             */
+            type?: components["schemas"]["admiral.connection.v1.ConnectionType"];
+            /**
+             * labels
+             * @description Arbitrary key-value labels for organizing and filtering connections.
+             */
+            labels?: {
+                [key: string]: string;
+            };
+        } & ({
+            /** aws_federation */
+            aws_federation: components["schemas"]["admiral.connection.v1.AWSFederationConfig"];
+        } | {
+            /**
+             * aws_static
+             * @deprecated
+             */
+            aws_static: components["schemas"]["admiral.connection.v1.AWSStaticAuth"];
+        } | {
+            /** azure_federation */
+            azure_federation: components["schemas"]["admiral.connection.v1.AzureFederationConfig"];
+        } | {
+            /**
+             * azure_static
+             * @deprecated
+             */
+            azure_static: components["schemas"]["admiral.connection.v1.AzureStaticAuth"];
+        } | {
+            /** bearer_token */
+            bearer_token: components["schemas"]["admiral.connection.v1.BearerTokenAuth"];
+        } | {
+            /** gcp_federation */
+            gcp_federation: components["schemas"]["admiral.connection.v1.GCPFederationConfig"];
+        } | {
+            /**
+             * gcp_static
+             * @deprecated
+             */
+            gcp_static: components["schemas"]["admiral.connection.v1.GCPStaticAuth"];
+        } | {
+            /** git_github_app */
+            git_github_app: components["schemas"]["admiral.connection.v1.GitHubAppAuth"];
+        } | {
+            /** git_ssh */
+            git_ssh: components["schemas"]["admiral.connection.v1.GitSSHAuth"];
+        } | {
+            /** git_token */
+            git_token: components["schemas"]["admiral.connection.v1.GitTokenAuth"];
+        } | {
+            /** helm_http */
+            helm_http: components["schemas"]["admiral.connection.v1.HelmHTTPAuth"];
+        } | {
+            /** oci_basic */
+            oci_basic: components["schemas"]["admiral.connection.v1.BasicAuth"];
+        });
+        /** LabelsEntry */
+        "admiral.connection.v1.CreateConnectionRequest.LabelsEntry": {
+            /** key */
+            key?: string;
+            /** value */
+            value?: string;
+        };
+        /**
+         * CreateConnectionResponse
+         * @description CreateConnectionResponse contains the newly created connection.
+         */
+        "admiral.connection.v1.CreateConnectionResponse": {
+            /**
+             * connection
+             * @description The created connection. Auth config sensitive fields are masked.
+             */
+            connection?: components["schemas"]["admiral.connection.v1.Connection"];
+        };
+        /**
+         * DeleteConnectionRequest
+         * @description DeleteConnectionRequest identifies a connection to delete.
+         */
+        "admiral.connection.v1.DeleteConnectionRequest": {
+            /**
+             * connection_id
+             * Format: uuid
+             * @description The unique identifier of the connection to delete (UUID).
+             *      Fails if any sources still reference this connection.
+             */
+            connection_id?: string;
+        };
+        /**
+         * DeleteConnectionResponse
+         * @description DeleteConnectionResponse is empty on success.
+         */
+        "admiral.connection.v1.DeleteConnectionResponse": Record<string, never>;
+        /**
+         * GCPFederationConfig
+         * @description GCPFederationConfig holds the Workload Identity Federation configuration for
+         *      OIDC-based authentication to GCP services (Artifact Registry, GCS, Terraform).
+         *
+         *      Setup: Create a Workload Identity Pool and Provider that trusts Admiral's
+         *      OIDC issuer, then grant the service account access to the required resources.
+         */
+        "admiral.connection.v1.GCPFederationConfig": {
+            /**
+             * project_number
+             * @description GCP project number (numeric, not project ID).
+             */
+            project_number?: string;
+            /**
+             * pool_id
+             * @description Workload Identity Pool ID.
+             */
+            pool_id?: string;
+            /**
+             * provider_id
+             * @description Workload Identity Provider ID within the pool.
+             */
+            provider_id?: string;
+            /**
+             * service_account_email
+             * @description Email of the GCP service account to impersonate.
+             */
+            service_account_email?: string;
+        };
+        /**
+         * GCPStaticAuth
+         * @description GCPStaticAuth holds a static GCP service account key. Prefer
+         *      GCPFederationConfig (Workload Identity) instead.
+         */
+        "admiral.connection.v1.GCPStaticAuth": {
+            /**
+             * service_account_json
+             * @description JSON-encoded service account key.
+             *      Write-only: masked in responses.
+             */
+            service_account_json?: string;
+        };
+        /**
+         * GetConnectionRequest
+         * @description GetConnectionRequest identifies a connection to retrieve.
+         */
+        "admiral.connection.v1.GetConnectionRequest": {
+            /**
+             * connection_id
+             * Format: uuid
+             * @description The unique identifier of the connection (UUID).
+             */
+            connection_id?: string;
+        };
+        /**
+         * GetConnectionResponse
+         * @description GetConnectionResponse contains the connection record.
+         */
+        "admiral.connection.v1.GetConnectionResponse": {
+            /**
+             * connection
+             * @description The connection record. Sensitive credential fields are masked.
+             */
+            connection?: components["schemas"]["admiral.connection.v1.Connection"];
+        };
+        /**
+         * GitHubAppAuth
+         * @description GitHubAppAuth holds GitHub App credentials for Git operations.
+         *      Preferred over personal tokens for organizations -- provides granular
+         *      repository permissions and a better audit trail.
+         */
+        "admiral.connection.v1.GitHubAppAuth": {
+            /**
+             * app_id
+             * @description The GitHub App's numeric ID.
+             */
+            app_id?: string;
+            /**
+             * installation_id
+             * @description The installation ID for the target organization or repository.
+             */
+            installation_id?: string;
+            /**
+             * private_key
+             * @description PEM-encoded private key for the GitHub App.
+             *      Write-only: masked in responses.
+             */
+            private_key?: string;
+        };
+        /**
+         * GitSSHAuth
+         * @description GitSSHAuth holds SSH key credentials for Git operations.
+         */
+        "admiral.connection.v1.GitSSHAuth": {
+            /**
+             * private_key
+             * @description PEM-encoded SSH private key.
+             *      Write-only: masked in responses.
+             */
+            private_key?: string;
+            /**
+             * passphrase
+             * @description Optional passphrase for the private key.
+             *      Write-only: masked in responses.
+             */
+            passphrase?: string;
+        };
+        /**
+         * GitTokenAuth
+         * @description GitTokenAuth holds HTTPS token credentials for Git operations.
+         */
+        "admiral.connection.v1.GitTokenAuth": {
+            /**
+             * token
+             * @description Personal access token, OAuth token, or bot token.
+             *      Write-only: masked in responses.
+             */
+            token?: string;
+        };
+        /**
+         * HelmHTTPAuth
+         * @description HelmHTTPAuth holds basic auth credentials for classic Helm HTTP repositories.
+         */
+        "admiral.connection.v1.HelmHTTPAuth": {
+            /**
+             * username
+             * @description Username for basic authentication.
+             */
+            username?: string;
+            /**
+             * password
+             * @description Password for basic authentication.
+             *      Write-only: masked in responses.
+             */
+            password?: string;
+        };
+        /**
+         * ListConnectionsRequest
+         * @description ListConnectionsRequest contains pagination and filter parameters.
+         */
+        "admiral.connection.v1.ListConnectionsRequest": {
+            /**
+             * filter
+             * @description Filter expression to narrow results. Uses the Admiral filter DSL.
+             *
+             *      Syntax: `field['name'] = 'value'` with AND/OR/NOT, comparison operators
+             *      (=, !=, <, >, <=, >=, ~=), and predicates (IN, BETWEEN, CONTAINS,
+             *      STARTS_WITH, ENDS_WITH, IS NULL, EXISTS).
+             *
+             *      Filterable fields:
+             *        - `name` -- filter by connection name.
+             *        - `type` -- filter by connection type (GIT_TOKEN, HELM_HTTP, etc.).
+             *        - `status` -- filter by connection status (ACTIVE, ERROR, UNTESTED).
+             *        - `labels.key` -- filter by label key.
+             *
+             *      Example: `field['type'] = 'GIT_TOKEN' AND field['status'] = 'ACTIVE'`
+             */
+            filter?: string;
+            /**
+             * page_size
+             * Format: int32
+             * @description Maximum number of connections to return per page.
+             */
+            page_size?: number;
+            /**
+             * page_token
+             * @description Opaque pagination token from a previous response.
+             */
+            page_token?: string;
+        };
+        /**
+         * ListConnectionsResponse
+         * @description ListConnectionsResponse contains a page of connections.
+         */
+        "admiral.connection.v1.ListConnectionsResponse": {
+            /**
+             * connections
+             * @description The list of connections. Sensitive credential fields are masked.
+             */
+            connections?: components["schemas"]["admiral.connection.v1.Connection"][];
+            /**
+             * next_page_token
+             * @description Pagination token for the next page. Empty when there are no more results.
+             */
+            next_page_token?: string;
+        };
+        /**
+         * TestConnectionRequest
+         * @description TestConnectionRequest identifies a connection to validate.
+         */
+        "admiral.connection.v1.TestConnectionRequest": {
+            /**
+             * connection_id
+             * Format: uuid
+             * @description The unique identifier of the connection to test (UUID).
+             */
+            connection_id?: string;
+        };
+        /**
+         * TestConnectionResponse
+         * @description TestConnectionResponse contains the result of the connectivity test.
+         */
+        "admiral.connection.v1.TestConnectionResponse": {
+            /**
+             * connection
+             * @description The updated connection with refreshed status and last_tested_at.
+             */
+            connection?: components["schemas"]["admiral.connection.v1.Connection"];
+            /**
+             * success
+             * @description Whether the test succeeded.
+             */
+            success?: boolean;
+            /**
+             * message
+             * @description Human-readable message describing the test result. On failure, includes
+             *      the error details (e.g., "401 Unauthorized: token expired").
+             */
+            message?: string;
+        };
+        /**
+         * UpdateConnectionRequest
+         * @description UpdateConnectionRequest contains the connection fields to update.
+         */
+        "admiral.connection.v1.UpdateConnectionRequest": {
+            /**
+             * connection
+             * @description The connection with updated fields.
+             *      Only fields specified in `update_mask` are updated.
+             *
+             *      When updating auth_config, the entire auth config is replaced.
+             *      Omitting auth_config from the update_mask leaves credentials unchanged.
+             */
+            connection: components["schemas"]["admiral.connection.v1.Connection"];
+            /**
+             * update_mask
+             * @description The set of fields to update. If unset, all mutable fields are updated.
+             *      Supported fields: `name`, `description`, `auth_config`, `labels`.
+             */
+            update_mask?: components["schemas"]["google.protobuf.FieldMask"];
+        };
+        /**
+         * UpdateConnectionResponse
+         * @description UpdateConnectionResponse contains the updated connection.
+         */
+        "admiral.connection.v1.UpdateConnectionResponse": {
+            /**
+             * connection
+             * @description The updated connection. Sensitive credential fields are masked.
+             */
+            connection?: components["schemas"]["admiral.connection.v1.Connection"];
+        };
+        /**
+         * CancelDeploymentRequest
+         * @description CancelDeploymentRequest cancels an in-progress deployment.
+         */
+        "admiral.deployment.v1.CancelDeploymentRequest": {
+            /**
+             * deployment_id
+             * Format: uuid
+             * @description Unique identifier of the deployment to cancel (UUID).
+             */
+            deployment_id?: string;
+            /**
+             * reason
+             * @description Optional reason for cancellation.
+             */
+            reason?: string;
+        };
+        /**
+         * CancelDeploymentResponse
+         * @description CancelDeploymentResponse contains the updated deployment.
+         */
+        "admiral.deployment.v1.CancelDeploymentResponse": {
+            /**
+             * deployment
+             * @description The cancelled deployment.
+             */
+            deployment?: components["schemas"]["admiral.deployment.v1.Deployment"];
+        };
+        /**
+         * CreateDeploymentRequest
+         * @description CreateDeploymentRequest triggers a new deployment.
+         */
+        "admiral.deployment.v1.CreateDeploymentRequest": {
+            /**
+             * application_id
+             * Format: uuid
+             * @description The application to deploy (UUID).
+             */
+            application_id?: string;
+            /**
+             * environment_id
+             * Format: uuid
+             * @description The target environment (UUID).
+             */
+            environment_id?: string;
+            /**
+             * message
+             * @description Optional message describing this deployment.
+             */
+            message?: string;
+            /**
+             * destroy
+             * @description Destroy all resources in the environment. Runs Terraform destroy for
+             *      infra components and deletes workload resources from the cluster, in
+             *      reverse dependency order. Required before deleting an environment that
+             *      has active resources.
+             */
+            destroy?: boolean;
+        };
+        /**
+         * CreateDeploymentResponse
+         * @description CreateDeploymentResponse contains the newly created deployment.
+         */
+        "admiral.deployment.v1.CreateDeploymentResponse": {
+            /**
+             * deployment
+             * @description The created deployment. Status will be PENDING initially.
+             */
+            deployment?: components["schemas"]["admiral.deployment.v1.Deployment"];
+        };
+        /**
+         * Deployment
+         * @description Deployment represents a single deployment of an application to an
+         *      environment. Each deployment produces one Revision per component. The
+         *      deployment tracks the composite status across all revisions and provides
+         *      the audit trail for what was deployed, when, and by whom.
+         * @example {
+         *       "id": "7e8f9a0b-1c2d-3e4f-5a6b-7c8d9e0f1a2b",
+         *       "application_id": "a1b2c3d4-5678-9abc-def0-1234567890ab",
+         *       "environment_id": "e5f6a7b8-9012-3cde-f456-789012345678",
+         *       "status": "DEPLOYMENT_STATUS_SUCCEEDED",
+         *       "version": "42",
+         *       "description": "Deploy v2.4.1 with updated ingress rules",
+         *       "created_by": "d290f1ee-6c54-4b01-90e6-d701748f0851",
+         *       "created_at": "2025-11-20T14:00:00Z",
+         *       "updated_at": "2025-11-20T14:12:00Z",
+         *       "completed_at": "2025-11-20T14:12:00Z"
+         *     }
+         */
+        "admiral.deployment.v1.Deployment": {
+            /**
+             * id
+             * Format: uuid
+             * @description Unique identifier for the deployment (UUID).
+             */
+            id?: string;
+            /**
+             * application_id
+             * Format: uuid
+             * @description The application being deployed (UUID).
+             */
+            application_id?: string;
+            /**
+             * environment_id
+             * Format: uuid
+             * @description The target environment (UUID).
+             */
+            environment_id?: string;
+            /**
+             * status
+             * @description Composite status derived from all component revisions.
+             */
+            status?: components["schemas"]["admiral.deployment.v1.DeploymentStatus"];
+            /**
+             * trigger_type
+             * @description What triggered this deployment.
+             */
+            trigger_type?: components["schemas"]["admiral.deployment.v1.DeploymentTriggerType"];
+            /**
+             * triggered_by
+             * Format: uuid
+             * @description UUID of the user that triggered the deployment.
+             */
+            triggered_by?: string;
+            /**
+             * message
+             * @description Optional message describing the deployment (e.g., "Deploying v2.1.0
+             *      with new caching layer" or "Rolling back to stable after API errors").
+             */
+            message?: string;
+            /**
+             * destroy
+             * @description Whether this is a destroy deployment. Destroy deployments tear down all
+             *      resources in the environment: Terraform destroy for infra components,
+             *      resource deletion for workload components. Executed in reverse dependency
+             *      order. Required before an environment with active resources can be deleted.
+             */
+            destroy?: boolean;
+            /**
+             * revision_summary
+             * @description Summary counts for quick status display.
+             */
+            revision_summary?: components["schemas"]["admiral.deployment.v1.RevisionSummary"];
+            /**
+             * created_at
+             * @description When the deployment was created.
+             */
+            created_at?: components["schemas"]["google.protobuf.Timestamp"];
+            /**
+             * completed_at
+             * @description When the deployment finished (all revisions completed, failed, or
+             *      cancelled). Absent while the deployment is in progress.
+             */
+            completed_at?: components["schemas"]["google.protobuf.Timestamp"];
+        };
+        /**
+         * DeploymentStatus
+         * @description DeploymentStatus represents the composite status of a deployment, derived
+         *      from the statuses of all its component revisions.
+         * @enum {string}
+         */
+        "admiral.deployment.v1.DeploymentStatus": "DEPLOYMENT_STATUS_UNSPECIFIED" | "DEPLOYMENT_STATUS_PENDING" | "DEPLOYMENT_STATUS_QUEUED" | "DEPLOYMENT_STATUS_RUNNING" | "DEPLOYMENT_STATUS_SUCCEEDED" | "DEPLOYMENT_STATUS_PARTIALLY_FAILED" | "DEPLOYMENT_STATUS_FAILED" | "DEPLOYMENT_STATUS_CANCELLED";
+        /**
+         * DeploymentTriggerType
+         * @description DeploymentTriggerType indicates what initiated the deployment.
+         * @enum {string}
+         */
+        "admiral.deployment.v1.DeploymentTriggerType": "DEPLOYMENT_TRIGGER_TYPE_UNSPECIFIED" | "DEPLOYMENT_TRIGGER_TYPE_MANUAL" | "DEPLOYMENT_TRIGGER_TYPE_CI" | "DEPLOYMENT_TRIGGER_TYPE_DESTROY";
+        /**
+         * GetDeploymentRequest
+         * @description GetDeploymentRequest identifies a deployment to retrieve.
+         */
+        "admiral.deployment.v1.GetDeploymentRequest": {
+            /**
+             * deployment_id
+             * Format: uuid
+             * @description Unique identifier of the deployment (UUID).
+             */
+            deployment_id?: string;
+        };
+        /**
+         * GetDeploymentResponse
+         * @description GetDeploymentResponse contains the deployment record.
+         */
+        "admiral.deployment.v1.GetDeploymentResponse": {
+            /**
+             * deployment
+             * @description The deployment record with current status.
+             */
+            deployment?: components["schemas"]["admiral.deployment.v1.Deployment"];
+        };
+        /**
+         * GetRevisionRequest
+         * @description GetRevisionRequest identifies a revision within a deployment.
+         */
+        "admiral.deployment.v1.GetRevisionRequest": {
+            /**
+             * deployment_id
+             * Format: uuid
+             * @description The deployment (UUID).
+             */
+            deployment_id?: string;
+            /**
+             * revision_id
+             * Format: uuid
+             * @description The revision (UUID).
+             */
+            revision_id?: string;
+        };
+        /**
+         * GetRevisionResponse
+         * @description GetRevisionResponse contains the revision record.
+         */
+        "admiral.deployment.v1.GetRevisionResponse": {
+            /**
+             * revision
+             * @description The revision record with current status and artifacts.
+             */
+            revision?: components["schemas"]["admiral.deployment.v1.Revision"];
+        };
+        /**
+         * ListDeploymentsRequest
+         * @description ListDeploymentsRequest contains pagination and filter parameters.
+         */
+        "admiral.deployment.v1.ListDeploymentsRequest": {
+            /**
+             * filter
+             * @description Filter expression using the PEG filter DSL.
+             *
+             *      Common filter fields:
+             *        - `application_id` -- deployments for a specific application.
+             *        - `environment_id` -- deployments to a specific environment.
+             *        - `status` -- filter by deployment status.
+             *        - `trigger_type` -- filter by trigger type (MANUAL, CI, DESTROY).
+             */
+            filter?: string;
+            /**
+             * page_size
+             * Format: int32
+             * @description Maximum number of deployments to return per page.
+             */
+            page_size?: number;
+            /**
+             * page_token
+             * @description Opaque pagination token from a previous response.
+             */
+            page_token?: string;
+        };
+        /**
+         * ListDeploymentsResponse
+         * @description ListDeploymentsResponse contains a page of deployments.
+         */
+        "admiral.deployment.v1.ListDeploymentsResponse": {
+            /**
+             * deployments
+             * @description The list of deployments, ordered from newest to oldest.
+             */
+            deployments?: components["schemas"]["admiral.deployment.v1.Deployment"][];
+            /**
+             * next_page_token
+             * @description Pagination token for the next page. Empty when there are no more results.
+             */
+            next_page_token?: string;
+        };
+        /**
+         * ListRevisionsRequest
+         * @description ListRevisionsRequest lists all revisions for a deployment.
+         */
+        "admiral.deployment.v1.ListRevisionsRequest": {
+            /**
+             * deployment_id
+             * Format: uuid
+             * @description Unique identifier of the deployment to list revisions for (UUID).
+             */
+            deployment_id?: string;
+            /**
+             * page_size
+             * Format: int32
+             * @description Maximum number of revisions to return per page.
+             */
+            page_size?: number;
+            /**
+             * page_token
+             * @description Opaque pagination token from a previous response.
+             */
+            page_token?: string;
+        };
+        /**
+         * ListRevisionsResponse
+         * @description ListRevisionsResponse contains all revisions for a deployment.
+         */
+        "admiral.deployment.v1.ListRevisionsResponse": {
+            /**
+             * revisions
+             * @description The list of revisions, ordered by dependency graph (upstream first).
+             */
+            revisions?: components["schemas"]["admiral.deployment.v1.Revision"][];
+            /**
+             * next_page_token
+             * @description Pagination token for the next page. Empty when there are no more results.
+             */
+            next_page_token?: string;
+        };
+        /**
+         * RetryRevisionRequest
+         * @description RetryRevisionRequest retries a failed revision.
+         */
+        "admiral.deployment.v1.RetryRevisionRequest": {
+            /**
+             * deployment_id
+             * Format: uuid
+             * @description The deployment (UUID).
+             */
+            deployment_id?: string;
+            /**
+             * revision_id
+             * Format: uuid
+             * @description The revision to retry (UUID). Must be in FAILED status.
+             */
+            revision_id?: string;
+        };
+        /**
+         * RetryRevisionResponse
+         * @description RetryRevisionResponse contains the updated revision.
+         */
+        "admiral.deployment.v1.RetryRevisionResponse": {
+            /**
+             * revision
+             * @description The retried revision. Status resets and retry_count is incremented.
+             *      Downstream revisions that were BLOCKED will automatically unblock
+             *      if this revision succeeds.
+             */
+            revision?: components["schemas"]["admiral.deployment.v1.Revision"];
+        };
+        /**
+         * Revision
+         * @description Revision represents an immutable, rendered artifact for a single component
+         *      within a deployment. Each revision tracks the full lifecycle from rendering
+         *      through execution, and stores references to the produced artifacts
+         *      (rendered manifests, Terraform plan files, etc.).
+         *
+         *      For infrastructure components (Terraform):
+         *        - Rendering produces .tf files and .tfvars with resolved variable values.
+         *        - `terraform plan` and `terraform apply` are executed by the assigned runner.
+         *        - The plan output is stored for visibility.
+         *        - Each component has its own Terraform state.
+         *
+         *      For workload components (Helm, Kustomize, manifests):
+         *        - Rendering produces Kubernetes manifests (via helm template, kustomize
+         *          build, or raw file collection).
+         *        - Manifests are ordered (CRDs before resources, namespaces first).
+         *        - The rendered bundle is sent to the K8s agent for application.
+         */
+        "admiral.deployment.v1.Revision": {
+            /**
+             * id
+             * Format: uuid
+             * @description Unique identifier for the revision (UUID).
+             */
+            id?: string;
+            /**
+             * deployment_id
+             * Format: uuid
+             * @description The deployment this revision belongs to (UUID).
+             */
+            deployment_id?: string;
+            /**
+             * component_id
+             * Format: uuid
+             * @description The component this revision is for (UUID).
+             */
+            component_id?: string;
+            /**
+             * component_name
+             * @description Component name at the time of deployment (denormalized for display).
+             */
+            component_name?: string;
+            /**
+             * category
+             * @description Component category at the time of deployment (after override resolution).
+             */
+            category?: components["schemas"]["admiral.deployment.v1.RevisionCategory"];
+            /**
+             * status
+             * @description Lifecycle status of this revision.
+             */
+            status?: components["schemas"]["admiral.deployment.v1.RevisionStatus"];
+            /**
+             * source_id
+             * @description The source used for this revision (UUID, after override resolution).
+             */
+            source_id?: string;
+            /**
+             * version
+             * @description The version deployed (after override resolution).
+             */
+            version?: string;
+            /**
+             * resolved_values
+             * @description The resolved values template snapshot -- the values_template with all
+             *      variable references and component output references fully resolved.
+             *      Stored for audit: shows exactly what inputs were used. Sensitive
+             *      variable values are masked in API responses.
+             */
+            resolved_values?: string;
+            /**
+             * depends_on
+             * @description Component IDs that this revision depends on. Populated from the resolved
+             *      depends_on list plus implicit dependencies from template expressions.
+             */
+            depends_on?: string[];
+            /**
+             * blocked_by
+             * @description Component IDs that are blocking this revision. Only populated when
+             *      status is BLOCKED -- indicates which upstream components failed.
+             */
+            blocked_by?: string[];
+            /**
+             * artifact_checksum
+             * @description SHA-256 checksum of the rendered artifact bundle (tar.gz).
+             */
+            artifact_checksum?: string;
+            /**
+             * artifact_url
+             * @description Storage location of the rendered artifact bundle. Internal reference
+             *      used by agents/runners to fetch the bundle.
+             */
+            artifact_url?: string;
+            /**
+             * plan_output
+             * @description (Infrastructure only) The Terraform plan output in human-readable format.
+             *      Populated after planning completes. Used for visibility and audit.
+             */
+            plan_output?: string;
+            /**
+             * plan_summary
+             * @description (Infrastructure only) The number of resources Terraform plans to add,
+             *      change, and destroy. Populated after planning completes.
+             */
+            plan_summary?: components["schemas"]["admiral.deployment.v1.TerraformPlanSummary"];
+            /**
+             * error_message
+             * @description Error message if the revision failed. Empty on success.
+             */
+            error_message?: string;
+            /**
+             * retry_count
+             * Format: int32
+             * @description Number of retry attempts. Starts at 0 for the initial attempt.
+             */
+            retry_count?: number;
+            /**
+             * created_at
+             * @description When the revision was created (same as deployment created_at).
+             */
+            created_at?: components["schemas"]["google.protobuf.Timestamp"];
+            /**
+             * started_at
+             * @description When the revision started execution (transitioned from PENDING/QUEUED).
+             */
+            started_at?: components["schemas"]["google.protobuf.Timestamp"];
+            /**
+             * completed_at
+             * @description When the revision finished (succeeded, failed, or cancelled).
+             */
+            completed_at?: components["schemas"]["google.protobuf.Timestamp"];
+        };
+        /**
+         * RevisionCategory
+         * @description RevisionCategory mirrors ComponentCategory but is stored on the revision
+         *      to capture the effective category at deployment time (may differ from
+         *      the component default if an environment override changed the source type).
+         * @enum {string}
+         */
+        "admiral.deployment.v1.RevisionCategory": "REVISION_CATEGORY_UNSPECIFIED" | "REVISION_CATEGORY_INFRASTRUCTURE" | "REVISION_CATEGORY_WORKLOAD";
+        /**
+         * RevisionStatus
+         * @description RevisionStatus represents the lifecycle status of a single component
+         *      revision within a deployment.
+         * @enum {string}
+         */
+        "admiral.deployment.v1.RevisionStatus": "REVISION_STATUS_UNSPECIFIED" | "REVISION_STATUS_PENDING" | "REVISION_STATUS_QUEUED" | "REVISION_STATUS_PLANNING" | "REVISION_STATUS_APPLYING" | "REVISION_STATUS_SUCCEEDED" | "REVISION_STATUS_FAILED" | "REVISION_STATUS_BLOCKED" | "REVISION_STATUS_CANCELLED";
+        /**
+         * RevisionSummary
+         * @description RevisionSummary provides aggregate counts of revision statuses within a
+         *      deployment, enabling quick status display without loading all revisions.
+         */
+        "admiral.deployment.v1.RevisionSummary": {
+            /**
+             * total
+             * Format: int32
+             * @description Total number of component revisions in this deployment.
+             */
+            total?: number;
+            /**
+             * succeeded
+             * Format: int32
+             * @description Number of revisions that completed successfully.
+             */
+            succeeded?: number;
+            /**
+             * failed
+             * Format: int32
+             * @description Number of revisions that failed.
+             */
+            failed?: number;
+            /**
+             * blocked
+             * Format: int32
+             * @description Number of revisions that are blocked by upstream failures.
+             */
+            blocked?: number;
+            /**
+             * running
+             * Format: int32
+             * @description Number of revisions currently running (planning or applying).
+             */
+            running?: number;
+            /**
+             * cancelled
+             * Format: int32
+             * @description Number of revisions that were cancelled.
+             */
+            cancelled?: number;
+            /**
+             * pending
+             * Format: int32
+             * @description Number of revisions that have not started yet.
+             */
+            pending?: number;
+        };
+        /**
+         * TerraformPlanSummary
+         * @description TerraformPlanSummary provides resource change counts from a Terraform plan.
+         */
+        "admiral.deployment.v1.TerraformPlanSummary": {
+            /**
+             * additions
+             * Format: int32
+             * @description Number of resources to be created.
+             */
+            additions?: number;
+            /**
+             * changes
+             * Format: int32
+             * @description Number of resources to be updated in place.
+             */
+            changes?: number;
+            /**
+             * destructions
+             * Format: int32
+             * @description Number of resources to be destroyed.
+             */
+            destructions?: number;
+        };
+        /**
+         * CreateEnvironmentRequest
+         * @description CreateEnvironmentRequest contains the parameters for creating a new environment.
+         */
+        "admiral.environment.v1.CreateEnvironmentRequest": {
+            /**
+             * application_id
+             * Format: uuid
+             * @description The application to create this environment for (UUID).
+             */
+            application_id?: string;
+            /**
+             * name
+             * @description URL-safe, human-readable identifier (e.g., "prod", "staging-us-east").
+             *      Must be unique within the application. Lowercase alphanumeric and hyphens only.
+             */
+            name?: string;
+            /**
+             * description
+             * @description Optional longer-form description of the environment's purpose.
+             */
+            description?: string;
+            /**
+             * runtime_type
+             * @description The kind of runtime this environment targets. Optional -- can be assigned
+             *      later via UpdateEnvironment.
+             */
+            runtime_type?: components["schemas"]["admiral.environment.v1.RuntimeType"];
+            /**
+             * labels
+             * @description Arbitrary key-value labels for organizing and filtering environments.
+             */
+            labels?: {
+                [key: string]: string;
+            };
+            /**
+             * infrastructure
+             * @description Infrastructure execution settings (runner assignment).
+             */
+            infrastructure?: components["schemas"]["admiral.environment.v1.InfrastructureConfig"];
+        } & {
+            /**
+             * kubernetes
+             * @description Kubernetes-specific settings (cluster, namespace).
+             */
+            kubernetes: components["schemas"]["admiral.environment.v1.KubernetesConfig"];
+        };
+        /** LabelsEntry */
+        "admiral.environment.v1.CreateEnvironmentRequest.LabelsEntry": {
+            /** key */
+            key?: string;
+            /** value */
+            value?: string;
+        };
+        /**
+         * CreateEnvironmentResponse
+         * @description CreateEnvironmentResponse contains the newly created environment.
+         */
+        "admiral.environment.v1.CreateEnvironmentResponse": {
+            /**
+             * environment
+             * @description The created environment.
+             */
+            environment?: components["schemas"]["admiral.environment.v1.Environment"];
+        };
+        /**
+         * DeleteEnvironmentRequest
+         * @description DeleteEnvironmentRequest identifies an environment to delete.
+         */
+        "admiral.environment.v1.DeleteEnvironmentRequest": {
+            /**
+             * environment_id
+             * Format: uuid
+             * @description The unique identifier of the environment to delete (UUID).
+             */
+            environment_id?: string;
+        };
+        /**
+         * DeleteEnvironmentResponse
+         * @description DeleteEnvironmentResponse is empty on success.
+         */
+        "admiral.environment.v1.DeleteEnvironmentResponse": Record<string, never>;
+        /**
+         * Environment
+         * @description Environment represents a named deployment target for an application. Each
+         *      environment binds an application to a runtime where its workloads are deployed.
+         * @example {
+         *       "id": "e5f6a7b8-9012-3cde-f456-789012345678",
+         *       "application_id": "a1b2c3d4-5678-9abc-def0-1234567890ab",
+         *       "name": "staging",
+         *       "description": "Shared staging environment for QA validation before production promotion.",
+         *       "runtime_type": "RUNTIME_TYPE_KUBERNETES",
+         *       "labels": {
+         *         "region": "us-east-1",
+         *         "tier": "staging"
+         *       },
+         *       "infrastructure": {
+         *         "runner_id": "b2c3d4e5-6789-0abc-def1-234567890abc"
+         *       },
+         *       "kubernetes": {
+         *         "cluster_id": "c3d4e5f6-7890-1abc-def0-abcdef012345",
+         *         "namespace": "inventory-staging"
+         *       },
+         *       "has_pending_changes": true,
+         *       "last_deployed_at": "2025-11-01T09:15:00Z",
+         *       "created_by": "d290f1ee-6c54-4b01-90e6-d701748f0851",
+         *       "updated_by": "d290f1ee-6c54-4b01-90e6-d701748f0851",
+         *       "created_at": "2025-09-15T11:00:00Z",
+         *       "updated_at": "2025-11-02T14:30:00Z"
+         *     }
+         */
+        "admiral.environment.v1.Environment": {
+            /**
+             * id
+             * Format: uuid
+             * @description Unique identifier for the environment (UUID).
+             */
+            id?: string;
+            /**
+             * application_id
+             * Format: uuid
+             * @description The application this environment belongs to (UUID).
+             */
+            application_id?: string;
+            /**
+             * name
+             * @description URL-safe, human-readable identifier (e.g., "prod", "staging-us-east").
+             *      Unique within the application. Lowercase alphanumeric and hyphens only,
+             *      must start with a letter and end with an alphanumeric character (1-63 chars).
+             */
+            name?: string;
+            /**
+             * description
+             * @description Optional longer-form description of the environment's purpose
+             *      (e.g., "US East production serving live traffic" or
+             *      "Shared staging for QA validation before prod promotion").
+             */
+            description?: string;
+            /**
+             * runtime_type
+             * @description The kind of runtime this environment targets. Optional -- can be assigned
+             *      after creation.
+             */
+            runtime_type?: components["schemas"]["admiral.environment.v1.RuntimeType"];
+            /**
+             * labels
+             * @description Arbitrary key-value labels for organizing and filtering environments
+             *      (e.g., `{"region": "us-east-1", "tier": "production"}`).
+             */
+            labels?: {
+                [key: string]: string;
+            };
+            /**
+             * infrastructure
+             * @description Infrastructure execution settings (runner assignment). If unset,
+             *      infrastructure components in this environment cannot be deployed.
+             */
+            infrastructure?: components["schemas"]["admiral.environment.v1.InfrastructureConfig"];
+            /**
+             * has_pending_changes
+             * @description Whether the environment has configuration changes that have not yet been
+             *      deployed. Server-derived by comparing current resolved config (variables,
+             *      component settings, overrides, source versions) against the last
+             *      successful deployment's snapshot. False if no successful deployment
+             *      exists yet (a fresh environment with no deployments returns false --
+             *      use `last_deployed_at` to distinguish "clean" from "never deployed").
+             */
+            has_pending_changes?: boolean;
+            /**
+             * last_deployed_at
+             * @description When the last successful deployment to this environment completed.
+             *      Absent if no successful deployment has occurred yet.
+             */
+            last_deployed_at?: components["schemas"]["google.protobuf.Timestamp"];
+            /**
+             * created_by
+             * @description The user or agent who created this environment (server-populated from token).
+             */
+            created_by?: components["schemas"]["admiral.common.v1.ActorRef"];
+            /**
+             * updated_by
+             * @description The user or agent who last updated this environment (server-populated from token).
+             */
+            updated_by?: components["schemas"]["admiral.common.v1.ActorRef"];
+            /**
+             * created_at
+             * @description When the environment was created.
+             */
+            created_at?: components["schemas"]["google.protobuf.Timestamp"];
+            /**
+             * updated_at
+             * @description When the environment was last updated.
+             */
+            updated_at?: components["schemas"]["google.protobuf.Timestamp"];
+        } & {
+            /**
+             * kubernetes
+             * @description Kubernetes-specific settings (cluster, namespace).
+             */
+            kubernetes: components["schemas"]["admiral.environment.v1.KubernetesConfig"];
+        };
+        /** LabelsEntry */
+        "admiral.environment.v1.Environment.LabelsEntry": {
+            /** key */
+            key?: string;
+            /** value */
+            value?: string;
+        };
+        /**
+         * GetEnvironmentRequest
+         * @description GetEnvironmentRequest identifies an environment to retrieve.
+         */
+        "admiral.environment.v1.GetEnvironmentRequest": {
+            /**
+             * environment_id
+             * Format: uuid
+             * @description The unique identifier of the environment (UUID).
+             */
+            environment_id?: string;
+        };
+        /**
+         * GetEnvironmentResponse
+         * @description GetEnvironmentResponse contains the environment record.
+         */
+        "admiral.environment.v1.GetEnvironmentResponse": {
+            /**
+             * environment
+             * @description The environment record.
+             */
+            environment?: components["schemas"]["admiral.environment.v1.Environment"];
+        };
+        /**
+         * InfrastructureConfig
+         * @description InfrastructureConfig contains settings for infrastructure operations
+         *      (Terraform plan/apply) within this environment.
+         */
+        "admiral.environment.v1.InfrastructureConfig": {
+            /**
+             * runner_id
+             * Format: uuid
+             * @description The runner that executes infrastructure operations for this environment (UUID).
+             *      If unset, infrastructure components in this environment cannot be deployed.
+             */
+            runner_id?: string;
+        };
+        /**
+         * KubernetesConfig
+         * @description KubernetesConfig contains Kubernetes-specific settings for an environment.
+         */
+        "admiral.environment.v1.KubernetesConfig": {
+            /**
+             * cluster_id
+             * Format: uuid
+             * @description The cluster this environment deploys to (UUID).
+             */
+            cluster_id?: string;
+            /**
+             * namespace
+             * @description The Kubernetes namespace for this environment's workloads.
+             *      Defaults to the environment name if not specified at deploy time.
+             */
+            namespace?: string | null;
+        };
+        /**
+         * ListEnvironmentsRequest
+         * @description ListEnvironmentsRequest contains pagination and filter parameters.
+         */
+        "admiral.environment.v1.ListEnvironmentsRequest": {
+            /**
+             * filter
+             * @description Filter expression to narrow results. Uses the Admiral filter DSL.
+             *
+             *      Syntax: `field['name'] = 'value'` with AND/OR/NOT, comparison operators
+             *      (=, !=, <, >, <=, >=, ~=), and predicates (IN, BETWEEN, CONTAINS,
+             *      STARTS_WITH, ENDS_WITH, IS NULL, EXISTS).
+             *
+             *      Filterable fields:
+             *        - `application_id` -- filter by parent application (UUID).
+             *        - `name` -- filter by environment name.
+             *        - `runtime_type` -- filter by runtime type (KUBERNETES).
+             *        - `labels.key` -- filter by label key.
+             *
+             *      Example: `field['application_id'] = '<uuid>' AND field['name'] = 'prod'`
+             */
+            filter?: string;
+            /**
+             * page_size
+             * Format: int32
+             * @description Maximum number of environments to return per page.
+             */
+            page_size?: number;
+            /**
+             * page_token
+             * @description Opaque pagination token from a previous response.
+             */
+            page_token?: string;
+        };
+        /**
+         * ListEnvironmentsResponse
+         * @description ListEnvironmentsResponse contains a page of environments.
+         */
+        "admiral.environment.v1.ListEnvironmentsResponse": {
+            /**
+             * environments
+             * @description The list of environments.
+             */
+            environments?: components["schemas"]["admiral.environment.v1.Environment"][];
+            /**
+             * next_page_token
+             * @description Pagination token for the next page. Empty when there are no more results.
+             */
+            next_page_token?: string;
+        };
+        /**
+         * RuntimeType
+         * @description RuntimeType identifies the kind of runtime an environment targets.
+         * @enum {string}
+         */
+        "admiral.environment.v1.RuntimeType": "RUNTIME_TYPE_UNSPECIFIED" | "RUNTIME_TYPE_KUBERNETES";
+        /**
+         * UpdateEnvironmentRequest
+         * @description UpdateEnvironmentRequest contains the environment fields to update.
+         */
+        "admiral.environment.v1.UpdateEnvironmentRequest": {
+            /**
+             * environment
+             * @description The environment with updated fields.
+             *      Only fields specified in `update_mask` are updated.
+             */
+            environment: components["schemas"]["admiral.environment.v1.Environment"];
+            /**
+             * update_mask
+             * @description The set of fields to update. If unset, all mutable fields are updated.
+             *      Supported fields: `name`, `description`, `runtime_type`, `kubernetes`,
+             *      `labels`, `infrastructure`.
+             */
+            update_mask?: components["schemas"]["google.protobuf.FieldMask"];
+        };
+        /**
+         * UpdateEnvironmentResponse
+         * @description UpdateEnvironmentResponse contains the updated environment.
+         */
+        "admiral.environment.v1.UpdateEnvironmentResponse": {
+            /**
+             * environment
+             * @description The updated environment.
+             */
+            environment?: components["schemas"]["admiral.environment.v1.Environment"];
+        };
+        /**
+         * HealthcheckResponse
+         * @description Empty response indicating the service is healthy.
+         */
+        "admiral.healthcheck.v1.HealthcheckResponse": Record<string, never>;
+        /**
+         * ActiveJobInfo
+         * @description ActiveJobInfo summarizes a job currently being executed by a runner instance.
+         *      Included in RunnerStatus to provide real-time job progress via heartbeat.
+         */
+        "admiral.runner.v1.ActiveJobInfo": {
+            /**
+             * job_id
+             * Format: uuid
+             * @description The job being executed (UUID).
+             */
+            job_id?: string;
+            /**
+             * phase
+             * @description Current execution phase reported by the worker thread.
+             */
+            phase?: components["schemas"]["admiral.runner.v1.JobPhase"];
+            /**
+             * started_at
+             * @description When execution of this job started (when the runner claimed it).
+             */
+            started_at?: components["schemas"]["google.protobuf.Timestamp"];
+        };
+        /**
+         * ClaimJobRequest
+         * @description ClaimJobRequest is sent by the runner to poll for available work.
+         *      The runner is identified by the SAT's binding -- no runner_id is required.
+         */
+        "admiral.runner.v1.ClaimJobRequest": Record<string, never>;
+        /**
+         * ClaimJobResponse
+         * @description ClaimJobResponse contains the next job to execute, if any.
+         */
+        "admiral.runner.v1.ClaimJobResponse": {
+            /**
+             * job
+             * @description The job to execute. Absent if no work is available -- the runner should
+             *      wait and poll again after its configured interval.
+             */
+            job?: components["schemas"]["admiral.runner.v1.Job"];
+        };
+        /**
+         * CreateRunnerRequest
+         * @description CreateRunnerRequest contains the parameters for creating a new runner.
+         */
+        "admiral.runner.v1.CreateRunnerRequest": {
+            /**
+             * name
+             * @description URL-safe, human-readable identifier (e.g., "prod-terraform-runner").
+             *      Must be unique within the tenant. Lowercase alphanumeric and hyphens only.
+             */
+            name?: string;
+            /**
+             * description
+             * @description Optional longer-form description of the runner's purpose.
+             */
+            description?: string;
+            /**
+             * kind
+             * @description The type of operations this runner executes.
+             */
+            kind?: components["schemas"]["admiral.runner.v1.RunnerKind"];
+            /**
+             * labels
+             * @description Arbitrary key-value labels for organizing and filtering runners.
+             */
+            labels?: {
+                [key: string]: string;
+            };
+        };
+        /** LabelsEntry */
+        "admiral.runner.v1.CreateRunnerRequest.LabelsEntry": {
+            /** key */
+            key?: string;
+            /** value */
+            value?: string;
+        };
+        /**
+         * CreateRunnerResponse
+         * @description CreateRunnerResponse contains the newly created runner and its initial
+         *      Service Access Token (SAT).
+         */
+        "admiral.runner.v1.CreateRunnerResponse": {
+            /**
+             * runner
+             * @description The created runner. Health status will be PENDING until the runner
+             *      begins heartbeating.
+             */
+            runner?: components["schemas"]["admiral.runner.v1.Runner"];
+            /**
+             * plain_text_token
+             * @description The raw Agent Token secret (e.g., "adms_pL2mN5oQ8rS1..."). This value
+             *      is shown exactly once and cannot be retrieved again. Deploy this token to
+             *      the runner binary for authentication.
+             *
+             *      To create additional tokens (e.g., for rotation), use
+             *      CreateRunnerToken (POST /v1/runners/{runner_id}/tokens).
+             */
+            plain_text_token?: string;
+        };
+        /**
+         * CreateRunnerTokenRequest
+         * @description CreateRunnerTokenRequest contains the parameters for creating a new SAT
+         *      bound to a runner.
+         */
+        "admiral.runner.v1.CreateRunnerTokenRequest": {
+            /**
+             * runner_id
+             * Format: uuid
+             * @description The runner to bind this token to (UUID).
+             */
+            runner_id?: string;
+            /**
+             * name
+             * @description URL-safe, human-readable identifier for the token (e.g., "prod-runner-key").
+             *      Must be unique within the runner's tokens. Lowercase alphanumeric and
+             *      hyphens only.
+             */
+            name?: string;
+            /**
+             * expires_at
+             * @description Optional expiration time. If unset, the token does not expire.
+             */
+            expires_at?: components["schemas"]["google.protobuf.Timestamp"];
+        };
+        /**
+         * CreateRunnerTokenResponse
+         * @description CreateRunnerTokenResponse contains the newly created SAT.
+         */
+        "admiral.runner.v1.CreateRunnerTokenResponse": {
+            /**
+             * access_token
+             * @description The created token metadata. Scopes are auto-assigned for runner SATs.
+             */
+            access_token?: components["schemas"]["admiral.common.v1.AccessToken"];
+            /**
+             * plain_text_token
+             * @description The raw token secret (e.g., "adms_pL2mN5oQ8rS1..."). This value is
+             *      shown exactly once and cannot be retrieved again. Store it securely.
+             */
+            plain_text_token?: string;
+        };
+        /**
+         * DeleteRunnerRequest
+         * @description DeleteRunnerRequest identifies a runner to delete.
+         */
+        "admiral.runner.v1.DeleteRunnerRequest": {
+            /**
+             * runner_id
+             * Format: uuid
+             * @description The unique identifier of the runner to delete (UUID).
+             *      All associated service access tokens will be revoked.
+             */
+            runner_id?: string;
+        };
+        /**
+         * DeleteRunnerResponse
+         * @description DeleteRunnerResponse is empty on success.
+         */
+        "admiral.runner.v1.DeleteRunnerResponse": Record<string, never>;
+        /**
+         * GetJobBundleRequest
+         * @description GetJobBundleRequest identifies a job whose artifact bundle to fetch.
+         */
+        "admiral.runner.v1.GetJobBundleRequest": {
+            /**
+             * job_id
+             * Format: uuid
+             * @description The job to fetch the bundle for (UUID).
+             */
+            job_id?: string;
+        };
+        /**
+         * GetJobBundleResponse
+         * @description GetJobBundleResponse contains the rendered artifacts for execution.
+         */
+        "admiral.runner.v1.GetJobBundleResponse": {
+            /**
+             * bundle
+             * @description The artifact bundle with everything needed to execute the TF operation.
+             */
+            bundle?: components["schemas"]["admiral.runner.v1.JobBundle"];
+        };
+        /**
+         * GetRunnerRequest
+         * @description GetRunnerRequest identifies a runner to retrieve.
+         */
+        "admiral.runner.v1.GetRunnerRequest": {
+            /**
+             * runner_id
+             * Format: uuid
+             * @description The unique identifier of the runner (UUID).
+             */
+            runner_id?: string;
+        };
+        /**
+         * GetRunnerResponse
+         * @description GetRunnerResponse contains the runner record.
+         */
+        "admiral.runner.v1.GetRunnerResponse": {
+            /**
+             * runner
+             * @description The runner record, including server-derived health_status.
+             */
+            runner?: components["schemas"]["admiral.runner.v1.Runner"];
+        };
+        /**
+         * GetRunnerStatusRequest
+         * @description GetRunnerStatusRequest identifies a runner whose status to retrieve.
+         */
+        "admiral.runner.v1.GetRunnerStatusRequest": {
+            /**
+             * runner_id
+             * Format: uuid
+             * @description The unique identifier of the runner (UUID).
+             */
+            runner_id?: string;
+        };
+        /**
+         * GetRunnerStatusResponse
+         * @description GetRunnerStatusResponse contains the server-derived health status and the
+         *      latest capacity snapshot. If no heartbeat has been received yet, the
+         *      health_status will be PENDING and status will be absent.
+         */
+        "admiral.runner.v1.GetRunnerStatusResponse": {
+            /**
+             * health_status
+             * @description Server-derived health status based on heartbeat recency and capacity.
+             */
+            health_status?: components["schemas"]["admiral.runner.v1.RunnerHealthStatus"];
+            /**
+             * status
+             * @description Latest capacity snapshot from the runner. Absent if no heartbeat has
+             *      been received yet.
+             */
+            status?: components["schemas"]["admiral.runner.v1.RunnerStatus"];
+            /**
+             * reported_at
+             * @description When the latest heartbeat was received.
+             */
+            reported_at?: components["schemas"]["google.protobuf.Timestamp"];
+        };
+        /**
+         * GetRunnerTokenRequest
+         * @description GetRunnerTokenRequest identifies a runner SAT to retrieve.
+         */
+        "admiral.runner.v1.GetRunnerTokenRequest": {
+            /**
+             * runner_id
+             * Format: uuid
+             * @description The runner the token belongs to (UUID).
+             */
+            runner_id?: string;
+            /**
+             * token_id
+             * Format: uuid
+             * @description The unique identifier of the token (UUID).
+             */
+            token_id?: string;
+        };
+        /**
+         * GetRunnerTokenResponse
+         * @description GetRunnerTokenResponse contains the requested runner SAT metadata.
+         */
+        "admiral.runner.v1.GetRunnerTokenResponse": {
+            /**
+             * access_token
+             * @description The token metadata. The token secret is never included.
+             */
+            access_token?: components["schemas"]["admiral.common.v1.AccessToken"];
+        };
+        /**
+         * HeartbeatRequest
+         * @description HeartbeatRequest contains the runner's alive signal and current capacity.
+         *      The runner is identified by the SAT's binding -- no runner_id is required.
+         */
+        "admiral.runner.v1.HeartbeatRequest": {
+            /**
+             * status
+             * @description Current capacity and telemetry metrics.
+             */
+            status: components["schemas"]["admiral.runner.v1.RunnerStatus"];
+            /**
+             * instance_id
+             * Format: uuid
+             * @description Random UUID generated at process startup to distinguish multiple runner
+             *      instances sharing the same SAT. The server uses this to track heartbeats
+             *      per instance and aggregate capacity metrics across all instances of the
+             *      same runner. A new instance_id is generated each time the runner process
+             *      starts -- it is not persisted across restarts.
+             */
+            instance_id?: string;
+        };
+        /**
+         * HeartbeatResponse
+         * @description HeartbeatResponse acknowledges the heartbeat.
+         */
+        "admiral.runner.v1.HeartbeatResponse": {
+            /**
+             * ack
+             * @description Whether the heartbeat was accepted.
+             */
+            ack?: boolean;
+            /**
+             * next_heartbeat_seconds
+             * Format: int32
+             * @description Server-controlled interval (in seconds) before the runner should send
+             *      its next heartbeat. Allows the server to adjust frequency dynamically.
+             */
+            next_heartbeat_seconds?: number;
+        };
+        /**
+         * Job
+         * @description Job represents an infrastructure execution job assigned to a runner.
+         *      Jobs bridge the Deployment/Revision system and the Runner execution plane.
+         */
+        "admiral.runner.v1.Job": {
+            /**
+             * id
+             * Format: uuid
+             * @description Unique identifier for the job (UUID).
+             */
+            id?: string;
+            /**
+             * runner_id
+             * Format: uuid
+             * @description The runner this job is assigned to (UUID).
+             */
+            runner_id?: string;
+            /**
+             * revision_id
+             * Format: uuid
+             * @description The revision this job belongs to (UUID).
+             */
+            revision_id?: string;
+            /**
+             * deployment_id
+             * Format: uuid
+             * @description The deployment this job belongs to (UUID). Denormalized for convenience.
+             */
+            deployment_id?: string;
+            /**
+             * job_type
+             * @description The type of Terraform operation to execute.
+             */
+            job_type?: components["schemas"]["admiral.runner.v1.JobType"];
+            /**
+             * status
+             * @description Current lifecycle status of the job.
+             */
+            status?: components["schemas"]["admiral.runner.v1.JobStatus"];
+            /**
+             * created_at
+             * @description When the job was created.
+             */
+            created_at?: components["schemas"]["google.protobuf.Timestamp"];
+            /**
+             * started_at
+             * @description When the runner started executing the job.
+             */
+            started_at?: components["schemas"]["google.protobuf.Timestamp"];
+            /**
+             * completed_at
+             * @description When the job finished (succeeded, failed, or cancelled).
+             */
+            completed_at?: components["schemas"]["google.protobuf.Timestamp"];
+        };
+        /**
+         * JobBundle
+         * @description JobBundle contains everything a runner needs to execute a Terraform operation.
+         *      Fetched separately from ClaimJob to keep the claim response lightweight.
+         */
+        "admiral.runner.v1.JobBundle": {
+            /**
+             * artifact_url
+             * @description Signed URL to download the rendered artifact bundle (tar.gz containing
+             *      .tf files, .tfvars, etc.). Time-limited.
+             */
+            artifact_url?: string;
+            /**
+             * artifact_checksum
+             * @description SHA-256 checksum of the artifact bundle for integrity verification.
+             */
+            artifact_checksum?: string;
+            /**
+             * variables
+             * @description Resolved variable values to inject as TF_VAR_* environment variables.
+             *      Sensitive values are included (runner is a trusted execution context).
+             */
+            variables?: {
+                [key: string]: string;
+            };
+            /**
+             * provider_configs
+             * @description Provider configuration blocks (JSON-encoded). Keys are provider names
+             *      (e.g., "aws", "google"), values are JSON objects with provider config.
+             */
+            provider_configs?: {
+                [key: string]: string;
+            };
+            /**
+             * backend_config
+             * @description Terraform backend configuration (JSON-encoded). Contains the backend
+             *      type and its configuration for state storage.
+             */
+            backend_config?: string;
+            /**
+             * terraform_version
+             * @description The Terraform version to use for this operation (e.g., "1.7.5").
+             */
+            terraform_version?: string;
+        };
+        /** ProviderConfigsEntry */
+        "admiral.runner.v1.JobBundle.ProviderConfigsEntry": {
+            /** key */
+            key?: string;
+            /** value */
+            value?: string;
+        };
+        /** VariablesEntry */
+        "admiral.runner.v1.JobBundle.VariablesEntry": {
+            /** key */
+            key?: string;
+            /** value */
+            value?: string;
+        };
+        /**
+         * JobPhase
+         * @description JobPhase represents the current execution phase of a job as reported by the
+         *      runner's worker thread. Used in heartbeat payloads to give the server
+         *      visibility into job progress between ClaimJob and ReportJobResult.
+         * @enum {string}
+         */
+        "admiral.runner.v1.JobPhase": "JOB_PHASE_UNSPECIFIED" | "JOB_PHASE_INITIALIZING" | "JOB_PHASE_PLANNING" | "JOB_PHASE_APPLYING" | "JOB_PHASE_FINALIZING";
+        /**
+         * JobResult
+         * @description JobResult contains the outcome of a completed job, reported by the runner.
+         */
+        "admiral.runner.v1.JobResult": {
+            /**
+             * status
+             * @description The final status of the job (SUCCEEDED or FAILED).
+             */
+            status?: components["schemas"]["admiral.runner.v1.JobStatus"];
+            /**
+             * plan_output
+             * @description (Plan jobs only) The Terraform plan output in human-readable format.
+             */
+            plan_output?: string;
+            /**
+             * plan_summary
+             * @description (Plan jobs only) Summary of resource changes from the plan.
+             */
+            plan_summary?: components["schemas"]["admiral.deployment.v1.TerraformPlanSummary"];
+            /**
+             * error_message
+             * @description Error message if the job failed. Empty on success.
+             */
+            error_message?: string;
+            /**
+             * logs_url
+             * @description URL to the full execution logs in external storage.
+             */
+            logs_url?: string;
+            /**
+             * duration
+             * @description How long the Terraform operation took to execute.
+             */
+            duration?: components["schemas"]["google.protobuf.Duration"];
+        };
+        /**
+         * JobStatus
+         * @description JobStatus represents the lifecycle state of a runner job.
+         * @enum {string}
+         */
+        "admiral.runner.v1.JobStatus": "JOB_STATUS_UNSPECIFIED" | "JOB_STATUS_PENDING" | "JOB_STATUS_ASSIGNED" | "JOB_STATUS_RUNNING" | "JOB_STATUS_SUCCEEDED" | "JOB_STATUS_FAILED" | "JOB_STATUS_CANCELED";
+        /**
+         * JobType
+         * @description JobType identifies the kind of Terraform operation a job executes.
+         * @enum {string}
+         */
+        "admiral.runner.v1.JobType": "JOB_TYPE_UNSPECIFIED" | "JOB_TYPE_PLAN" | "JOB_TYPE_APPLY" | "JOB_TYPE_DESTROY_PLAN" | "JOB_TYPE_DESTROY_APPLY";
+        /**
+         * ListRunnerJobsRequest
+         * @description ListRunnerJobsRequest contains pagination and filter parameters for listing
+         *      jobs assigned to a specific runner.
+         */
+        "admiral.runner.v1.ListRunnerJobsRequest": {
+            /**
+             * runner_id
+             * Format: uuid
+             * @description The runner whose jobs to list (UUID).
+             */
+            runner_id?: string;
+            /**
+             * filter
+             * @description Filter expression to narrow results. Uses the Admiral filter DSL.
+             *
+             *      Filterable fields:
+             *        - `status` -- filter by job status (PENDING, ASSIGNED, RUNNING, etc.).
+             *        - `job_type` -- filter by job type (PLAN, APPLY, DESTROY_PLAN, DESTROY_APPLY).
+             *        - `deployment_id` -- jobs for a specific deployment (UUID).
+             *
+             *      Example: `field['status'] = 'RUNNING'`
+             */
+            filter?: string;
+            /**
+             * page_size
+             * Format: int32
+             * @description Maximum number of jobs to return per page.
+             */
+            page_size?: number;
+            /**
+             * page_token
+             * @description Opaque pagination token from a previous response.
+             */
+            page_token?: string;
+        };
+        /**
+         * ListRunnerJobsResponse
+         * @description ListRunnerJobsResponse contains a page of jobs.
+         */
+        "admiral.runner.v1.ListRunnerJobsResponse": {
+            /**
+             * jobs
+             * @description The list of jobs, ordered from newest to oldest.
+             */
+            jobs?: components["schemas"]["admiral.runner.v1.Job"][];
+            /**
+             * next_page_token
+             * @description Pagination token for the next page. Empty when there are no more results.
+             */
+            next_page_token?: string;
+        };
+        /**
+         * ListRunnerTokensRequest
+         * @description ListRunnerTokensRequest contains pagination and filter parameters.
+         */
+        "admiral.runner.v1.ListRunnerTokensRequest": {
+            /**
+             * runner_id
+             * Format: uuid
+             * @description The runner to list tokens for (UUID).
+             */
+            runner_id?: string;
+            /**
+             * filter
+             * @description Filter expression to narrow results. Uses the Admiral filter DSL.
+             *
+             *      Filterable fields:
+             *        - `name` -- filter by token name.
+             *        - `status` -- filter by token status (ACTIVE, REVOKED).
+             *
+             *      Example: `field['status'] = 'ACTIVE'`
+             */
+            filter?: string;
+            /**
+             * page_size
+             * Format: int32
+             * @description Maximum number of tokens to return per page.
+             */
+            page_size?: number;
+            /**
+             * page_token
+             * @description Opaque pagination token from a previous response.
+             */
+            page_token?: string;
+        };
+        /**
+         * ListRunnerTokensResponse
+         * @description ListRunnerTokensResponse contains a page of runner SAT metadata.
+         */
+        "admiral.runner.v1.ListRunnerTokensResponse": {
+            /**
+             * access_tokens
+             * @description The list of tokens. Token secrets are never included.
+             */
+            access_tokens?: components["schemas"]["admiral.common.v1.AccessToken"][];
+            /**
+             * next_page_token
+             * @description Pagination token for the next page. Empty when there are no more results.
+             */
+            next_page_token?: string;
+        };
+        /**
+         * ListRunnersRequest
+         * @description ListRunnersRequest contains pagination and filter parameters.
+         */
+        "admiral.runner.v1.ListRunnersRequest": {
+            /**
+             * filter
+             * @description Filter expression to narrow results. Uses the Admiral filter DSL.
+             *
+             *      Syntax: `field['name'] = 'value'` with AND/OR/NOT, comparison operators
+             *      (=, !=, <, >, <=, >=, ~=), and predicates (IN, BETWEEN, CONTAINS,
+             *      STARTS_WITH, ENDS_WITH, IS NULL, EXISTS).
+             *
+             *      Filterable fields:
+             *        - `name` -- filter by runner name.
+             *        - `kind` -- filter by runner kind (TERRAFORM, WORKFLOW).
+             *        - `health_status` -- filter by health status.
+             *        - `labels.key` -- filter by label key.
+             *
+             *      Example: `field['kind'] = 'TERRAFORM' AND field['health_status'] = 'HEALTHY'`
+             */
+            filter?: string;
+            /**
+             * page_size
+             * Format: int32
+             * @description Maximum number of runners to return per page.
+             */
+            page_size?: number;
+            /**
+             * page_token
+             * @description Opaque pagination token from a previous response.
+             */
+            page_token?: string;
+        };
+        /**
+         * ListRunnersResponse
+         * @description ListRunnersResponse contains a page of runners.
+         */
+        "admiral.runner.v1.ListRunnersResponse": {
+            /**
+             * runners
+             * @description The list of runners.
+             */
+            runners?: components["schemas"]["admiral.runner.v1.Runner"][];
+            /**
+             * next_page_token
+             * @description Pagination token for the next page. Empty when there are no more results.
+             */
+            next_page_token?: string;
+        };
+        /**
+         * ReportJobResultRequest
+         * @description ReportJobResultRequest contains the outcome of a completed job.
+         */
+        "admiral.runner.v1.ReportJobResultRequest": {
+            /**
+             * job_id
+             * Format: uuid
+             * @description The job being reported on (UUID).
+             */
+            job_id?: string;
+            /**
+             * result
+             * @description The job result with status, outputs, and error information.
+             */
+            result: components["schemas"]["admiral.runner.v1.JobResult"];
+        };
+        /**
+         * ReportJobResultResponse
+         * @description ReportJobResultResponse acknowledges the result.
+         */
+        "admiral.runner.v1.ReportJobResultResponse": {
+            /**
+             * ack
+             * @description Whether the result was accepted.
+             */
+            ack?: boolean;
+        };
+        /**
+         * RevokeRunnerTokenRequest
+         * @description RevokeRunnerTokenRequest identifies a runner SAT to revoke.
+         */
+        "admiral.runner.v1.RevokeRunnerTokenRequest": {
+            /**
+             * runner_id
+             * Format: uuid
+             * @description The runner the token belongs to (UUID).
+             */
+            runner_id?: string;
+            /**
+             * token_id
+             * Format: uuid
+             * @description The unique identifier of the token to revoke (UUID).
+             */
+            token_id?: string;
+        };
+        /**
+         * RevokeRunnerTokenResponse
+         * @description RevokeRunnerTokenResponse contains the revoked runner SAT metadata.
+         */
+        "admiral.runner.v1.RevokeRunnerTokenResponse": {
+            /**
+             * access_token
+             * @description The token metadata with updated status.
+             */
+            access_token?: components["schemas"]["admiral.common.v1.AccessToken"];
+        };
+        /**
+         * Runner
+         * @description Runner represents a registered infrastructure execution runner within a
+         *      tenant. Runners claim and execute Terraform operations (plan, apply, destroy)
+         *      dispatched by the deployment engine.
+         * @example {
+         *       "id": "b2c3d4e5-6789-0abc-def1-234567890abc",
+         *       "name": "prod-terraform-runner",
+         *       "description": "Terraform runner for production AWS infrastructure provisioning.",
+         *       "kind": "RUNNER_KIND_TERRAFORM",
+         *       "labels": {
+         *         "cloud": "aws",
+         *         "team": "platform"
+         *       },
+         *       "health_status": "RUNNER_HEALTH_STATUS_HEALTHY",
+         *       "created_by": "d290f1ee-6c54-4b01-90e6-d701748f0851",
+         *       "updated_by": "d290f1ee-6c54-4b01-90e6-d701748f0851",
+         *       "created_at": "2025-07-15T10:00:00Z",
+         *       "updated_at": "2025-11-18T08:30:00Z"
+         *     }
+         */
+        "admiral.runner.v1.Runner": {
+            /**
+             * id
+             * Format: uuid
+             * @description Unique identifier for the runner (UUID).
+             */
+            id?: string;
+            /**
+             * name
+             * @description URL-safe, human-readable identifier (e.g., "prod-terraform-runner").
+             *      Unique within the tenant. Lowercase alphanumeric and hyphens only,
+             *      must start with a letter and end with an alphanumeric character (1-63 chars).
+             */
+            name?: string;
+            /**
+             * description
+             * @description Optional longer-form description of the runner's purpose
+             *      (e.g., "Terraform runner for production AWS infrastructure").
+             */
+            description?: string;
+            /**
+             * kind
+             * @description The type of operations this runner executes.
+             */
+            kind?: components["schemas"]["admiral.runner.v1.RunnerKind"];
+            /**
+             * labels
+             * @description Arbitrary key-value labels for organizing and filtering runners
+             *      (e.g., `{"cloud": "aws", "team": "platform"}`).
+             */
+            labels?: {
+                [key: string]: string;
+            };
+            /**
+             * health_status
+             * @description Derived health status based on heartbeat recency and capacity.
+             */
+            health_status?: components["schemas"]["admiral.runner.v1.RunnerHealthStatus"];
+            /**
+             * created_by
+             * @description The user or agent who created this runner (server-populated from token).
+             */
+            created_by?: components["schemas"]["admiral.common.v1.ActorRef"];
+            /**
+             * updated_by
+             * @description The user or agent who last updated this runner (server-populated from token).
+             */
+            updated_by?: components["schemas"]["admiral.common.v1.ActorRef"];
+            /**
+             * created_at
+             * @description When the runner record was created.
+             */
+            created_at?: components["schemas"]["google.protobuf.Timestamp"];
+            /**
+             * updated_at
+             * @description When the runner record was last updated.
+             */
+            updated_at?: components["schemas"]["google.protobuf.Timestamp"];
+        };
+        /** LabelsEntry */
+        "admiral.runner.v1.Runner.LabelsEntry": {
+            /** key */
+            key?: string;
+            /** value */
+            value?: string;
+        };
+        /**
+         * RunnerHealthStatus
+         * @description RunnerHealthStatus represents the derived health state of a runner.
+         *      The status is computed from heartbeat recency and capacity metrics.
+         * @enum {string}
+         */
+        "admiral.runner.v1.RunnerHealthStatus": "RUNNER_HEALTH_STATUS_UNSPECIFIED" | "RUNNER_HEALTH_STATUS_PENDING" | "RUNNER_HEALTH_STATUS_HEALTHY" | "RUNNER_HEALTH_STATUS_DEGRADED" | "RUNNER_HEALTH_STATUS_UNREACHABLE";
+        /**
+         * RunnerKind
+         * @description RunnerKind identifies the type of operations a runner executes.
+         * @enum {string}
+         */
+        "admiral.runner.v1.RunnerKind": "RUNNER_KIND_UNSPECIFIED" | "RUNNER_KIND_TERRAFORM" | "RUNNER_KIND_WORKFLOW";
+        /**
+         * RunnerStatus
+         * @description RunnerStatus contains capacity and telemetry metrics for a runner, as
+         *      reported via Heartbeat. This message is used in both the push payload
+         *      (HeartbeatRequest) and the read response (GetRunnerStatusResponse).
+         *
+         *      Server-derived fields (health_status) are NOT included here -- they live
+         *      on the Runner record and are returned alongside this message in
+         *      GetRunnerStatusResponse.
+         */
+        "admiral.runner.v1.RunnerStatus": {
+            /**
+             * version
+             * @description The runner binary version (e.g., "1.2.0").
+             */
+            version?: string;
+            /**
+             * active_jobs
+             * Format: int32
+             * @description Number of jobs currently being executed by this runner.
+             */
+            active_jobs?: number;
+            /**
+             * max_concurrent_jobs
+             * Format: int32
+             * @description Maximum number of concurrent jobs this runner supports.
+             */
+            max_concurrent_jobs?: number;
+            /**
+             * available_providers
+             * @description Terraform providers available on this runner (e.g., ["aws", "google", "azurerm"]).
+             */
+            available_providers?: string[];
+            /**
+             * tool_versions
+             * @description CLI tool versions installed on this runner, detected at startup and
+             *      reported on every heartbeat. Visible to admins via GetRunnerStatus.
+             *      The server uses tool_versions to match jobs to capable runners (e.g.,
+             *      a job requiring Terraform 1.9.x will only be assigned to a runner
+             *      reporting a compatible version).
+             *      Keys are tool names (e.g., "terraform", "tofu", "helm", "kustomize", "kubectl").
+             *      Values are semantic versions (e.g., "1.7.5", "1.9.0").
+             */
+            tool_versions?: {
+                [key: string]: string;
+            };
+            /**
+             * active_job_details
+             * @description Details of jobs currently being executed by this runner instance. The
+             *      worker thread updates job phase in shared memory; the heartbeat thread
+             *      reads and includes it on each tick. Gives the server visibility into
+             *      job progress for stuck-job detection and admin dashboards.
+             */
+            active_job_details?: components["schemas"]["admiral.runner.v1.ActiveJobInfo"][];
+        };
+        /** ToolVersionsEntry */
+        "admiral.runner.v1.RunnerStatus.ToolVersionsEntry": {
+            /** key */
+            key?: string;
+            /** value */
+            value?: string;
+        };
+        /**
+         * UpdateRunnerRequest
+         * @description UpdateRunnerRequest contains the runner fields to update.
+         */
+        "admiral.runner.v1.UpdateRunnerRequest": {
+            /**
+             * runner
+             * @description The runner with updated fields. The `id` field is required.
+             *      Only fields specified in `update_mask` are updated.
+             */
+            runner: components["schemas"]["admiral.runner.v1.Runner"];
+            /**
+             * update_mask
+             * @description The set of fields to update. If unset, all mutable fields are updated.
+             *      Supported fields: `name`, `description`, `labels`.
+             */
+            update_mask?: components["schemas"]["google.protobuf.FieldMask"];
+        };
+        /**
+         * UpdateRunnerResponse
+         * @description UpdateRunnerResponse contains the updated runner.
+         */
+        "admiral.runner.v1.UpdateRunnerResponse": {
+            /**
+             * runner
+             * @description The updated runner.
+             */
+            runner?: components["schemas"]["admiral.runner.v1.Runner"];
+        };
+        /**
+         * ArchiveConfig
+         * @description ArchiveConfig provides additional parameters for archive sources
+         *      (tar.gz, zip) fetched via HTTP, S3, or GCS.
+         */
+        "admiral.source.v1.ArchiveConfig": {
+            /**
+             * path
+             * @description Subdirectory within the extracted archive to use. Empty means archive root.
+             */
+            path?: string;
+            /**
+             * checksum
+             * @description Expected checksum for integrity verification (e.g., "sha256:abc123...").
+             *      When set, the fetched archive is verified against this checksum before
+             *      extraction.
+             */
+            checksum?: string;
+        };
+        /**
+         * CreateSourceRequest
+         * @description CreateSourceRequest contains the parameters for creating a new source.
+         */
+        "admiral.source.v1.CreateSourceRequest": {
+            /**
+             * name
+             * @description URL-safe, human-readable identifier. Must be unique within the tenant.
+             */
+            name?: string;
+            /**
+             * description
+             * @description Optional description of the source's purpose.
+             */
+            description?: string;
+            /**
+             * type
+             * @description The kind of artifact and fetch protocol.
+             */
+            type?: components["schemas"]["admiral.source.v1.SourceType"];
+            /**
+             * url
+             * @description Base URL for the source (see Source.url for per-type semantics).
+             */
+            url?: string;
+            /**
+             * connection_id
+             * Format: uuid
+             * @description Reference to the connection providing credentials (UUID). Optional for
+             *      public sources.
+             */
+            connection_id?: string | null;
+            /**
+             * catalog
+             * @description Whether this is a curated catalog entry.
+             */
+            catalog?: boolean;
+            /**
+             * labels
+             * @description Arbitrary key-value labels.
+             */
+            labels?: {
+                [key: string]: string;
+            };
+        } & ({
+            /** archive */
+            archive: components["schemas"]["admiral.source.v1.ArchiveConfig"];
+        } | {
+            /** helm_git */
+            helm_git: components["schemas"]["admiral.source.v1.HelmGitConfig"];
+        } | {
+            /** helm_oci */
+            helm_oci: components["schemas"]["admiral.source.v1.HelmOCIConfig"];
+        } | {
+            /** helm_repository */
+            helm_repository: components["schemas"]["admiral.source.v1.HelmRepositoryConfig"];
+        } | {
+            /** kustomize_git */
+            kustomize_git: components["schemas"]["admiral.source.v1.KustomizeGitConfig"];
+        } | {
+            /** manifest_git */
+            manifest_git: components["schemas"]["admiral.source.v1.ManifestGitConfig"];
+        } | {
+            /** terraform_git */
+            terraform_git: components["schemas"]["admiral.source.v1.TerraformGitConfig"];
+        } | {
+            /** terraform_registry */
+            terraform_registry: components["schemas"]["admiral.source.v1.TerraformRegistryConfig"];
+        });
+        /** LabelsEntry */
+        "admiral.source.v1.CreateSourceRequest.LabelsEntry": {
+            /** key */
+            key?: string;
+            /** value */
+            value?: string;
+        };
+        /**
+         * CreateSourceResponse
+         * @description CreateSourceResponse contains the newly created source.
+         */
+        "admiral.source.v1.CreateSourceResponse": {
+            /**
+             * source
+             * @description The created source.
+             */
+            source?: components["schemas"]["admiral.source.v1.Source"];
+        };
+        /**
+         * DeleteSourceRequest
+         * @description DeleteSourceRequest identifies a source to delete.
+         */
+        "admiral.source.v1.DeleteSourceRequest": {
+            /**
+             * source_id
+             * Format: uuid
+             * @description Unique identifier of the source to delete (UUID).
+             *      Fails if any application components still reference this source.
+             */
+            source_id?: string;
+        };
+        /**
+         * DeleteSourceResponse
+         * @description DeleteSourceResponse is empty on success.
+         */
+        "admiral.source.v1.DeleteSourceResponse": Record<string, never>;
+        /**
+         * GetSourceInputsRequest
+         * @description GetSourceInputsRequest fetches discoverable inputs for a source at a
+         *      specific version.
+         */
+        "admiral.source.v1.GetSourceInputsRequest": {
+            /**
+             * source_id
+             * Format: uuid
+             * @description Unique identifier of the source to inspect (UUID).
+             */
+            source_id?: string;
+            /**
+             * version
+             * @description The version to inspect. For registry sources, a semver string. For Git
+             *      sources, a tag, branch, or commit SHA. Required.
+             */
+            version?: string;
+        };
+        /**
+         * GetSourceInputsResponse
+         * @description GetSourceInputsResponse contains the discovered inputs for the source at
+         *      the requested version.
+         */
+        "admiral.source.v1.GetSourceInputsResponse": {
+            /**
+             * inputs
+             * @description Discovered input parameters. Empty for source types that do not support
+             *      input discovery (Kustomize, raw manifests).
+             */
+            inputs?: components["schemas"]["admiral.source.v1.SourceInput"][];
+            /**
+             * resolved_version
+             * @description The version that was actually inspected (resolved from the requested
+             *      version -- e.g., a branch name resolved to a commit SHA).
+             */
+            resolved_version?: string;
+        };
+        /**
+         * GetSourceOutputsRequest
+         * @description GetSourceOutputsRequest fetches discoverable outputs for a source at a
+         *      specific version.
+         */
+        "admiral.source.v1.GetSourceOutputsRequest": {
+            /**
+             * source_id
+             * Format: uuid
+             * @description Unique identifier of the source to inspect (UUID).
+             */
+            source_id?: string;
+            /**
+             * version
+             * @description The version to inspect. Required.
+             */
+            version?: string;
+        };
+        /**
+         * GetSourceOutputsResponse
+         * @description GetSourceOutputsResponse contains the discovered outputs for the source at
+         *      the requested version.
+         */
+        "admiral.source.v1.GetSourceOutputsResponse": {
+            /**
+             * outputs
+             * @description Discovered output definitions. Only populated for Terraform module sources.
+             *      Workload sources (Helm, Kustomize, manifests) do not have formal outputs --
+             *      workload component outputs are user-declared at the component level.
+             */
+            outputs?: components["schemas"]["admiral.source.v1.SourceOutput"][];
+            /**
+             * resolved_version
+             * @description The version that was actually inspected.
+             */
+            resolved_version?: string;
+        };
+        /**
+         * GetSourceRequest
+         * @description GetSourceRequest identifies a source to retrieve.
+         */
+        "admiral.source.v1.GetSourceRequest": {
+            /**
+             * source_id
+             * Format: uuid
+             * @description Unique identifier of the source (UUID).
+             */
+            source_id?: string;
+        };
+        /**
+         * GetSourceResponse
+         * @description GetSourceResponse contains the source record.
+         */
+        "admiral.source.v1.GetSourceResponse": {
+            /**
+             * source
+             * @description The source record.
+             */
+            source?: components["schemas"]["admiral.source.v1.Source"];
+        };
+        /**
+         * HelmGitConfig
+         * @description HelmGitConfig provides additional parameters for Helm charts sourced from
+         *      Git repositories.
+         */
+        "admiral.source.v1.HelmGitConfig": {
+            /**
+             * path
+             * @description Path within the repository to the chart directory (must contain Chart.yaml).
+             */
+            path?: string;
+            /**
+             * default_ref
+             * @description Default Git ref (branch, tag, or commit SHA).
+             */
+            default_ref?: string;
+        };
+        /**
+         * HelmOCIConfig
+         * @description HelmOCIConfig provides additional parameters for Helm charts stored in
+         *      OCI registries.
+         */
+        "admiral.source.v1.HelmOCIConfig": {
+            /**
+             * repository
+             * @description The full OCI repository path (e.g., "ghcr.io/myorg/charts/my-app").
+             *      The url field on the Source message holds the registry host, while this
+             *      field holds the full repository path.
+             */
+            repository?: string;
+        };
+        /**
+         * HelmRepositoryConfig
+         * @description HelmRepositoryConfig provides additional parameters for Helm charts from
+         *      classic HTTP/S chart repositories.
+         */
+        "admiral.source.v1.HelmRepositoryConfig": {
+            /**
+             * chart_name
+             * @description The chart name within the repository (e.g., "nginx-ingress", "redis").
+             */
+            chart_name?: string;
+        };
+        /**
+         * KustomizeGitConfig
+         * @description KustomizeGitConfig provides additional parameters for Kustomize overlays
+         *      sourced from Git repositories.
+         */
+        "admiral.source.v1.KustomizeGitConfig": {
+            /**
+             * path
+             * @description Path within the repository to the overlay directory (must contain
+             *      kustomization.yaml).
+             */
+            path?: string;
+            /**
+             * default_ref
+             * @description Default Git ref (branch, tag, or commit SHA).
+             */
+            default_ref?: string;
+        };
+        /**
+         * ListSourceVersionsRequest
+         * @description ListSourceVersionsRequest queries available versions for a source.
+         */
+        "admiral.source.v1.ListSourceVersionsRequest": {
+            /**
+             * source_id
+             * Format: uuid
+             * @description Unique identifier of the source to query versions for (UUID).
+             */
+            source_id?: string;
+            /**
+             * page_size
+             * Format: int32
+             * @description Maximum number of versions to return. Defaults to 50.
+             */
+            page_size?: number;
+            /**
+             * page_token
+             * @description Opaque pagination token for fetching additional versions.
+             */
+            page_token?: string;
+        };
+        /**
+         * ListSourceVersionsResponse
+         * @description ListSourceVersionsResponse contains available versions from the external system.
+         */
+        "admiral.source.v1.ListSourceVersionsResponse": {
+            /**
+             * versions
+             * @description Available versions, ordered from newest to oldest.
+             */
+            versions?: components["schemas"]["admiral.source.v1.SourceVersion"][];
+            /**
+             * next_page_token
+             * @description Pagination token for the next page. Empty when there are no more results.
+             */
+            next_page_token?: string;
+        };
+        /**
+         * ListSourcesRequest
+         * @description ListSourcesRequest contains pagination and filter parameters.
+         */
+        "admiral.source.v1.ListSourcesRequest": {
+            /**
+             * filter
+             * @description Filter expression to narrow results. Uses the Admiral filter DSL.
+             *
+             *      Syntax: `field['name'] = 'value'` with AND/OR/NOT, comparison operators
+             *      (=, !=, <, >, <=, >=, ~=), and predicates (IN, BETWEEN, CONTAINS,
+             *      STARTS_WITH, ENDS_WITH, IS NULL, EXISTS).
+             *
+             *      Filterable fields:
+             *        - `name` -- filter by source name.
+             *        - `type` -- filter by source type (TERRAFORM_REGISTRY, HELM_OCI, etc.).
+             *        - `catalog` -- filter by catalog status (true/false).
+             *        - `labels.key` -- filter by label key.
+             *
+             *      Example: `field['type'] = 'TERRAFORM_REGISTRY' AND field['catalog'] = 'true'`
+             */
+            filter?: string;
+            /**
+             * page_size
+             * Format: int32
+             * @description Maximum number of sources to return per page.
+             */
+            page_size?: number;
+            /**
+             * page_token
+             * @description Opaque pagination token from a previous response.
+             */
+            page_token?: string;
+        };
+        /**
+         * ListSourcesResponse
+         * @description ListSourcesResponse contains a page of sources.
+         */
+        "admiral.source.v1.ListSourcesResponse": {
+            /**
+             * sources
+             * @description The list of sources.
+             */
+            sources?: components["schemas"]["admiral.source.v1.Source"][];
+            /**
+             * next_page_token
+             * @description Pagination token for the next page. Empty when there are no more results.
+             */
+            next_page_token?: string;
+        };
+        /**
+         * ManifestGitConfig
+         * @description ManifestGitConfig provides additional parameters for raw Kubernetes manifests
+         *      sourced from Git repositories.
+         */
+        "admiral.source.v1.ManifestGitConfig": {
+            /**
+             * path
+             * @description Path within the repository to the directory containing manifest files.
+             *      All .yaml, .yml, and .json files in this directory are collected.
+             */
+            path?: string;
+            /**
+             * recursive
+             * @description Whether to recursively include files from subdirectories.
+             */
+            recursive?: boolean;
+            /**
+             * default_ref
+             * @description Default Git ref (branch, tag, or commit SHA).
+             */
+            default_ref?: string;
+        };
+        /**
+         * Source
+         * @description Source represents a fetchable artifact definition -- a pointer to an external
+         *      module, chart, or manifest set that Admiral can fetch, inspect, and render
+         *      into deployment snapshots.
+         *
+         *      Sources are tenant-scoped and optionally marked as catalog entries (curated,
+         *      pre-approved artifacts managed by platform engineers).
+         * @example {
+         *       "id": "f6a7b8c9-0123-4def-5678-901234567890",
+         *       "name": "nginx-ingress",
+         *       "description": "NGINX Ingress Controller Helm chart from the official repository.",
+         *       "type": "SOURCE_TYPE_HELM_REPOSITORY",
+         *       "url": "https://kubernetes.github.io/ingress-nginx",
+         *       "catalog": true,
+         *       "labels": {
+         *         "category": "networking",
+         *         "team": "platform"
+         *       },
+         *       "created_by": "d290f1ee-6c54-4b01-90e6-d701748f0851",
+         *       "updated_by": "d290f1ee-6c54-4b01-90e6-d701748f0851",
+         *       "created_at": "2025-08-01T12:00:00Z",
+         *       "updated_at": "2025-10-20T09:00:00Z"
+         *     }
+         */
+        "admiral.source.v1.Source": {
+            /**
+             * id
+             * Format: uuid
+             * @description Unique identifier for the source (UUID).
+             */
+            id?: string;
+            /**
+             * name
+             * @description URL-safe, human-readable identifier (e.g., "corporate-rds", "nginx-chart").
+             *      Unique within the tenant. Lowercase alphanumeric and hyphens only, must
+             *      start with a letter and end with an alphanumeric character (1-63 chars).
+             */
+            name?: string;
+            /**
+             * description
+             * @description Optional longer-form description of the source's purpose
+             *      (e.g., "Corporate-approved RDS module with encryption and backups").
+             */
+            description?: string;
+            /**
+             * type
+             * @description The kind of artifact and fetch protocol.
+             */
+            type?: components["schemas"]["admiral.source.v1.SourceType"];
+            /**
+             * url
+             * @description Base URL for the source. The meaning varies by source type:
+             *        - TERRAFORM_REGISTRY: registry hostname (e.g., "registry.terraform.io")
+             *        - TERRAFORM_GIT, HELM_GIT, KUSTOMIZE_GIT, MANIFEST_GIT: Git repo URL
+             *        - HELM_REPOSITORY: Helm repo URL (e.g., "https://charts.bitnami.com/bitnami")
+             *        - HELM_OCI: OCI registry URL (e.g., "oci://ghcr.io")
+             *        - ARCHIVE: HTTP/S3/GCS URL to the archive
+             */
+            url?: string;
+            /**
+             * connection_id
+             * Format: uuid
+             * @description Reference to the connection providing credentials for this source (UUID).
+             *      Optional -- null for public sources that require no authentication
+             *      (e.g., public Terraform registry, public Helm repos).
+             */
+            connection_id?: string | null;
+            /**
+             * catalog
+             * @description Whether this source is a curated catalog entry. Catalog sources are managed
+             *      by platform engineers and may be the only sources available to developers
+             *      if the organization enforces catalog-only policy.
+             */
+            catalog?: boolean;
+            /**
+             * labels
+             * @description Arbitrary key-value labels for organizing and filtering sources
+             *      (e.g., `{"team": "platform", "category": "database"}`).
+             */
+            labels?: {
+                [key: string]: string;
+            };
+            /**
+             * created_by
+             * @description The user or agent who created this source (server-populated from token).
+             */
+            created_by?: components["schemas"]["admiral.common.v1.ActorRef"];
+            /**
+             * updated_by
+             * @description The user or agent who last updated this source (server-populated from token).
+             */
+            updated_by?: components["schemas"]["admiral.common.v1.ActorRef"];
+            /**
+             * last_synced_at
+             * @description When the source metadata was last synced from the external system
+             *      (registry, Git, Helm repo). Updated by SyncSource and by automatic
+             *      background refresh when discovery RPCs encounter stale cached data.
+             *      Absent if no sync has occurred yet.
+             */
+            last_synced_at?: components["schemas"]["google.protobuf.Timestamp"];
+            /**
+             * created_at
+             * @description When the source was created.
+             */
+            created_at?: components["schemas"]["google.protobuf.Timestamp"];
+            /**
+             * updated_at
+             * @description When the source was last updated.
+             */
+            updated_at?: components["schemas"]["google.protobuf.Timestamp"];
+        } & ({
+            /**
+             * archive
+             * @description Archive config (for SOURCE_TYPE_ARCHIVE).
+             */
+            archive: components["schemas"]["admiral.source.v1.ArchiveConfig"];
+        } | {
+            /**
+             * helm_git
+             * @description Helm Git config (for SOURCE_TYPE_HELM_GIT).
+             */
+            helm_git: components["schemas"]["admiral.source.v1.HelmGitConfig"];
+        } | {
+            /**
+             * helm_oci
+             * @description Helm OCI config (for SOURCE_TYPE_HELM_OCI).
+             */
+            helm_oci: components["schemas"]["admiral.source.v1.HelmOCIConfig"];
+        } | {
+            /**
+             * helm_repository
+             * @description Helm HTTP repository config (for SOURCE_TYPE_HELM_REPOSITORY).
+             */
+            helm_repository: components["schemas"]["admiral.source.v1.HelmRepositoryConfig"];
+        } | {
+            /**
+             * kustomize_git
+             * @description Kustomize Git config (for SOURCE_TYPE_KUSTOMIZE_GIT).
+             */
+            kustomize_git: components["schemas"]["admiral.source.v1.KustomizeGitConfig"];
+        } | {
+            /**
+             * manifest_git
+             * @description Raw manifest Git config (for SOURCE_TYPE_MANIFEST_GIT).
+             */
+            manifest_git: components["schemas"]["admiral.source.v1.ManifestGitConfig"];
+        } | {
+            /**
+             * terraform_git
+             * @description Terraform Git module config (for SOURCE_TYPE_TERRAFORM_GIT).
+             */
+            terraform_git: components["schemas"]["admiral.source.v1.TerraformGitConfig"];
+        } | {
+            /**
+             * terraform_registry
+             * @description Terraform Registry Protocol config (for SOURCE_TYPE_TERRAFORM_REGISTRY).
+             */
+            terraform_registry: components["schemas"]["admiral.source.v1.TerraformRegistryConfig"];
+        });
+        /** LabelsEntry */
+        "admiral.source.v1.Source.LabelsEntry": {
+            /** key */
+            key?: string;
+            /** value */
+            value?: string;
+        };
+        /**
+         * SourceInput
+         * @description SourceInput represents a configurable parameter discovered from the source
+         *      artifact. For Terraform modules, these are variable blocks. For Helm charts,
+         *      these are entries from values.yaml (with optional type info from
+         *      values.schema.json).
+         */
+        "admiral.source.v1.SourceInput": {
+            /**
+             * name
+             * @description Parameter name (e.g., "instance_class", "replicaCount").
+             */
+            name?: string;
+            /**
+             * type
+             * @description Type constraint as a string. For Terraform: HCL type expression
+             *      (e.g., "string", "number", "list(string)", "object({name=string})").
+             *      For Helm: JSON Schema type (e.g., "string", "integer", "object").
+             *      Empty if type cannot be determined.
+             */
+            type?: string;
+            /**
+             * description
+             * @description Human-readable description of the parameter. From Terraform variable
+             *      description or Helm values.schema.json description field.
+             */
+            description?: string;
+            /**
+             * default_value
+             * @description JSON-encoded default value. Null/absent means no default (parameter is
+             *      required). For Terraform, this is the default from the variable block.
+             *      For Helm, this is the value from values.yaml.
+             */
+            default_value?: string | null;
+            /**
+             * required
+             * @description Whether this parameter is required (no default value provided).
+             *      For Terraform: true when the variable has no default.
+             *      For Helm: true when values.schema.json marks it as required.
+             */
+            required?: boolean;
+            /**
+             * sensitive
+             * @description Whether this parameter is sensitive (should be masked in logs and UI).
+             *      For Terraform: from the variable's sensitive attribute.
+             *      For Helm: not typically available.
+             */
+            sensitive?: boolean;
+        };
+        /**
+         * SourceOutput
+         * @description SourceOutput represents a value produced by the source after apply. Only
+         *      meaningful for Terraform modules, which declare formal output blocks.
+         *      Workload sources (Helm, Kustomize, manifests) do not have formal outputs --
+         *      workload component outputs are user-declared at the component level, not
+         *      discovered from the source.
+         */
+        "admiral.source.v1.SourceOutput": {
+            /**
+             * name
+             * @description Output name (e.g., "endpoint", "db_arn", "connection_string").
+             */
+            name?: string;
+            /**
+             * type
+             * @description Type of the output value, if declared (e.g., "string", "list(string)").
+             */
+            type?: string;
+            /**
+             * description
+             * @description Human-readable description of the output.
+             */
+            description?: string;
+            /**
+             * sensitive
+             * @description Whether this output is sensitive (masked in logs and CLI output).
+             */
+            sensitive?: boolean;
+        };
+        /**
+         * SourceType
+         * @description SourceType identifies the kind of artifact and the protocol used to fetch it.
+         * @enum {string}
+         */
+        "admiral.source.v1.SourceType": "SOURCE_TYPE_UNSPECIFIED" | "SOURCE_TYPE_TERRAFORM_REGISTRY" | "SOURCE_TYPE_TERRAFORM_GIT" | "SOURCE_TYPE_HELM_REPOSITORY" | "SOURCE_TYPE_HELM_OCI" | "SOURCE_TYPE_HELM_GIT" | "SOURCE_TYPE_KUSTOMIZE_GIT" | "SOURCE_TYPE_MANIFEST_GIT" | "SOURCE_TYPE_ARCHIVE";
+        /**
+         * SourceVersion
+         * @description SourceVersion represents an available version of a source artifact, as
+         *      reported by the external system (registry, repository, Git tags).
+         */
+        "admiral.source.v1.SourceVersion": {
+            /**
+             * version
+             * @description Version identifier. For registry sources, this is a semver string
+             *      (e.g., "1.2.3"). For Git sources, this is a tag name (e.g., "v1.2.3").
+             *      For OCI, this is a tag.
+             */
+            version?: string;
+            /**
+             * published_at
+             * @description When this version was published or tagged. May not be available for all
+             *      source types.
+             */
+            published_at?: components["schemas"]["google.protobuf.Timestamp"];
+            /**
+             * description
+             * @description Optional description or release notes for this version. Typically only
+             *      available from registry sources.
+             */
+            description?: string;
+        };
+        /**
+         * SyncSourceRequest
+         * @description SyncSourceRequest triggers a metadata refresh for a source.
+         */
+        "admiral.source.v1.SyncSourceRequest": {
+            /**
+             * source_id
+             * Format: uuid
+             * @description Unique identifier of the source to sync (UUID).
+             */
+            source_id?: string;
+        };
+        /**
+         * SyncSourceResponse
+         * @description SyncSourceResponse confirms the sync was triggered.
+         */
+        "admiral.source.v1.SyncSourceResponse": {
+            /**
+             * source
+             * @description The source with refreshed metadata.
+             */
+            source?: components["schemas"]["admiral.source.v1.Source"];
+        };
+        /**
+         * TerraformGitConfig
+         * @description TerraformGitConfig provides additional parameters for Terraform modules
+         *      sourced from Git repositories.
+         */
+        "admiral.source.v1.TerraformGitConfig": {
+            /**
+             * path
+             * @description Subdirectory within the repository containing the module root.
+             *      Uses double-slash convention (e.g., "modules/vpc"). Empty means repo root.
+             */
+            path?: string;
+            /**
+             * default_ref
+             * @description Default Git ref (branch, tag, or commit SHA) to use when no version is
+             *      specified. Typically a branch name like "main" or a tag like "v1.0.0".
+             */
+            default_ref?: string;
+        };
+        /**
+         * TerraformRegistryConfig
+         * @description TerraformRegistryConfig provides additional parameters for Terraform module
+         *      registry sources.
+         */
+        "admiral.source.v1.TerraformRegistryConfig": {
+            /**
+             * namespace
+             * @description Module namespace in the registry (e.g., "hashicorp", "myorg").
+             */
+            namespace?: string;
+            /**
+             * module_name
+             * @description Module name in the registry (e.g., "consul", "rds").
+             */
+            module_name?: string;
+            /**
+             * system
+             * @description Target system / provider (e.g., "aws", "azurerm", "google").
+             */
+            system?: string;
+        };
+        /**
+         * UpdateSourceRequest
+         * @description UpdateSourceRequest contains the source fields to update.
+         */
+        "admiral.source.v1.UpdateSourceRequest": {
+            /**
+             * source
+             * @description The source with updated fields. Only fields specified in `update_mask`
+             *      are updated.
+             */
+            source: components["schemas"]["admiral.source.v1.Source"];
+            /**
+             * update_mask
+             * @description The set of fields to update. If unset, all mutable fields are updated.
+             *      Supported fields: `name`, `description`, `url`, `connection_id`, `catalog`,
+             *      `source_config`, `labels`.
+             */
+            update_mask?: components["schemas"]["google.protobuf.FieldMask"];
+        };
+        /**
+         * UpdateSourceResponse
+         * @description UpdateSourceResponse contains the updated source.
+         */
+        "admiral.source.v1.UpdateSourceResponse": {
+            /**
+             * source
+             * @description The updated source.
+             */
+            source?: components["schemas"]["admiral.source.v1.Source"];
+        };
+        /**
+         * DeleteStateRequest
+         * @description DeleteStateRequest identifies a state record to permanently delete.
+         */
+        "admiral.state.v1.DeleteStateRequest": {
+            /**
+             * state_id
+             * Format: uuid
+             * @description The unique identifier of the state record to delete (UUID).
+             *      Fails if the state is currently locked -- force-unlock first.
+             */
+            state_id?: string;
+        };
+        /**
+         * DeleteStateResponse
+         * @description DeleteStateResponse is empty on success.
+         */
+        "admiral.state.v1.DeleteStateResponse": Record<string, never>;
+        /**
+         * ForceUnlockStateRequest
+         * @description ForceUnlockStateRequest identifies a state to force-unlock.
+         */
+        "admiral.state.v1.ForceUnlockStateRequest": {
+            /**
+             * state_id
+             * Format: uuid
+             * @description The state record to force-unlock (UUID).
+             */
+            state_id?: string;
+            /**
+             * reason
+             * @description Reason for force-unlocking (audited). Recommended to provide context
+             *      for why the lock is being broken (e.g., "runner crashed during apply").
+             */
+            reason?: string;
+        };
+        /**
+         * ForceUnlockStateResponse
+         * @description ForceUnlockStateResponse confirms the lock was forcefully released.
+         */
+        "admiral.state.v1.ForceUnlockStateResponse": Record<string, never>;
+        /**
+         * GetCurrentStateRequest
+         * @description GetCurrentStateRequest identifies a state record to retrieve.
+         */
+        "admiral.state.v1.GetCurrentStateRequest": {
+            /**
+             * state_id
+             * Format: uuid
+             * @description The unique identifier of the state record (UUID).
+             */
+            state_id?: string;
+        };
+        /**
+         * GetCurrentStateResponse
+         * @description GetCurrentStateResponse contains the state record with current data and
+         *      lock info.
+         */
+        "admiral.state.v1.GetCurrentStateResponse": {
+            /**
+             * state
+             * @description The state record including current data and any active lock.
+             */
+            state?: components["schemas"]["admiral.state.v1.State"];
+        };
+        /**
+         * GetStateRequest
+         * @description GetStateRequest fetches the current state for a job.
+         */
+        "admiral.state.v1.GetStateRequest": {
+            /**
+             * job_id
+             * Format: uuid
+             * @description The job to fetch state for (UUID). The server resolves the component
+             *      and environment from the job's binding.
+             */
+            job_id?: string;
+        };
+        /**
+         * GetStateResponse
+         * @description GetStateResponse contains the current state data.
+         */
+        "admiral.state.v1.GetStateResponse": {
+            /**
+             * data
+             * Format: byte
+             * @description The raw Terraform state data (JSON-encoded). Empty if no state exists
+             *      yet (fresh init -- Terraform handles this gracefully).
+             */
+            data?: string;
+        };
+        /**
+         * GetStateVersionRequest
+         * @description GetStateVersionRequest identifies a specific historical state version.
+         */
+        "admiral.state.v1.GetStateVersionRequest": {
+            /**
+             * state_id
+             * Format: uuid
+             * @description The state record (UUID).
+             */
+            state_id?: string;
+            /**
+             * serial
+             * Format: int64
+             * @description The serial number of the version to retrieve.
+             */
+            serial?: number | string;
+        };
+        /**
+         * GetStateVersionResponse
+         * @description GetStateVersionResponse contains the full state data at a historical serial.
+         *      Returns both the version metadata and the raw data separately -- the
+         *      StateVersion message intentionally omits data to keep ListStateVersions
+         *      lightweight.
+         */
+        "admiral.state.v1.GetStateVersionResponse": {
+            /**
+             * version
+             * @description The state version metadata.
+             */
+            version?: components["schemas"]["admiral.state.v1.StateVersion"];
+            /**
+             * data
+             * Format: byte
+             * @description The raw Terraform state data (JSON-encoded) at this serial.
+             */
+            data?: string;
+        };
+        /**
+         * ListStateVersionsRequest
+         * @description ListStateVersionsRequest contains pagination parameters for version history.
+         */
+        "admiral.state.v1.ListStateVersionsRequest": {
+            /**
+             * state_id
+             * Format: uuid
+             * @description The state record to list versions for (UUID).
+             */
+            state_id?: string;
+            /**
+             * page_size
+             * Format: int32
+             * @description Maximum number of versions to return per page.
+             */
+            page_size?: number;
+            /**
+             * page_token
+             * @description Opaque pagination token from a previous response.
+             */
+            page_token?: string;
+        };
+        /**
+         * ListStateVersionsResponse
+         * @description ListStateVersionsResponse contains a page of state version metadata.
+         */
+        "admiral.state.v1.ListStateVersionsResponse": {
+            /**
+             * versions
+             * @description The list of state versions, ordered from newest to oldest.
+             */
+            versions?: components["schemas"]["admiral.state.v1.StateVersion"][];
+            /**
+             * next_page_token
+             * @description Pagination token for the next page. Empty when there are no more results.
+             */
+            next_page_token?: string;
+        };
+        /**
+         * ListStatesRequest
+         * @description ListStatesRequest contains pagination and filter parameters.
+         */
+        "admiral.state.v1.ListStatesRequest": {
+            /**
+             * filter
+             * @description Filter expression using the PEG filter DSL.
+             *
+             *      Common filter fields:
+             *        - `component_id` -- states for a specific component (UUID).
+             *        - `environment_id` -- states for a specific environment (UUID).
+             *        - `application_id` -- states for all components belonging to an
+             *          application (UUID). The server resolves the application's components
+             *          and returns states for all of them. Can be combined with
+             *          `environment_id`.
+             */
+            filter?: string;
+            /**
+             * page_size
+             * Format: int32
+             * @description Maximum number of states to return per page.
+             */
+            page_size?: number;
+            /**
+             * page_token
+             * @description Opaque pagination token from a previous response.
+             */
+            page_token?: string;
+        };
+        /**
+         * ListStatesResponse
+         * @description ListStatesResponse contains a page of state metadata.
+         */
+        "admiral.state.v1.ListStatesResponse": {
+            /**
+             * states
+             * @description The list of state summaries (metadata only, no state data blob).
+             *      Use GetCurrentState to fetch full data for a specific record.
+             */
+            states?: components["schemas"]["admiral.state.v1.StateSummary"][];
+            /**
+             * next_page_token
+             * @description Pagination token for the next page. Empty when there are no more results.
+             */
+            next_page_token?: string;
+        };
+        /**
+         * LockStateRequest
+         * @description LockStateRequest acquires an exclusive lock on the job's state.
+         */
+        "admiral.state.v1.LockStateRequest": {
+            /**
+             * job_id
+             * Format: uuid
+             * @description The job requesting the lock (UUID).
+             */
+            job_id?: string;
+            /**
+             * lock_id
+             * Format: uuid
+             * @description Terraform-generated lock ID (UUID).
+             */
+            lock_id?: string;
+            /**
+             * operation
+             * @description The Terraform operation requesting the lock.
+             */
+            operation?: string;
+            /**
+             * who
+             * @description Identifier of who is requesting the lock.
+             */
+            who?: string;
+            /**
+             * version
+             * @description Terraform/OpenTofu version of the client requesting the lock.
+             */
+            version?: string;
+        };
+        /**
+         * LockStateResponse
+         * @description LockStateResponse confirms the lock was acquired.
+         */
+        "admiral.state.v1.LockStateResponse": Record<string, never>;
+        /**
+         * PushStateRequest
+         * @description PushStateRequest stores a new state version.
+         */
+        "admiral.state.v1.PushStateRequest": {
+            /**
+             * job_id
+             * Format: uuid
+             * @description The job pushing state (UUID).
+             */
+            job_id?: string;
+            /**
+             * data
+             * Format: byte
+             * @description The raw Terraform state data (JSON-encoded). Maximum 64 MiB.
+             */
+            data?: string;
+            /**
+             * md5
+             * @description MD5 hash of the state data.
+             */
+            md5?: string;
+            /**
+             * serial
+             * Format: int64
+             * @description Terraform state serial number. Must be greater than the current serial.
+             */
+            serial?: number | string;
+            /**
+             * lineage
+             * @description Terraform state lineage. Must match the existing lineage if the state
+             *      record already exists.
+             */
+            lineage?: string;
+        };
+        /**
+         * PushStateResponse
+         * @description PushStateResponse acknowledges the state was stored.
+         */
+        "admiral.state.v1.PushStateResponse": Record<string, never>;
+        /**
+         * State
+         * @description State represents the full Terraform state for an infrastructure component
+         *      in a specific environment, including the raw state data blob. Each
+         *      component + environment combination has at most one state record. The
+         *      server creates the record on first PushState.
+         *
+         *      This message is returned by GetCurrentState. For list operations, see
+         *      StateSummary which omits the data blob.
+         */
+        "admiral.state.v1.State": {
+            /**
+             * id
+             * Format: uuid
+             * @description Unique identifier for the state record (UUID, server-generated).
+             */
+            id?: string;
+            /**
+             * component_id
+             * Format: uuid
+             * @description The infrastructure component this state belongs to (UUID).
+             */
+            component_id?: string;
+            /**
+             * environment_id
+             * Format: uuid
+             * @description The environment this state is scoped to (UUID).
+             */
+            environment_id?: string;
+            /**
+             * serial
+             * Format: int64
+             * @description Terraform state serial number. Monotonically increasing with each
+             *      successful apply. Used for optimistic concurrency control.
+             */
+            serial?: number | string;
+            /**
+             * data
+             * Format: byte
+             * @description The raw Terraform state data (JSON-encoded). This is the opaque
+             *      `.tfstate` blob managed by Terraform. Can be several megabytes for
+             *      large workspaces.
+             */
+            data?: string;
+            /**
+             * md5
+             * @description MD5 hash of the state data. Used by Terraform for integrity checks
+             *      and conditional updates.
+             */
+            md5?: string;
+            /**
+             * lineage
+             * @description Terraform state lineage -- a UUID generated on first init. All
+             *      subsequent writes must match this lineage to prevent cross-state
+             *      contamination.
+             */
+            lineage?: string;
+            /**
+             * lock
+             * @description Active lock on this state, if any. Absent when the state is unlocked.
+             */
+            lock?: components["schemas"]["admiral.state.v1.StateLock"];
+            /**
+             * created_at
+             * @description When the state record was first created.
+             */
+            created_at?: components["schemas"]["google.protobuf.Timestamp"];
+            /**
+             * updated_at
+             * @description When the state data was last updated (last successful PushState).
+             */
+            updated_at?: components["schemas"]["google.protobuf.Timestamp"];
+        };
+        /**
+         * StateLock
+         * @description StateLock represents an exclusive lock on a state record. Terraform acquires
+         *      locks before plan/apply to prevent concurrent modifications. The lock_id is
+         *      generated by Terraform (as a UUID) and included in all lock/unlock requests.
+         */
+        "admiral.state.v1.StateLock": {
+            /**
+             * lock_id
+             * Format: uuid
+             * @description Unique identifier for the lock (UUID, generated by Terraform/OpenTofu).
+             */
+            lock_id?: string;
+            /**
+             * operation
+             * @description The Terraform operation holding the lock. Common values:
+             *        - "OperationTypePlan"
+             *        - "OperationTypeApply"
+             *      This value is set by the Terraform client and is informational only.
+             */
+            operation?: string;
+            /**
+             * who
+             * @description Identifier of who holds the lock. Populated by Terraform -- typically
+             *      the format "username@hostname" (e.g., "deploy@prod-runner-01").
+             *      This field is informational only; its format is controlled by Terraform.
+             */
+            who?: string;
+            /**
+             * version
+             * @description Terraform/OpenTofu version string of the client holding the lock
+             *      (e.g., "1.7.5").
+             */
+            version?: string;
+            /**
+             * acquired_at
+             * @description When the lock was acquired.
+             */
+            acquired_at?: components["schemas"]["google.protobuf.Timestamp"];
+        };
+        /**
+         * StateSummary
+         * @description StateSummary contains state metadata without the raw data blob. Used in
+         *      ListStates to keep list responses lightweight. Use GetCurrentState to
+         *      fetch the full state data for a specific record.
+         */
+        "admiral.state.v1.StateSummary": {
+            /**
+             * id
+             * Format: uuid
+             * @description Unique identifier for the state record (UUID).
+             */
+            id?: string;
+            /**
+             * component_id
+             * Format: uuid
+             * @description The infrastructure component this state belongs to (UUID).
+             */
+            component_id?: string;
+            /**
+             * environment_id
+             * Format: uuid
+             * @description The environment this state is scoped to (UUID).
+             */
+            environment_id?: string;
+            /**
+             * serial
+             * Format: int64
+             * @description Terraform state serial number.
+             */
+            serial?: number | string;
+            /**
+             * md5
+             * @description MD5 hash of the current state data.
+             */
+            md5?: string;
+            /**
+             * lineage
+             * @description Terraform state lineage.
+             */
+            lineage?: string;
+            /**
+             * size_bytes
+             * Format: int64
+             * @description Size of the current state data in bytes.
+             */
+            size_bytes?: number | string;
+            /**
+             * lock
+             * @description Active lock on this state, if any. Absent when the state is unlocked.
+             */
+            lock?: components["schemas"]["admiral.state.v1.StateLock"];
+            /**
+             * created_at
+             * @description When the state record was first created.
+             */
+            created_at?: components["schemas"]["google.protobuf.Timestamp"];
+            /**
+             * updated_at
+             * @description When the state data was last updated (last successful PushState).
+             */
+            updated_at?: components["schemas"]["google.protobuf.Timestamp"];
+        };
+        /**
+         * StateVersion
+         * @description StateVersion contains metadata about a historical state version. Used in
+         *      ListStateVersions to provide version history without the full state data
+         *      blob.
+         */
+        "admiral.state.v1.StateVersion": {
+            /**
+             * serial
+             * Format: int64
+             * @description Terraform state serial number for this version.
+             */
+            serial?: number | string;
+            /**
+             * md5
+             * @description MD5 hash of the state data at this version.
+             */
+            md5?: string;
+            /**
+             * lineage
+             * @description Terraform state lineage.
+             */
+            lineage?: string;
+            /**
+             * size_bytes
+             * Format: int64
+             * @description Size of the state data in bytes.
+             */
+            size_bytes?: number | string;
+            /**
+             * job_id
+             * Format: uuid
+             * @description The job that produced this state version (UUID). Absent for state that
+             *      was written outside the normal job lifecycle -- for example, state
+             *      uploaded directly via an admin migration tool, or state that existed
+             *      before Admiral began managing the component.
+             */
+            job_id?: string | null;
+            /**
+             * created_at
+             * @description When this state version was created.
+             */
+            created_at?: components["schemas"]["google.protobuf.Timestamp"];
+        };
+        /**
+         * UnlockStateRequest
+         * @description UnlockStateRequest releases the lock on the job's state.
+         */
+        "admiral.state.v1.UnlockStateRequest": {
+            /**
+             * job_id
+             * Format: uuid
+             * @description The job releasing the lock (UUID).
+             */
+            job_id?: string;
+            /**
+             * lock_id
+             * Format: uuid
+             * @description The lock_id to release (UUID). Must match the currently held lock.
+             */
+            lock_id?: string;
+        };
+        /**
+         * UnlockStateResponse
+         * @description UnlockStateResponse confirms the lock was released.
+         */
+        "admiral.state.v1.UnlockStateResponse": Record<string, never>;
+        /**
+         * CreatePersonalAccessTokenRequest
+         * @description CreatePersonalAccessTokenRequest contains the parameters for creating a new PAT.
+         */
+        "admiral.user.v1.CreatePersonalAccessTokenRequest": {
+            /**
+             * name
+             * @description URL-safe, human-readable identifier for the token (e.g., "postman-testing").
+             *      Must be unique per user within the tenant. Lowercase alphanumeric and
+             *      hyphens only.
+             */
+            name?: string;
+            /**
+             * scopes
+             * @description The scopes to grant this token. Must be valid scopes allowed for PATs.
+             *      The server enforces that issued scopes are a subset of the caller's own
+             *      scopes -- a token cannot grant more access than the user holds.
+             */
+            scopes?: string[];
+            /**
+             * expires_at
+             * @description Optional expiration time. If unset, the token does not expire.
+             *      Tenant policies may enforce a maximum lifetime.
+             */
+            expires_at?: components["schemas"]["google.protobuf.Timestamp"];
+        };
+        /**
+         * CreatePersonalAccessTokenResponse
+         * @description CreatePersonalAccessTokenResponse contains the newly created PAT.
+         */
+        "admiral.user.v1.CreatePersonalAccessTokenResponse": {
+            /**
+             * access_token
+             * @description The created token metadata.
+             */
+            access_token?: components["schemas"]["admiral.common.v1.AccessToken"];
+            /**
+             * plain_text_token
+             * @description The raw token secret (e.g., "adm_pat_7kH3mNqR2xFb..."). This value is
+             *      shown exactly once and cannot be retrieved again. Store it securely.
+             */
+            plain_text_token?: string;
+        };
+        /**
+         * GetMeRequest
+         * @description GetMeRequest is the request message for GetMe.
+         *      No parameters are required as the user is identified by the auth token.
+         */
+        "admiral.user.v1.GetMeRequest": Record<string, never>;
+        /**
+         * GetMeResponse
+         * @description GetMeResponse contains the authenticated user's profile.
+         */
+        "admiral.user.v1.GetMeResponse": {
+            /**
+             * user
+             * @description The user profile.
+             */
+            user?: components["schemas"]["admiral.user.v1.User"];
+        };
+        /**
+         * GetPersonalAccessTokenRequest
+         * @description GetPersonalAccessTokenRequest identifies a PAT to retrieve.
+         */
+        "admiral.user.v1.GetPersonalAccessTokenRequest": {
+            /**
+             * token_id
+             * Format: uuid
+             * @description The unique identifier of the token (UUID).
+             */
+            token_id?: string;
+        };
+        /**
+         * GetPersonalAccessTokenResponse
+         * @description GetPersonalAccessTokenResponse contains the requested PAT metadata.
+         */
+        "admiral.user.v1.GetPersonalAccessTokenResponse": {
+            /**
+             * access_token
+             * @description The token metadata. The token secret is never included.
+             */
+            access_token?: components["schemas"]["admiral.common.v1.AccessToken"];
+        };
+        /**
+         * GetUserRequest
+         * @description GetUserRequest identifies a user to retrieve by ID.
+         */
+        "admiral.user.v1.GetUserRequest": {
+            /**
+             * user_id
+             * Format: uuid
+             * @description The unique identifier of the user (UUID).
+             */
+            user_id?: string;
+        };
+        /**
+         * GetUserResponse
+         * @description GetUserResponse contains the requested user's profile.
+         */
+        "admiral.user.v1.GetUserResponse": {
+            /**
+             * user
+             * @description The user profile.
+             */
+            user?: components["schemas"]["admiral.user.v1.User"];
+        };
+        /**
+         * ListPersonalAccessTokensRequest
+         * @description ListPersonalAccessTokensRequest contains pagination and filter parameters.
+         */
+        "admiral.user.v1.ListPersonalAccessTokensRequest": {
+            /**
+             * filter
+             * @description Filter expression to narrow results. Uses the Admiral filter DSL.
+             *
+             *      Filterable fields:
+             *        - `name` -- filter by token name.
+             *        - `status` -- filter by token status (ACTIVE, REVOKED, EXPIRED).
+             *
+             *      Example: `field['status'] = 'ACTIVE'`
+             */
+            filter?: string;
+            /**
+             * page_size
+             * Format: int32
+             * @description Maximum number of tokens to return per page.
+             */
+            page_size?: number;
+            /**
+             * page_token
+             * @description Opaque pagination token from a previous response.
+             */
+            page_token?: string;
+        };
+        /**
+         * ListPersonalAccessTokensResponse
+         * @description ListPersonalAccessTokensResponse contains a page of PAT metadata.
+         */
+        "admiral.user.v1.ListPersonalAccessTokensResponse": {
+            /**
+             * access_tokens
+             * @description The list of tokens. Token secrets are never included.
+             */
+            access_tokens?: components["schemas"]["admiral.common.v1.AccessToken"][];
+            /**
+             * next_page_token
+             * @description Pagination token for the next page. Empty when there are no more results.
+             */
+            next_page_token?: string;
+        };
+        /**
+         * RevokePersonalAccessTokenRequest
+         * @description RevokePersonalAccessTokenRequest identifies a PAT to revoke.
+         */
+        "admiral.user.v1.RevokePersonalAccessTokenRequest": {
+            /**
+             * token_id
+             * Format: uuid
+             * @description The unique identifier of the token to revoke (UUID).
+             */
+            token_id?: string;
+        };
+        /**
+         * RevokePersonalAccessTokenResponse
+         * @description RevokePersonalAccessTokenResponse contains the revoked PAT metadata.
+         */
+        "admiral.user.v1.RevokePersonalAccessTokenResponse": {
+            /**
+             * access_token
+             * @description The token metadata with updated status.
+             */
+            access_token?: components["schemas"]["admiral.common.v1.AccessToken"];
+        };
+        /**
+         * UpdatePersonalAccessTokenRequest
+         * @description UpdatePersonalAccessTokenRequest contains the fields to update on a PAT.
+         *      Only provided fields are updated; omitted fields remain unchanged.
+         */
+        "admiral.user.v1.UpdatePersonalAccessTokenRequest": {
+            /**
+             * token_id
+             * Format: uuid
+             * @description The unique identifier of the token to update (UUID).
+             */
+            token_id?: string;
+            /**
+             * name
+             * @description New name for the token. Must follow the same naming rules as creation.
+             *      Omit to leave the name unchanged.
+             */
+            name?: string | null;
+            /**
+             * scopes
+             * @description New scopes for the token. Replaces all existing scopes.
+             *      The server enforces that issued scopes are a subset of the caller's own
+             *      scopes -- a token cannot grant more access than the user holds.
+             *      Omit to leave scopes unchanged.
+             */
+            scopes?: string[];
+        };
+        /**
+         * UpdatePersonalAccessTokenResponse
+         * @description UpdatePersonalAccessTokenResponse contains the updated PAT metadata.
+         */
+        "admiral.user.v1.UpdatePersonalAccessTokenResponse": {
+            /**
+             * access_token
+             * @description The updated token metadata.
+             */
+            access_token?: components["schemas"]["admiral.common.v1.AccessToken"];
+        };
+        /**
+         * User
+         * @description User represents a user's profile information.
+         * @example {
+         *       "id": "d290f1ee-6c54-4b01-90e6-d701748f0851",
+         *       "email": "alex.chen@example.com",
+         *       "display_name": "Alex Chen",
+         *       "given_name": "Alex",
+         *       "family_name": "Chen",
+         *       "avatar_url": "https://avatars.example.com/alex-chen.jpg",
+         *       "created_at": "2025-06-01T09:00:00Z",
+         *       "updated_at": "2025-11-15T11:00:00Z"
+         *     }
+         */
+        "admiral.user.v1.User": {
+            /**
+             * id
+             * Format: uuid
+             * @description Unique identifier for the user (UUID).
+             */
+            id?: string;
+            /**
+             * email
+             * @description User's email address.
+             */
+            email?: string;
+            /**
+             * email_verified
+             * @description Whether the email has been verified by the IdP.
+             */
+            email_verified?: boolean;
+            /**
+             * display_name
+             * @description User's display name for UI purposes.
+             */
+            display_name?: string | null;
+            /**
+             * given_name
+             * @description User's given (first) name.
+             */
+            given_name?: string | null;
+            /**
+             * family_name
+             * @description User's family (last) name.
+             */
+            family_name?: string | null;
+            /**
+             * avatar_url
+             * @description URL to the user's avatar image.
+             */
+            avatar_url?: string | null;
+            /**
+             * created_at
+             * @description When the user was created.
+             */
+            created_at?: components["schemas"]["google.protobuf.Timestamp"];
+            /**
+             * updated_at
+             * @description When the user was last updated.
+             */
+            updated_at?: components["schemas"]["google.protobuf.Timestamp"];
+        };
+        /**
+         * CreateVariableRequest
+         * @description CreateVariableRequest contains the parameters for creating a new variable.
+         *      The variable's scope is derived from the presence of application_id and
+         *      environment_id: neither means global, application_id only means app-scoped,
+         *      both means environment-scoped.
+         */
+        "admiral.variable.v1.CreateVariableRequest": {
+            /**
+             * key
+             * @description The variable name. Must be a valid environment variable identifier
+             *      (e.g., "DATABASE_URL", "API_KEY").
+             */
+            key?: string;
+            /**
+             * value
+             * @description The variable value. For COMPLEX type, must be valid JSON.
+             */
+            value?: string;
+            /**
+             * sensitive
+             * @description Whether the variable value should be encrypted at rest and masked in
+             *      API responses.
+             */
+            sensitive?: boolean;
+            /**
+             * type
+             * @description How the value should be interpreted. Defaults to STRING if not specified.
+             */
+            type?: components["schemas"]["admiral.variable.v1.VariableType"];
+            /**
+             * description
+             * @description Optional description of the variable's purpose.
+             */
+            description?: string;
+            /**
+             * application_id
+             * Format: uuid
+             * @description The application to scope this variable to (UUID). When set without
+             *      environment_id, the variable applies to all environments in the app.
+             */
+            application_id?: string | null;
+            /**
+             * environment_id
+             * Format: uuid
+             * @description The environment to scope this variable to (UUID). Requires application_id.
+             *      When set, the variable applies only to this specific environment.
+             */
+            environment_id?: string | null;
+        };
+        /**
+         * CreateVariableResponse
+         * @description CreateVariableResponse contains the newly created variable.
+         */
+        "admiral.variable.v1.CreateVariableResponse": {
+            /**
+             * variable
+             * @description The created variable.
+             */
+            variable?: components["schemas"]["admiral.variable.v1.Variable"];
+        };
+        /**
+         * DeleteVariableRequest
+         * @description DeleteVariableRequest identifies a variable to delete.
+         */
+        "admiral.variable.v1.DeleteVariableRequest": {
+            /**
+             * variable_id
+             * Format: uuid
+             * @description The unique identifier of the variable to delete (UUID).
+             */
+            variable_id?: string;
+        };
+        /**
+         * DeleteVariableResponse
+         * @description DeleteVariableResponse is empty on success.
+         */
+        "admiral.variable.v1.DeleteVariableResponse": Record<string, never>;
+        /**
+         * GetVariableRequest
+         * @description GetVariableRequest identifies a variable to retrieve.
+         */
+        "admiral.variable.v1.GetVariableRequest": {
+            /**
+             * variable_id
+             * Format: uuid
+             * @description The unique identifier of the variable (UUID).
+             */
+            variable_id?: string;
+        };
+        /**
+         * GetVariableResponse
+         * @description GetVariableResponse contains the variable record.
+         */
+        "admiral.variable.v1.GetVariableResponse": {
+            /**
+             * variable
+             * @description The variable record. Sensitive variable values are masked.
+             */
+            variable?: components["schemas"]["admiral.variable.v1.Variable"];
+        };
+        /**
+         * ListVariablesRequest
+         * @description ListVariablesRequest contains filters and pagination parameters.
+         *
+         *      The filter determines which variables are included in the merged view
+         *      based on the presence of `application_id` and `environment_id` fields:
+         *        - Neither field in filter: global variables only.
+         *        - `application_id` in filter: global + app-level variables merged.
+         *        - `application_id` + `environment_id` in filter: global + app + environment
+         *          variables merged.
+         *
+         *      When variables with the same key exist at multiple levels, all are returned
+         *      so clients can determine precedence.
+         */
+        "admiral.variable.v1.ListVariablesRequest": {
+            /**
+             * filter
+             * @description Filter expression using the PEG filter DSL.
+             *
+             *      Common filter fields:
+             *        - `application_id` -- scope to an application (triggers merge with
+             *          app-level variables alongside global variables).
+             *        - `environment_id` -- scope to an environment (requires application_id;
+             *          triggers merge with environment-level variables).
+             *        - `sensitive` -- filter by sensitivity.
+             *        - `type` -- filter by variable type.
+             *        - `key` -- filter by variable key (supports prefix matching).
+             */
+            filter?: string;
+            /**
+             * page_size
+             * Format: int32
+             * @description Maximum number of variables to return per page.
+             */
+            page_size?: number;
+            /**
+             * page_token
+             * @description Opaque pagination token from a previous response.
+             */
+            page_token?: string;
+        };
+        /**
+         * ListVariablesResponse
+         * @description ListVariablesResponse contains a page of variables.
+         */
+        "admiral.variable.v1.ListVariablesResponse": {
+            /**
+             * variables
+             * @description The list of variables from all applicable levels.
+             */
+            variables?: components["schemas"]["admiral.variable.v1.Variable"][];
+            /**
+             * next_page_token
+             * @description Pagination token for the next page. Empty when there are no more results.
+             */
+            next_page_token?: string;
+        };
+        /**
+         * UpdateVariableRequest
+         * @description UpdateVariableRequest contains the variable fields to update.
+         */
+        "admiral.variable.v1.UpdateVariableRequest": {
+            /**
+             * variable
+             * @description The variable with updated fields.
+             *      Only fields specified in `update_mask` are updated.
+             */
+            variable: components["schemas"]["admiral.variable.v1.Variable"];
+            /**
+             * update_mask
+             * @description The set of fields to update. If unset, all mutable fields are updated.
+             *      Supported fields: `value`, `sensitive`, `type`, `description`.
+             */
+            update_mask?: components["schemas"]["google.protobuf.FieldMask"];
+        };
+        /**
+         * UpdateVariableResponse
+         * @description UpdateVariableResponse contains the updated variable.
+         */
+        "admiral.variable.v1.UpdateVariableResponse": {
+            /**
+             * variable
+             * @description The updated variable.
+             */
+            variable?: components["schemas"]["admiral.variable.v1.Variable"];
+        };
+        /**
+         * Variable
+         * @description Variable represents a configuration key-value pair scoped to a tenant,
+         *      application, or application+environment. Variables are resolved at deployment
+         *      time into immutable deployment snapshots.
+         *
+         *      Variables are user-managed configuration values, distinct from component
+         *      outputs which are system-managed values produced by apply (e.g., Terraform
+         *      outputs). Component outputs are resolved at render time and referenced via
+         *      a separate namespace ({{ .component.<name>.<output> }}).
+         * @example {
+         *       "id": "1a2b3c4d-5e6f-7890-abcd-ef0123456789",
+         *       "key": "DATABASE_URL",
+         *       "value": "postgresql://db.internal:5432/inventory",
+         *       "sensitive": false,
+         *       "type": "VARIABLE_TYPE_STRING",
+         *       "scope": "VARIABLE_SCOPE_ENVIRONMENT",
+         *       "description": "Primary database connection string for the inventory service.",
+         *       "application_id": "a1b2c3d4-5678-9abc-def0-1234567890ab",
+         *       "environment_id": "e5f6a7b8-9012-3cde-f456-789012345678",
+         *       "created_by": "d290f1ee-6c54-4b01-90e6-d701748f0851",
+         *       "updated_by": "d290f1ee-6c54-4b01-90e6-d701748f0851",
+         *       "created_at": "2025-09-16T12:00:00Z",
+         *       "updated_at": "2025-10-30T15:00:00Z"
+         *     }
+         */
+        "admiral.variable.v1.Variable": {
+            /**
+             * id
+             * Format: uuid
+             * @description Unique identifier for the variable (UUID).
+             */
+            id?: string;
+            /**
+             * key
+             * @description The variable name. Must be a valid environment variable identifier
+             *      (e.g., "DATABASE_URL", "API_KEY"). Alphanumeric and underscores
+             *      (uppercase conventional but lowercase accepted), must start with a letter
+             *      or underscore (max 255 chars).
+             */
+            key?: string;
+            /**
+             * value
+             * @description The variable value. Always stored as a string -- use `type` to indicate
+             *      how to interpret it. Masked or empty for sensitive variables in responses.
+             *
+             *      For COMPLEX type, this is a JSON-encoded string (e.g., '["a","b"]' or
+             *      '{"key":"value"}'). The rendering engine converts it to the target format
+             *      (HCL for Terraform, YAML for Helm).
+             */
+            value?: string;
+            /**
+             * sensitive
+             * @description Whether the variable value is encrypted at rest and masked in API responses.
+             */
+            sensitive?: boolean;
+            /**
+             * type
+             * @description How the value should be interpreted by the rendering engine and displayed
+             *      in the UI. Defaults to STRING if not specified.
+             */
+            type?: components["schemas"]["admiral.variable.v1.VariableType"];
+            /**
+             * description
+             * @description Optional description of the variable's purpose (e.g., "Maximum replica
+             *      count for production scaling" or "RDS instance class per environment").
+             */
+            description?: string;
+            /**
+             * application_id
+             * Format: uuid
+             * @description The application this variable is scoped to (UUID). When set, the variable
+             *      is scoped to this application. When both application_id and environment_id
+             *      are set, the variable is scoped to that specific environment.
+             *      Absent means the variable is global (tenant-wide).
+             */
+            application_id?: string | null;
+            /**
+             * environment_id
+             * Format: uuid
+             * @description The environment this variable is scoped to (UUID). Requires application_id.
+             *      When set alongside application_id, the variable applies only to this
+             *      specific environment within the application.
+             */
+            environment_id?: string | null;
+            /**
+             * created_by
+             * @description The user or agent who created this variable (server-populated from token).
+             */
+            created_by?: components["schemas"]["admiral.common.v1.ActorRef"];
+            /**
+             * updated_by
+             * @description The user or agent who last updated this variable (server-populated from token).
+             */
+            updated_by?: components["schemas"]["admiral.common.v1.ActorRef"];
+            /**
+             * created_at
+             * @description When the variable was created.
+             */
+            created_at?: components["schemas"]["google.protobuf.Timestamp"];
+            /**
+             * updated_at
+             * @description When the variable was last updated.
+             */
+            updated_at?: components["schemas"]["google.protobuf.Timestamp"];
+        };
+        /**
+         * VariableType
+         * @description VariableType indicates how the variable value should be interpreted by the
+         *      rendering engine and displayed in the UI. The value is always stored as a
+         *      string regardless of type.
+         * @enum {string}
+         */
+        "admiral.variable.v1.VariableType": "VARIABLE_TYPE_UNSPECIFIED" | "VARIABLE_TYPE_STRING" | "VARIABLE_TYPE_NUMBER" | "VARIABLE_TYPE_BOOLEAN" | "VARIABLE_TYPE_COMPLEX";
+        /**
+         * Format: duration
+         * @description A Duration represents a signed, fixed-length span of time represented
+         *      as a count of seconds and fractions of seconds at nanosecond
+         *      resolution. It is independent of any calendar and concepts like "day"
+         *      or "month". It is related to Timestamp in that the difference between
+         *      two Timestamp values is a Duration and it can be added or subtracted
+         *      from a Timestamp. Range is approximately +-10,000 years.
+         *
+         *      # Examples
+         *
+         *      Example 1: Compute Duration from two Timestamps in pseudo code.
+         *
+         *          Timestamp start = ...;
+         *          Timestamp end = ...;
+         *          Duration duration = ...;
+         *
+         *          duration.seconds = end.seconds - start.seconds;
+         *          duration.nanos = end.nanos - start.nanos;
+         *
+         *          if (duration.seconds < 0 && duration.nanos > 0) {
+         *            duration.seconds += 1;
+         *            duration.nanos -= 1000000000;
+         *          } else if (duration.seconds > 0 && duration.nanos < 0) {
+         *            duration.seconds -= 1;
+         *            duration.nanos += 1000000000;
+         *          }
+         *
+         *      Example 2: Compute Timestamp from Timestamp + Duration in pseudo code.
+         *
+         *          Timestamp start = ...;
+         *          Duration duration = ...;
+         *          Timestamp end = ...;
+         *
+         *          end.seconds = start.seconds + duration.seconds;
+         *          end.nanos = start.nanos + duration.nanos;
+         *
+         *          if (end.nanos < 0) {
+         *            end.seconds -= 1;
+         *            end.nanos += 1000000000;
+         *          } else if (end.nanos >= 1000000000) {
+         *            end.seconds += 1;
+         *            end.nanos -= 1000000000;
+         *          }
+         *
+         *      Example 3: Compute Duration from datetime.timedelta in Python.
+         *
+         *          td = datetime.timedelta(days=3, minutes=10)
+         *          duration = Duration()
+         *          duration.FromTimedelta(td)
+         *
+         *      # JSON Mapping
+         *
+         *      In JSON format, the Duration type is encoded as a string rather than an
+         *      object, where the string ends in the suffix "s" (indicating seconds) and
+         *      is preceded by the number of seconds, with nanoseconds expressed as
+         *      fractional seconds. For example, 3 seconds with 0 nanoseconds should be
+         *      encoded in JSON format as "3s", while 3 seconds and 1 nanosecond should
+         *      be expressed in JSON format as "3.000000001s", and 3 seconds and 1
+         *      microsecond should be expressed in JSON format as "3.000001s".
+         */
+        "google.protobuf.Duration": string;
+        /**
+         * @description `FieldMask` represents a set of symbolic field paths, for example:
+         *
+         *          paths: "f.a"
+         *          paths: "f.b.d"
+         *
+         *      Here `f` represents a field in some root message, `a` and `b`
+         *      fields in the message found in `f`, and `d` a field found in the
+         *      message in `f.b`.
+         *
+         *      Field masks are used to specify a subset of fields that should be
+         *      returned by a get operation or modified by an update operation.
+         *      Field masks also have a custom JSON encoding (see below).
+         *
+         *      # Field Masks in Projections
+         *
+         *      When used in the context of a projection, a response message or
+         *      sub-message is filtered by the API to only contain those fields as
+         *      specified in the mask. For example, if the mask in the previous
+         *      example is applied to a response message as follows:
+         *
+         *          f {
+         *            a : 22
+         *            b {
+         *              d : 1
+         *              x : 2
+         *            }
+         *            y : 13
+         *          }
+         *          z: 8
+         *
+         *      The result will not contain specific values for fields x,y and z
+         *      (their value will be set to the default, and omitted in proto text
+         *      output):
+         *
+         *
+         *          f {
+         *            a : 22
+         *            b {
+         *              d : 1
+         *            }
+         *          }
+         *
+         *      A repeated field is not allowed except at the last position of a
+         *      paths string.
+         *
+         *      If a FieldMask object is not present in a get operation, the
+         *      operation applies to all fields (as if a FieldMask of all fields
+         *      had been specified).
+         *
+         *      Note that a field mask does not necessarily apply to the
+         *      top-level response message. In case of a REST get operation, the
+         *      field mask applies directly to the response, but in case of a REST
+         *      list operation, the mask instead applies to each individual message
+         *      in the returned resource list. In case of a REST custom method,
+         *      other definitions may be used. Where the mask applies will be
+         *      clearly documented together with its declaration in the API.  In
+         *      any case, the effect on the returned resource/resources is required
+         *      behavior for APIs.
+         *
+         *      # Field Masks in Update Operations
+         *
+         *      A field mask in update operations specifies which fields of the
+         *      targeted resource are going to be updated. The API is required
+         *      to only change the values of the fields as specified in the mask
+         *      and leave the others untouched. If a resource is passed in to
+         *      describe the updated values, the API ignores the values of all
+         *      fields not covered by the mask.
+         *
+         *      If a repeated field is specified for an update operation, new values will
+         *      be appended to the existing repeated field in the target resource. Note that
+         *      a repeated field is only allowed in the last position of a `paths` string.
+         *
+         *      If a sub-message is specified in the last position of the field mask for an
+         *      update operation, then new value will be merged into the existing sub-message
+         *      in the target resource.
+         *
+         *      For example, given the target message:
+         *
+         *          f {
+         *            b {
+         *              d: 1
+         *              x: 2
+         *            }
+         *            c: [1]
+         *          }
+         *
+         *      And an update message:
+         *
+         *          f {
+         *            b {
+         *              d: 10
+         *            }
+         *            c: [2]
+         *          }
+         *
+         *      then if the field mask is:
+         *
+         *       paths: ["f.b", "f.c"]
+         *
+         *      then the result will be:
+         *
+         *          f {
+         *            b {
+         *              d: 10
+         *              x: 2
+         *            }
+         *            c: [1, 2]
+         *          }
+         *
+         *      An implementation may provide options to override this default behavior for
+         *      repeated and message fields.
+         *
+         *      In order to reset a field's value to the default, the field must
+         *      be in the mask and set to the default value in the provided resource.
+         *      Hence, in order to reset all fields of a resource, provide a default
+         *      instance of the resource and set all fields in the mask, or do
+         *      not provide a mask as described below.
+         *
+         *      If a field mask is not present on update, the operation applies to
+         *      all fields (as if a field mask of all fields has been specified).
+         *      Note that in the presence of schema evolution, this may mean that
+         *      fields the client does not know and has therefore not filled into
+         *      the request will be reset to their default. If this is unwanted
+         *      behavior, a specific service may require a client to always specify
+         *      a field mask, producing an error if not.
+         *
+         *      As with get operations, the location of the resource which
+         *      describes the updated values in the request message depends on the
+         *      operation kind. In any case, the effect of the field mask is
+         *      required to be honored by the API.
+         *
+         *      ## Considerations for HTTP REST
+         *
+         *      The HTTP kind of an update operation which uses a field mask must
+         *      be set to PATCH instead of PUT in order to satisfy HTTP semantics
+         *      (PUT must only be used for full updates).
+         *
+         *      # JSON Encoding of Field Masks
+         *
+         *      In JSON, a field mask is encoded as a single string where paths are
+         *      separated by a comma. Fields name in each path are converted
+         *      to/from lower-camel naming conventions.
+         *
+         *      As an example, consider the following message declarations:
+         *
+         *          message Profile {
+         *            User user = 1;
+         *            Photo photo = 2;
+         *          }
+         *          message User {
+         *            string display_name = 1;
+         *            string address = 2;
+         *          }
+         *
+         *      In proto a field mask for `Profile` may look as such:
+         *
+         *          mask {
+         *            paths: "user.display_name"
+         *            paths: "photo"
+         *          }
+         *
+         *      In JSON, the same mask is represented as below:
+         *
+         *          {
+         *            mask: "user.displayName,photo"
+         *          }
+         *
+         *      # Field Masks and Oneof Fields
+         *
+         *      Field masks treat fields in oneofs just as regular fields. Consider the
+         *      following message:
+         *
+         *          message SampleMessage {
+         *            oneof test_oneof {
+         *              string name = 4;
+         *              SubMessage sub_message = 9;
+         *            }
+         *          }
+         *
+         *      The field mask can be:
+         *
+         *          mask {
+         *            paths: "name"
+         *          }
+         *
+         *      Or:
+         *
+         *          mask {
+         *            paths: "sub_message"
+         *          }
+         *
+         *      Note that oneof type names ("test_oneof" in this case) cannot be used in
+         *      paths.
+         *
+         *      ## Field Mask Verification
+         *
+         *      The implementation of any API method which has a FieldMask type field in the
+         *      request should verify the included field paths, and return an
+         *      `INVALID_ARGUMENT` error if any path is unmappable.
+         */
+        "google.protobuf.FieldMask": string;
+        /**
+         * Format: date-time
+         * @description A Timestamp represents a point in time independent of any time zone or local
+         *      calendar, encoded as a count of seconds and fractions of seconds at
+         *      nanosecond resolution. The count is relative to an epoch at UTC midnight on
+         *      January 1, 1970, in the proleptic Gregorian calendar which extends the
+         *      Gregorian calendar backwards to year one.
+         *
+         *      All minutes are 60 seconds long. Leap seconds are "smeared" so that no leap
+         *      second table is needed for interpretation, using a [24-hour linear
+         *      smear](https://developers.google.com/time/smear).
+         *
+         *      The range is from 0001-01-01T00:00:00Z to 9999-12-31T23:59:59.999999999Z. By
+         *      restricting to that range, we ensure that we can convert to and from [RFC
+         *      3339](https://www.ietf.org/rfc/rfc3339.txt) date strings.
+         *
+         *      # Examples
+         *
+         *      Example 1: Compute Timestamp from POSIX `time()`.
+         *
+         *          Timestamp timestamp;
+         *          timestamp.set_seconds(time(NULL));
+         *          timestamp.set_nanos(0);
+         *
+         *      Example 2: Compute Timestamp from POSIX `gettimeofday()`.
+         *
+         *          struct timeval tv;
+         *          gettimeofday(&tv, NULL);
+         *
+         *          Timestamp timestamp;
+         *          timestamp.set_seconds(tv.tv_sec);
+         *          timestamp.set_nanos(tv.tv_usec * 1000);
+         *
+         *      Example 3: Compute Timestamp from Win32 `GetSystemTimeAsFileTime()`.
+         *
+         *          FILETIME ft;
+         *          GetSystemTimeAsFileTime(&ft);
+         *          UINT64 ticks = (((UINT64)ft.dwHighDateTime) << 32) | ft.dwLowDateTime;
+         *
+         *          // A Windows tick is 100 nanoseconds. Windows epoch 1601-01-01T00:00:00Z
+         *          // is 11644473600 seconds before Unix epoch 1970-01-01T00:00:00Z.
+         *          Timestamp timestamp;
+         *          timestamp.set_seconds((INT64) ((ticks / 10000000) - 11644473600LL));
+         *          timestamp.set_nanos((INT32) ((ticks % 10000000) * 100));
+         *
+         *      Example 4: Compute Timestamp from Java `System.currentTimeMillis()`.
+         *
+         *          long millis = System.currentTimeMillis();
+         *
+         *          Timestamp timestamp = Timestamp.newBuilder().setSeconds(millis / 1000)
+         *              .setNanos((int) ((millis % 1000) * 1000000)).build();
+         *
+         *      Example 5: Compute Timestamp from Java `Instant.now()`.
+         *
+         *          Instant now = Instant.now();
+         *
+         *          Timestamp timestamp =
+         *              Timestamp.newBuilder().setSeconds(now.getEpochSecond())
+         *                  .setNanos(now.getNano()).build();
+         *
+         *      Example 6: Compute Timestamp from current time in Python.
+         *
+         *          timestamp = Timestamp()
+         *          timestamp.GetCurrentTime()
+         *
+         *      # JSON Mapping
+         *
+         *      In JSON format, the Timestamp type is encoded as a string in the
+         *      [RFC 3339](https://www.ietf.org/rfc/rfc3339.txt) format. That is, the
+         *      format is "{year}-{month}-{day}T{hour}:{min}:{sec}[.{frac_sec}]Z"
+         *      where {year} is always expressed using four digits while {month}, {day},
+         *      {hour}, {min}, and {sec} are zero-padded to two digits each. The fractional
+         *      seconds, which can go up to 9 digits (i.e. up to 1 nanosecond resolution),
+         *      are optional. The "Z" suffix indicates the timezone ("UTC"); the timezone
+         *      is required. A proto3 JSON serializer should always use UTC (as indicated by
+         *      "Z") when printing the Timestamp type and a proto3 JSON parser should be
+         *      able to accept both UTC and other timezones (as indicated by an offset).
+         *
+         *      For example, "2017-01-15T01:30:15.01Z" encodes 15.01 seconds past
+         *      01:30 UTC on January 15, 2017.
+         *
+         *      In JavaScript, one can convert a Date object to this format using the
+         *      standard
+         *      [toISOString()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/toISOString)
+         *      method. In Python, a standard `datetime.datetime` object can be converted
+         *      to this format using
+         *      [`strftime`](https://docs.python.org/2/library/time.html#time.strftime) with
+         *      the time format spec '%Y-%m-%dT%H:%M:%S.%fZ'. Likewise, in Java, one can use
+         *      the Joda Time's [`ISODateTimeFormat.dateTime()`](
+         *      http://joda-time.sourceforge.net/apidocs/org/joda/time/format/ISODateTimeFormat.html#dateTime()
+         *      ) to obtain a formatter capable of generating timestamps in this format.
+         * @example 2023-01-15T01:30:15.01Z
+         * @example 2024-12-25T12:00:00Z
+         */
+        "google.protobuf.Timestamp": string;
+    };
+    responses: never;
+    parameters: never;
+    requestBodies: never;
+    headers: never;
+    pathItems: never;
 }
 export type $defs = Record<string, never>;
 export interface operations {
-  ClusterAPI_GetRevisionBundle: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description The revision to fetch the bundle for (UUID). */
-        revision_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Success */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['admiral.api.cluster.v1.GetRevisionBundleResponse'];
-        };
-      };
-    };
-  };
-  ClusterAPI_ReportRevisionResult: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description The revision being reported on (UUID). */
-        revision_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': {
-          /**
-           * revision_id
-           * Format: uuid
-           * @description The revision being reported on (UUID).
-           */
-          revision_id?: string;
-          /**
-           * result
-           * @description The result of applying the revision.
-           */
-          result: components['schemas']['admiral.api.cluster.v1.RevisionResult'];
-        };
-      };
-    };
-    responses: {
-      /** @description Success */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['admiral.api.cluster.v1.ReportRevisionResultResponse'];
-        };
-      };
-    };
-  };
-  ClusterAPI_ReportClusterStatus: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['admiral.api.cluster.v1.ReportClusterStatusRequest'];
-      };
-    };
-    responses: {
-      /** @description Success */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['admiral.api.cluster.v1.ReportClusterStatusResponse'];
-        };
-      };
-    };
-  };
-  ApplicationAPI_ListApplications: {
-    parameters: {
-      query?: {
-        /**
-         * @description Filter expression to narrow results. Uses the Admiral filter DSL.
-         *
-         *      Syntax: `field['name'] = 'value'` with AND/OR/NOT, comparison operators
-         *      (=, !=, <, >, <=, >=, ~=), and predicates (IN, BETWEEN, CONTAINS,
-         *      STARTS_WITH, ENDS_WITH, IS NULL, EXISTS).
-         *
-         *      Filterable fields:
-         *        - `name` -- filter by application name.
-         *        - `labels.key` -- filter by label key.
-         *
-         *      Example: `field['name'] = 'inventory-api' AND field['labels.team'] = 'logistics'`
-         */
-        filter?: string;
-        /** @description Maximum number of applications to return per page. */
-        page_size?: number;
-        /** @description Opaque pagination token from a previous response. */
-        page_token?: string;
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Success */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['admiral.api.application.v1.ListApplicationsResponse'];
-        };
-      };
-    };
-  };
-  ApplicationAPI_CreateApplication: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['admiral.api.application.v1.CreateApplicationRequest'];
-      };
-    };
-    responses: {
-      /** @description Success */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['admiral.api.application.v1.CreateApplicationResponse'];
-        };
-      };
-    };
-  };
-  ApplicationAPI_UpdateApplication: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Unique identifier for the application (UUID). */
-        'application.id': string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': {
-          /**
-           * application
-           * @description The application with updated fields.
-           *      Only fields specified in `update_mask` are updated.
-           */
-          application: components['schemas']['admiral.api.application.v1.Application'];
-          /**
-           * update_mask
-           * @description The set of fields to update. If unset, all mutable fields are updated.
-           *      Supported fields: `name`, `description`, `labels`.
-           */
-          update_mask?: components['schemas']['google.protobuf.FieldMask'];
-        };
-      };
-    };
-    responses: {
-      /** @description Success */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['admiral.api.application.v1.UpdateApplicationResponse'];
-        };
-      };
-    };
-  };
-  ApplicationAPI_GetApplication: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description The unique identifier of the application (UUID). */
-        application_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Success */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['admiral.api.application.v1.GetApplicationResponse'];
-        };
-      };
-    };
-  };
-  ApplicationAPI_DeleteApplication: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description The unique identifier of the application to delete (UUID). */
-        application_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Success */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['admiral.api.application.v1.DeleteApplicationResponse'];
-        };
-      };
-    };
-  };
-  ClusterAPI_ListClusters: {
-    parameters: {
-      query?: {
-        /**
-         * @description Filter expression to narrow results. Uses the Admiral filter DSL.
-         *
-         *      Syntax: `field['name'] = 'value'` with AND/OR/NOT, comparison operators
-         *      (=, !=, <, >, <=, >=, ~=), and predicates (IN, BETWEEN, CONTAINS,
-         *      STARTS_WITH, ENDS_WITH, IS NULL, EXISTS).
-         *
-         *      Filterable fields:
-         *        - `name` -- filter by cluster name.
-         *        - `health_status` -- filter by health status.
-         *        - `labels.key` -- filter by label key.
-         *
-         *      Example: `field['health_status'] = 'HEALTHY' AND field['labels.region'] = 'us-east-1'`
-         */
-        filter?: string;
-        /** @description Maximum number of clusters to return per page. */
-        page_size?: number;
-        /** @description Opaque pagination token from a previous response. */
-        page_token?: string;
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Success */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['admiral.api.cluster.v1.ListClustersResponse'];
-        };
-      };
-    };
-  };
-  ClusterAPI_CreateCluster: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['admiral.api.cluster.v1.CreateClusterRequest'];
-      };
-    };
-    responses: {
-      /** @description Success */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['admiral.api.cluster.v1.CreateClusterResponse'];
-        };
-      };
-    };
-  };
-  ClusterAPI_UpdateCluster: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Unique identifier for the cluster (UUID). */
-        'cluster.id': string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': {
-          /**
-           * cluster
-           * @description The cluster with updated fields. The `id` field is required.
-           *      Only fields specified in `update_mask` are updated.
-           */
-          cluster: components['schemas']['admiral.api.cluster.v1.Cluster'];
-          /**
-           * update_mask
-           * @description The set of fields to update. If unset, all mutable fields are updated.
-           *      Supported fields: `name`, `description`, `labels`.
-           */
-          update_mask?: components['schemas']['google.protobuf.FieldMask'];
-        };
-      };
-    };
-    responses: {
-      /** @description Success */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['admiral.api.cluster.v1.UpdateClusterResponse'];
-        };
-      };
-    };
-  };
-  ClusterAPI_GetCluster: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description The unique identifier of the cluster (UUID). */
-        cluster_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Success */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['admiral.api.cluster.v1.GetClusterResponse'];
-        };
-      };
-    };
-  };
-  ClusterAPI_DeleteCluster: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /**
-         * @description The unique identifier of the cluster to delete (UUID).
-         *      All associated agent tokens will be revoked.
-         */
-        cluster_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Success */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['admiral.api.cluster.v1.DeleteClusterResponse'];
-        };
-      };
-    };
-  };
-  ClusterAPI_GetClusterStatus: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description The unique identifier of the cluster (UUID). */
-        cluster_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Success */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['admiral.api.cluster.v1.GetClusterStatusResponse'];
-        };
-      };
-    };
-  };
-  ClusterAPI_ListClusterTokens: {
-    parameters: {
-      query?: {
-        /**
-         * @description Filter expression to narrow results. Uses the Admiral filter DSL.
-         *
-         *      Filterable fields:
-         *        - `name` -- filter by token name.
-         *        - `status` -- filter by token status (ACTIVE, REVOKED).
-         *
-         *      Example: `field['status'] = 'ACTIVE'`
-         */
-        filter?: string;
-        /** @description Maximum number of tokens to return per page. */
-        page_size?: number;
-        /** @description Opaque pagination token from a previous response. */
-        page_token?: string;
-      };
-      header?: never;
-      path: {
-        /** @description The cluster to list tokens for (UUID). */
-        cluster_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Success */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['admiral.api.cluster.v1.ListClusterTokensResponse'];
-        };
-      };
-    };
-  };
-  ClusterAPI_CreateClusterToken: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description The cluster to bind this token to (UUID). */
-        cluster_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': {
-          /**
-           * cluster_id
-           * Format: uuid
-           * @description The cluster to bind this token to (UUID).
-           */
-          cluster_id?: string;
-          /**
-           * name
-           * @description URL-safe, human-readable identifier for the token (e.g., "prod-agent-key").
-           *      Must be unique within the cluster's tokens. Lowercase alphanumeric and
-           *      hyphens only.
-           */
-          name?: string;
-          /**
-           * expires_at
-           * @description Optional expiration time. If unset, the token does not expire.
-           */
-          expires_at?: components['schemas']['google.protobuf.Timestamp'];
-        };
-      };
-    };
-    responses: {
-      /** @description Success */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['admiral.api.cluster.v1.CreateClusterTokenResponse'];
-        };
-      };
-    };
-  };
-  ClusterAPI_GetClusterToken: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description The cluster the token belongs to (UUID). */
-        cluster_id: string;
-        /** @description The unique identifier of the token (UUID). */
-        token_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Success */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['admiral.api.cluster.v1.GetClusterTokenResponse'];
-        };
-      };
-    };
-  };
-  ClusterAPI_RevokeClusterToken: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description The cluster the token belongs to (UUID). */
-        cluster_id: string;
-        /** @description The unique identifier of the token to revoke (UUID). */
-        token_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': {
-          /**
-           * cluster_id
-           * Format: uuid
-           * @description The cluster the token belongs to (UUID).
-           */
-          cluster_id?: string;
-          /**
-           * token_id
-           * Format: uuid
-           * @description The unique identifier of the token to revoke (UUID).
-           */
-          token_id?: string;
-        };
-      };
-    };
-    responses: {
-      /** @description Success */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['admiral.api.cluster.v1.RevokeClusterTokenResponse'];
-        };
-      };
-    };
-  };
-  ClusterAPI_ListWorkloads: {
-    parameters: {
-      query?: {
-        /**
-         * @description Filter expression to narrow results. Uses the Admiral filter DSL.
-         *
-         *      Filterable fields:
-         *        - `namespace` -- filter by Kubernetes namespace.
-         *        - `kind` -- filter by workload kind (Deployment, StatefulSet, DaemonSet).
-         *        - `name` -- filter by workload name.
-         *        - `health_status` -- filter by workload health status.
-         *
-         *      Example: `field['namespace'] = 'production' AND field['health_status'] = 'DEGRADED'`
-         */
-        filter?: string;
-        /** @description Maximum number of workloads to return per page. */
-        page_size?: number;
-        /** @description Opaque pagination token from a previous response. */
-        page_token?: string;
-      };
-      header?: never;
-      path: {
-        /** @description The cluster whose workloads to list (UUID). */
-        cluster_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Success */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['admiral.api.cluster.v1.ListWorkloadsResponse'];
-        };
-      };
-    };
-  };
-  ClusterAPI_ReportWorkloadStatus: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description The cluster these workloads belong to (UUID). */
-        cluster_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': {
-          /**
-           * cluster_id
-           * Format: uuid
-           * @description The cluster these workloads belong to (UUID).
-           */
-          cluster_id?: string;
-          /**
-           * workloads
-           * @description Per-workload status snapshots.
-           */
-          workloads?: components['schemas']['admiral.api.cluster.v1.WorkloadStatus'][];
-          /**
-           * reported_at
-           * @description When the agent generated this report.
-           */
-          reported_at?: components['schemas']['google.protobuf.Timestamp'];
-        };
-      };
-    };
-    responses: {
-      /** @description Success */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['admiral.api.cluster.v1.ReportWorkloadStatusResponse'];
-        };
-      };
-    };
-  };
-  ComponentAPI_ListComponents: {
-    parameters: {
-      query?: {
-        /**
-         * @description Filter expression using the PEG filter DSL.
-         *
-         *      Common filter fields:
-         *        - `application_id` -- scope to an application (required for meaningful
-         *          results since components always belong to an application).
-         *        - `environment_id` -- when present, triggers the resolved view with
-         *          environment overrides applied to each component.
-         *        - `category` -- filter by component category (INFRASTRUCTURE, WORKLOAD).
-         *        - `name` -- filter by component name.
-         */
-        filter?: string;
-        /** @description Maximum number of components to return per page. */
-        page_size?: number;
-        /** @description Opaque pagination token from a previous response. */
-        page_token?: string;
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Success */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['admiral.api.component.v1.ListComponentsResponse'];
-        };
-      };
-    };
-  };
-  ComponentAPI_CreateComponent: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['admiral.api.component.v1.CreateComponentRequest'];
-      };
-    };
-    responses: {
-      /** @description Success */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['admiral.api.component.v1.CreateComponentResponse'];
-        };
-      };
-    };
-  };
-  ComponentAPI_UpdateComponent: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Unique identifier for the component (UUID). */
-        'component.id': string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': {
-          /**
-           * component
-           * @description The component with updated fields. Only fields specified in
-           *      `update_mask` are updated.
-           */
-          component: components['schemas']['admiral.api.component.v1.Component'];
-          /**
-           * update_mask
-           * @description The set of fields to update. If unset, all mutable fields are updated.
-           *      Supported fields: `name`, `description`, `source_id`, `version`,
-           *      `values_template`, `depends_on`, `outputs`.
-           */
-          update_mask?: components['schemas']['google.protobuf.FieldMask'];
-        };
-      };
-    };
-    responses: {
-      /** @description Success */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['admiral.api.component.v1.UpdateComponentResponse'];
-        };
-      };
-    };
-  };
-  ComponentAPI_GetComponent: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Unique identifier of the component (UUID). */
-        component_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Success */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['admiral.api.component.v1.GetComponentResponse'];
-        };
-      };
-    };
-  };
-  ComponentAPI_DeleteComponent: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /**
-         * @description Unique identifier of the component to delete (UUID).
-         *      Fails if other components depend on this component (via depends_on
-         *      or output references in values_template).
-         */
-        component_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Success */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['admiral.api.component.v1.DeleteComponentResponse'];
-        };
-      };
-    };
-  };
-  ComponentAPI_ListComponentOverrides: {
-    parameters: {
-      query?: {
-        /** @description Maximum number of overrides to return per page. */
-        page_size?: number;
-        /** @description Opaque pagination token from a previous response. */
-        page_token?: string;
-      };
-      header?: never;
-      path: {
-        /** @description Unique identifier of the component to list overrides for (UUID). */
-        component_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Success */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['admiral.api.component.v1.ListComponentOverridesResponse'];
-        };
-      };
-    };
-  };
-  ComponentAPI_GetComponentOverride: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description The component (UUID). */
-        component_id: string;
-        /** @description The environment (UUID). */
-        environment_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Success */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['admiral.api.component.v1.GetComponentOverrideResponse'];
-        };
-      };
-    };
-  };
-  ComponentAPI_SetComponentOverride: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description The component to override (UUID). */
-        component_id: string;
-        /** @description The environment this override applies to (UUID). */
-        environment_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': {
-          /**
-           * component_id
-           * Format: uuid
-           * @description The component to override (UUID).
-           */
-          component_id?: string;
-          /**
-           * environment_id
-           * Format: uuid
-           * @description The environment this override applies to (UUID).
-           */
-          environment_id?: string;
-          /**
-           * disabled
-           * @description When true, the component is not deployed in this environment.
-           */
-          disabled?: boolean;
-          /**
-           * source_id
-           * Format: uuid
-           * @description Override source (UUID). When set, replaces the component's default source.
-           */
-          source_id?: string | null;
-          /**
-           * version
-           * @description Override version. When set, replaces the component's default version.
-           */
-          version?: string | null;
-          /**
-           * values_template
-           * @description Override values template. When set, completely replaces the component's
-           *      default values template (no merge).
-           */
-          values_template?: string | null;
-          /**
-           * depends_on
-           * @description Override depends_on (component UUIDs). When set, replaces the component's
-           *      default depends_on.
-           */
-          depends_on?: string[];
-          /**
-           * outputs
-           * @description Override outputs. When set, replaces the component's declared outputs.
-           */
-          outputs?: components['schemas']['admiral.api.component.v1.ComponentOutput'][];
-        };
-      };
-    };
-    responses: {
-      /** @description Success */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['admiral.api.component.v1.SetComponentOverrideResponse'];
-        };
-      };
-    };
-  };
-  ComponentAPI_DeleteComponentOverride: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description The component (UUID). */
-        component_id: string;
-        /** @description The environment (UUID). */
-        environment_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Success */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['admiral.api.component.v1.DeleteComponentOverrideResponse'];
-        };
-      };
-    };
-  };
-  ConnectionAPI_ListConnections: {
-    parameters: {
-      query?: {
-        /**
-         * @description Filter expression to narrow results. Uses the Admiral filter DSL.
-         *
-         *      Syntax: `field['name'] = 'value'` with AND/OR/NOT, comparison operators
-         *      (=, !=, <, >, <=, >=, ~=), and predicates (IN, BETWEEN, CONTAINS,
-         *      STARTS_WITH, ENDS_WITH, IS NULL, EXISTS).
-         *
-         *      Filterable fields:
-         *        - `name` -- filter by connection name.
-         *        - `type` -- filter by connection type (GIT_TOKEN, HELM_HTTP, etc.).
-         *        - `status` -- filter by connection status (ACTIVE, ERROR, UNTESTED).
-         *        - `labels.key` -- filter by label key.
-         *
-         *      Example: `field['type'] = 'GIT_TOKEN' AND field['status'] = 'ACTIVE'`
-         */
-        filter?: string;
-        /** @description Maximum number of connections to return per page. */
-        page_size?: number;
-        /** @description Opaque pagination token from a previous response. */
-        page_token?: string;
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Success */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['admiral.api.connection.v1.ListConnectionsResponse'];
-        };
-      };
-    };
-  };
-  ConnectionAPI_CreateConnection: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['admiral.api.connection.v1.CreateConnectionRequest'];
-      };
-    };
-    responses: {
-      /** @description Success */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['admiral.api.connection.v1.CreateConnectionResponse'];
-        };
-      };
-    };
-  };
-  ConnectionAPI_UpdateConnection: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Unique identifier for the connection (UUID). */
-        'connection.id': string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': {
-          /**
-           * connection
-           * @description The connection with updated fields.
-           *      Only fields specified in `update_mask` are updated.
-           *
-           *      When updating auth_config, the entire auth config is replaced.
-           *      Omitting auth_config from the update_mask leaves credentials unchanged.
-           */
-          connection: components['schemas']['admiral.api.connection.v1.Connection'];
-          /**
-           * update_mask
-           * @description The set of fields to update. If unset, all mutable fields are updated.
-           *      Supported fields: `name`, `description`, `auth_config`, `labels`.
-           */
-          update_mask?: components['schemas']['google.protobuf.FieldMask'];
-        };
-      };
-    };
-    responses: {
-      /** @description Success */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['admiral.api.connection.v1.UpdateConnectionResponse'];
-        };
-      };
-    };
-  };
-  ConnectionAPI_GetConnection: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description The unique identifier of the connection (UUID). */
-        connection_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Success */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['admiral.api.connection.v1.GetConnectionResponse'];
-        };
-      };
-    };
-  };
-  ConnectionAPI_DeleteConnection: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /**
-         * @description The unique identifier of the connection to delete (UUID).
-         *      Fails if any sources still reference this connection.
-         */
-        connection_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Success */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['admiral.api.connection.v1.DeleteConnectionResponse'];
-        };
-      };
-    };
-  };
-  ConnectionAPI_TestConnection: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description The unique identifier of the connection to test (UUID). */
-        connection_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': {
-          /**
-           * connection_id
-           * Format: uuid
-           * @description The unique identifier of the connection to test (UUID).
-           */
-          connection_id?: string;
-        };
-      };
-    };
-    responses: {
-      /** @description Success */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['admiral.api.connection.v1.TestConnectionResponse'];
-        };
-      };
-    };
-  };
-  DeploymentAPI_ListDeployments: {
-    parameters: {
-      query?: {
-        /**
-         * @description Filter expression using the PEG filter DSL.
-         *
-         *      Common filter fields:
-         *        - `application_id` -- deployments for a specific application.
-         *        - `environment_id` -- deployments to a specific environment.
-         *        - `status` -- filter by deployment status.
-         *        - `trigger_type` -- filter by trigger type (MANUAL, CI, DESTROY).
-         */
-        filter?: string;
-        /** @description Maximum number of deployments to return per page. */
-        page_size?: number;
-        /** @description Opaque pagination token from a previous response. */
-        page_token?: string;
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Success */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['admiral.api.deployment.v1.ListDeploymentsResponse'];
-        };
-      };
-    };
-  };
-  DeploymentAPI_CreateDeployment: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['admiral.api.deployment.v1.CreateDeploymentRequest'];
-      };
-    };
-    responses: {
-      /** @description Success */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['admiral.api.deployment.v1.CreateDeploymentResponse'];
-        };
-      };
-    };
-  };
-  DeploymentAPI_GetDeployment: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Unique identifier of the deployment (UUID). */
-        deployment_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Success */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['admiral.api.deployment.v1.GetDeploymentResponse'];
-        };
-      };
-    };
-  };
-  DeploymentAPI_CancelDeployment: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Unique identifier of the deployment to cancel (UUID). */
-        deployment_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': {
-          /**
-           * deployment_id
-           * Format: uuid
-           * @description Unique identifier of the deployment to cancel (UUID).
-           */
-          deployment_id?: string;
-          /**
-           * reason
-           * @description Optional reason for cancellation.
-           */
-          reason?: string;
-        };
-      };
-    };
-    responses: {
-      /** @description Success */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['admiral.api.deployment.v1.CancelDeploymentResponse'];
-        };
-      };
-    };
-  };
-  DeploymentAPI_ListRevisions: {
-    parameters: {
-      query?: {
-        /** @description Maximum number of revisions to return per page. */
-        page_size?: number;
-        /** @description Opaque pagination token from a previous response. */
-        page_token?: string;
-      };
-      header?: never;
-      path: {
-        /** @description Unique identifier of the deployment to list revisions for (UUID). */
-        deployment_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Success */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['admiral.api.deployment.v1.ListRevisionsResponse'];
-        };
-      };
-    };
-  };
-  DeploymentAPI_GetRevision: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description The deployment (UUID). */
-        deployment_id: string;
-        /** @description The revision (UUID). */
-        revision_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Success */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['admiral.api.deployment.v1.GetRevisionResponse'];
-        };
-      };
-    };
-  };
-  DeploymentAPI_RetryRevision: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description The deployment (UUID). */
-        deployment_id: string;
-        /** @description The revision to retry (UUID). Must be in FAILED status. */
-        revision_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': {
-          /**
-           * deployment_id
-           * Format: uuid
-           * @description The deployment (UUID).
-           */
-          deployment_id?: string;
-          /**
-           * revision_id
-           * Format: uuid
-           * @description The revision to retry (UUID). Must be in FAILED status.
-           */
-          revision_id?: string;
-        };
-      };
-    };
-    responses: {
-      /** @description Success */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['admiral.api.deployment.v1.RetryRevisionResponse'];
-        };
-      };
-    };
-  };
-  EnvironmentAPI_ListEnvironments: {
-    parameters: {
-      query?: {
-        /**
-         * @description Filter expression to narrow results. Uses the Admiral filter DSL.
-         *
-         *      Syntax: `field['name'] = 'value'` with AND/OR/NOT, comparison operators
-         *      (=, !=, <, >, <=, >=, ~=), and predicates (IN, BETWEEN, CONTAINS,
-         *      STARTS_WITH, ENDS_WITH, IS NULL, EXISTS).
-         *
-         *      Filterable fields:
-         *        - `application_id` -- filter by parent application (UUID).
-         *        - `name` -- filter by environment name.
-         *        - `runtime_type` -- filter by runtime type (KUBERNETES).
-         *        - `labels.key` -- filter by label key.
-         *
-         *      Example: `field['application_id'] = '<uuid>' AND field['name'] = 'prod'`
-         */
-        filter?: string;
-        /** @description Maximum number of environments to return per page. */
-        page_size?: number;
-        /** @description Opaque pagination token from a previous response. */
-        page_token?: string;
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Success */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['admiral.api.environment.v1.ListEnvironmentsResponse'];
-        };
-      };
-    };
-  };
-  EnvironmentAPI_CreateEnvironment: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['admiral.api.environment.v1.CreateEnvironmentRequest'];
-      };
-    };
-    responses: {
-      /** @description Success */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['admiral.api.environment.v1.CreateEnvironmentResponse'];
-        };
-      };
-    };
-  };
-  EnvironmentAPI_UpdateEnvironment: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Unique identifier for the environment (UUID). */
-        'environment.id': string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': {
-          /**
-           * environment
-           * @description The environment with updated fields.
-           *      Only fields specified in `update_mask` are updated.
-           */
-          environment: components['schemas']['admiral.api.environment.v1.Environment'];
-          /**
-           * update_mask
-           * @description The set of fields to update. If unset, all mutable fields are updated.
-           *      Supported fields: `name`, `description`, `runtime_type`, `kubernetes`,
-           *      `labels`, `infrastructure`.
-           */
-          update_mask?: components['schemas']['google.protobuf.FieldMask'];
-        };
-      };
-    };
-    responses: {
-      /** @description Success */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['admiral.api.environment.v1.UpdateEnvironmentResponse'];
-        };
-      };
-    };
-  };
-  EnvironmentAPI_GetEnvironment: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description The unique identifier of the environment (UUID). */
-        environment_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Success */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['admiral.api.environment.v1.GetEnvironmentResponse'];
-        };
-      };
-    };
-  };
-  EnvironmentAPI_DeleteEnvironment: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description The unique identifier of the environment to delete (UUID). */
-        environment_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Success */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['admiral.api.environment.v1.DeleteEnvironmentResponse'];
-        };
-      };
-    };
-  };
-  HealthcheckAPI_Healthcheck: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Success */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['admiral.api.healthcheck.v1.HealthcheckResponse'];
-        };
-      };
-    };
-  };
-  RunnerAPI_Heartbeat: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['admiral.api.runner.v1.HeartbeatRequest'];
-      };
-    };
-    responses: {
-      /** @description Success */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['admiral.api.runner.v1.HeartbeatResponse'];
-        };
-      };
-    };
-  };
-  RunnerAPI_ClaimJob: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['admiral.api.runner.v1.ClaimJobRequest'];
-      };
-    };
-    responses: {
-      /** @description Success */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['admiral.api.runner.v1.ClaimJobResponse'];
-        };
-      };
-    };
-  };
-  RunnerAPI_GetJobBundle: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description The job to fetch the bundle for (UUID). */
-        job_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Success */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['admiral.api.runner.v1.GetJobBundleResponse'];
-        };
-      };
-    };
-  };
-  RunnerAPI_ReportJobResult: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description The job being reported on (UUID). */
-        job_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': {
-          /**
-           * job_id
-           * Format: uuid
-           * @description The job being reported on (UUID).
-           */
-          job_id?: string;
-          /**
-           * result
-           * @description The job result with status, outputs, and error information.
-           */
-          result: components['schemas']['admiral.api.runner.v1.JobResult'];
-        };
-      };
-    };
-    responses: {
-      /** @description Success */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['admiral.api.runner.v1.ReportJobResultResponse'];
-        };
-      };
-    };
-  };
-  StateAPI_GetState: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /**
-         * @description The job to fetch state for (UUID). The server resolves the component
-         *      and environment from the job's binding.
-         */
-        job_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Success */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['admiral.api.state.v1.GetStateResponse'];
-        };
-      };
-    };
-  };
-  StateAPI_PushState: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description The job pushing state (UUID). */
-        job_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': {
-          /**
-           * job_id
-           * Format: uuid
-           * @description The job pushing state (UUID).
-           */
-          job_id?: string;
-          /**
-           * data
-           * Format: byte
-           * @description The raw Terraform state data (JSON-encoded). Maximum 64 MiB.
-           */
-          data?: string;
-          /**
-           * md5
-           * @description MD5 hash of the state data.
-           */
-          md5?: string;
-          /**
-           * serial
-           * Format: int64
-           * @description Terraform state serial number. Must be greater than the current serial.
-           */
-          serial?: number | string;
-          /**
-           * lineage
-           * @description Terraform state lineage. Must match the existing lineage if the state
-           *      record already exists.
-           */
-          lineage?: string;
-        };
-      };
-    };
-    responses: {
-      /** @description Success */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['admiral.api.state.v1.PushStateResponse'];
-        };
-      };
-    };
-  };
-  StateAPI_LockState: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description The job requesting the lock (UUID). */
-        job_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': {
-          /**
-           * job_id
-           * Format: uuid
-           * @description The job requesting the lock (UUID).
-           */
-          job_id?: string;
-          /**
-           * lock_id
-           * Format: uuid
-           * @description Terraform-generated lock ID (UUID).
-           */
-          lock_id?: string;
-          /**
-           * operation
-           * @description The Terraform operation requesting the lock.
-           */
-          operation?: string;
-          /**
-           * who
-           * @description Identifier of who is requesting the lock.
-           */
-          who?: string;
-          /**
-           * version
-           * @description Terraform/OpenTofu version of the client requesting the lock.
-           */
-          version?: string;
-        };
-      };
-    };
-    responses: {
-      /** @description Success */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['admiral.api.state.v1.LockStateResponse'];
-        };
-      };
-    };
-  };
-  StateAPI_UnlockState: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description The job releasing the lock (UUID). */
-        job_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': {
-          /**
-           * job_id
-           * Format: uuid
-           * @description The job releasing the lock (UUID).
-           */
-          job_id?: string;
-          /**
-           * lock_id
-           * Format: uuid
-           * @description The lock_id to release (UUID). Must match the currently held lock.
-           */
-          lock_id?: string;
-        };
-      };
-    };
-    responses: {
-      /** @description Success */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['admiral.api.state.v1.UnlockStateResponse'];
-        };
-      };
-    };
-  };
-  RunnerAPI_ListRunners: {
-    parameters: {
-      query?: {
-        /**
-         * @description Filter expression to narrow results. Uses the Admiral filter DSL.
-         *
-         *      Syntax: `field['name'] = 'value'` with AND/OR/NOT, comparison operators
-         *      (=, !=, <, >, <=, >=, ~=), and predicates (IN, BETWEEN, CONTAINS,
-         *      STARTS_WITH, ENDS_WITH, IS NULL, EXISTS).
-         *
-         *      Filterable fields:
-         *        - `name` -- filter by runner name.
-         *        - `kind` -- filter by runner kind (TERRAFORM, WORKFLOW).
-         *        - `health_status` -- filter by health status.
-         *        - `labels.key` -- filter by label key.
-         *
-         *      Example: `field['kind'] = 'TERRAFORM' AND field['health_status'] = 'HEALTHY'`
-         */
-        filter?: string;
-        /** @description Maximum number of runners to return per page. */
-        page_size?: number;
-        /** @description Opaque pagination token from a previous response. */
-        page_token?: string;
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Success */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['admiral.api.runner.v1.ListRunnersResponse'];
-        };
-      };
-    };
-  };
-  RunnerAPI_CreateRunner: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['admiral.api.runner.v1.CreateRunnerRequest'];
-      };
-    };
-    responses: {
-      /** @description Success */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['admiral.api.runner.v1.CreateRunnerResponse'];
-        };
-      };
-    };
-  };
-  RunnerAPI_UpdateRunner: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Unique identifier for the runner (UUID). */
-        'runner.id': string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': {
-          /**
-           * runner
-           * @description The runner with updated fields. The `id` field is required.
-           *      Only fields specified in `update_mask` are updated.
-           */
-          runner: components['schemas']['admiral.api.runner.v1.Runner'];
-          /**
-           * update_mask
-           * @description The set of fields to update. If unset, all mutable fields are updated.
-           *      Supported fields: `name`, `description`, `labels`.
-           */
-          update_mask?: components['schemas']['google.protobuf.FieldMask'];
-        };
-      };
-    };
-    responses: {
-      /** @description Success */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['admiral.api.runner.v1.UpdateRunnerResponse'];
-        };
-      };
-    };
-  };
-  RunnerAPI_GetRunner: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description The unique identifier of the runner (UUID). */
-        runner_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Success */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['admiral.api.runner.v1.GetRunnerResponse'];
-        };
-      };
-    };
-  };
-  RunnerAPI_DeleteRunner: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /**
-         * @description The unique identifier of the runner to delete (UUID).
-         *      All associated agent tokens will be revoked.
-         */
-        runner_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Success */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['admiral.api.runner.v1.DeleteRunnerResponse'];
-        };
-      };
-    };
-  };
-  RunnerAPI_ListRunnerJobs: {
-    parameters: {
-      query?: {
-        /**
-         * @description Filter expression to narrow results. Uses the Admiral filter DSL.
-         *
-         *      Filterable fields:
-         *        - `status` -- filter by job status (PENDING, ASSIGNED, RUNNING, etc.).
-         *        - `job_type` -- filter by job type (PLAN, APPLY, DESTROY_PLAN, DESTROY_APPLY).
-         *        - `deployment_id` -- jobs for a specific deployment (UUID).
-         *
-         *      Example: `field['status'] = 'RUNNING'`
-         */
-        filter?: string;
-        /** @description Maximum number of jobs to return per page. */
-        page_size?: number;
-        /** @description Opaque pagination token from a previous response. */
-        page_token?: string;
-      };
-      header?: never;
-      path: {
-        /** @description The runner whose jobs to list (UUID). */
-        runner_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Success */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['admiral.api.runner.v1.ListRunnerJobsResponse'];
-        };
-      };
-    };
-  };
-  RunnerAPI_GetRunnerStatus: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description The unique identifier of the runner (UUID). */
-        runner_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Success */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['admiral.api.runner.v1.GetRunnerStatusResponse'];
-        };
-      };
-    };
-  };
-  RunnerAPI_ListRunnerTokens: {
-    parameters: {
-      query?: {
-        /**
-         * @description Filter expression to narrow results. Uses the Admiral filter DSL.
-         *
-         *      Filterable fields:
-         *        - `name` -- filter by token name.
-         *        - `status` -- filter by token status (ACTIVE, REVOKED).
-         *
-         *      Example: `field['status'] = 'ACTIVE'`
-         */
-        filter?: string;
-        /** @description Maximum number of tokens to return per page. */
-        page_size?: number;
-        /** @description Opaque pagination token from a previous response. */
-        page_token?: string;
-      };
-      header?: never;
-      path: {
-        /** @description The runner to list tokens for (UUID). */
-        runner_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Success */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['admiral.api.runner.v1.ListRunnerTokensResponse'];
-        };
-      };
-    };
-  };
-  RunnerAPI_CreateRunnerToken: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description The runner to bind this token to (UUID). */
-        runner_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': {
-          /**
-           * runner_id
-           * Format: uuid
-           * @description The runner to bind this token to (UUID).
-           */
-          runner_id?: string;
-          /**
-           * name
-           * @description URL-safe, human-readable identifier for the token (e.g., "prod-runner-key").
-           *      Must be unique within the runner's tokens. Lowercase alphanumeric and
-           *      hyphens only.
-           */
-          name?: string;
-          /**
-           * expires_at
-           * @description Optional expiration time. If unset, the token does not expire.
-           */
-          expires_at?: components['schemas']['google.protobuf.Timestamp'];
-        };
-      };
-    };
-    responses: {
-      /** @description Success */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['admiral.api.runner.v1.CreateRunnerTokenResponse'];
-        };
-      };
-    };
-  };
-  RunnerAPI_GetRunnerToken: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description The runner the token belongs to (UUID). */
-        runner_id: string;
-        /** @description The unique identifier of the token (UUID). */
-        token_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Success */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['admiral.api.runner.v1.GetRunnerTokenResponse'];
-        };
-      };
-    };
-  };
-  RunnerAPI_RevokeRunnerToken: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description The runner the token belongs to (UUID). */
-        runner_id: string;
-        /** @description The unique identifier of the token to revoke (UUID). */
-        token_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': {
-          /**
-           * runner_id
-           * Format: uuid
-           * @description The runner the token belongs to (UUID).
-           */
-          runner_id?: string;
-          /**
-           * token_id
-           * Format: uuid
-           * @description The unique identifier of the token to revoke (UUID).
-           */
-          token_id?: string;
-        };
-      };
-    };
-    responses: {
-      /** @description Success */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['admiral.api.runner.v1.RevokeRunnerTokenResponse'];
-        };
-      };
-    };
-  };
-  SourceAPI_ListSources: {
-    parameters: {
-      query?: {
-        /**
-         * @description Filter expression to narrow results. Uses the Admiral filter DSL.
-         *
-         *      Syntax: `field['name'] = 'value'` with AND/OR/NOT, comparison operators
-         *      (=, !=, <, >, <=, >=, ~=), and predicates (IN, BETWEEN, CONTAINS,
-         *      STARTS_WITH, ENDS_WITH, IS NULL, EXISTS).
-         *
-         *      Filterable fields:
-         *        - `name` -- filter by source name.
-         *        - `type` -- filter by source type (TERRAFORM_REGISTRY, HELM_OCI, etc.).
-         *        - `catalog` -- filter by catalog status (true/false).
-         *        - `labels.key` -- filter by label key.
-         *
-         *      Example: `field['type'] = 'TERRAFORM_REGISTRY' AND field['catalog'] = 'true'`
-         */
-        filter?: string;
-        /** @description Maximum number of sources to return per page. */
-        page_size?: number;
-        /** @description Opaque pagination token from a previous response. */
-        page_token?: string;
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Success */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['admiral.api.source.v1.ListSourcesResponse'];
-        };
-      };
-    };
-  };
-  SourceAPI_CreateSource: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['admiral.api.source.v1.CreateSourceRequest'];
-      };
-    };
-    responses: {
-      /** @description Success */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['admiral.api.source.v1.CreateSourceResponse'];
-        };
-      };
-    };
-  };
-  SourceAPI_UpdateSource: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Unique identifier for the source (UUID). */
-        'source.id': string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': {
-          /**
-           * source
-           * @description The source with updated fields. Only fields specified in `update_mask`
-           *      are updated.
-           */
-          source: components['schemas']['admiral.api.source.v1.Source'];
-          /**
-           * update_mask
-           * @description The set of fields to update. If unset, all mutable fields are updated.
-           *      Supported fields: `name`, `description`, `url`, `connection_id`, `catalog`,
-           *      `source_config`, `labels`.
-           */
-          update_mask?: components['schemas']['google.protobuf.FieldMask'];
-        };
-      };
-    };
-    responses: {
-      /** @description Success */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['admiral.api.source.v1.UpdateSourceResponse'];
-        };
-      };
-    };
-  };
-  SourceAPI_GetSource: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Unique identifier of the source (UUID). */
-        source_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Success */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['admiral.api.source.v1.GetSourceResponse'];
-        };
-      };
-    };
-  };
-  SourceAPI_DeleteSource: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /**
-         * @description Unique identifier of the source to delete (UUID).
-         *      Fails if any application components still reference this source.
-         */
-        source_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Success */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['admiral.api.source.v1.DeleteSourceResponse'];
-        };
-      };
-    };
-  };
-  SourceAPI_GetSourceInputs: {
-    parameters: {
-      query?: {
-        /**
-         * @description The version to inspect. For registry sources, a semver string. For Git
-         *      sources, a tag, branch, or commit SHA. Required.
-         */
-        version?: string;
-      };
-      header?: never;
-      path: {
-        /** @description Unique identifier of the source to inspect (UUID). */
-        source_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Success */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['admiral.api.source.v1.GetSourceInputsResponse'];
-        };
-      };
-    };
-  };
-  SourceAPI_GetSourceOutputs: {
-    parameters: {
-      query?: {
-        /** @description The version to inspect. Required. */
-        version?: string;
-      };
-      header?: never;
-      path: {
-        /** @description Unique identifier of the source to inspect (UUID). */
-        source_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Success */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['admiral.api.source.v1.GetSourceOutputsResponse'];
-        };
-      };
-    };
-  };
-  SourceAPI_SyncSource: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Unique identifier of the source to sync (UUID). */
-        source_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': {
-          /**
-           * source_id
-           * Format: uuid
-           * @description Unique identifier of the source to sync (UUID).
-           */
-          source_id?: string;
-        };
-      };
-    };
-    responses: {
-      /** @description Success */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['admiral.api.source.v1.SyncSourceResponse'];
-        };
-      };
-    };
-  };
-  SourceAPI_ListSourceVersions: {
-    parameters: {
-      query?: {
-        /** @description Maximum number of versions to return. Defaults to 50. */
-        page_size?: number;
-        /** @description Opaque pagination token for fetching additional versions. */
-        page_token?: string;
-      };
-      header?: never;
-      path: {
-        /** @description Unique identifier of the source to query versions for (UUID). */
-        source_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Success */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['admiral.api.source.v1.ListSourceVersionsResponse'];
-        };
-      };
-    };
-  };
-  StateAPI_ListStates: {
-    parameters: {
-      query?: {
-        /**
-         * @description Filter expression using the PEG filter DSL.
-         *
-         *      Common filter fields:
-         *        - `component_id` -- states for a specific component (UUID).
-         *        - `environment_id` -- states for a specific environment (UUID).
-         *        - `application_id` -- states for all components belonging to an
-         *          application (UUID). The server resolves the application's components
-         *          and returns states for all of them. Can be combined with
-         *          `environment_id`.
-         */
-        filter?: string;
-        /** @description Maximum number of states to return per page. */
-        page_size?: number;
-        /** @description Opaque pagination token from a previous response. */
-        page_token?: string;
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Success */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['admiral.api.state.v1.ListStatesResponse'];
-        };
-      };
-    };
-  };
-  StateAPI_GetCurrentState: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description The unique identifier of the state record (UUID). */
-        state_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Success */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['admiral.api.state.v1.GetCurrentStateResponse'];
-        };
-      };
-    };
-  };
-  StateAPI_DeleteState: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /**
-         * @description The unique identifier of the state record to delete (UUID).
-         *      Fails if the state is currently locked -- force-unlock first.
-         */
-        state_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Success */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['admiral.api.state.v1.DeleteStateResponse'];
-        };
-      };
-    };
-  };
-  StateAPI_ForceUnlockState: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description The state record to force-unlock (UUID). */
-        state_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': {
-          /**
-           * state_id
-           * Format: uuid
-           * @description The state record to force-unlock (UUID).
-           */
-          state_id?: string;
-          /**
-           * reason
-           * @description Reason for force-unlocking (audited). Recommended to provide context
-           *      for why the lock is being broken (e.g., "runner crashed during apply").
-           */
-          reason?: string;
-        };
-      };
-    };
-    responses: {
-      /** @description Success */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['admiral.api.state.v1.ForceUnlockStateResponse'];
-        };
-      };
-    };
-  };
-  StateAPI_ListStateVersions: {
-    parameters: {
-      query?: {
-        /** @description Maximum number of versions to return per page. */
-        page_size?: number;
-        /** @description Opaque pagination token from a previous response. */
-        page_token?: string;
-      };
-      header?: never;
-      path: {
-        /** @description The state record to list versions for (UUID). */
-        state_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Success */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['admiral.api.state.v1.ListStateVersionsResponse'];
-        };
-      };
-    };
-  };
-  StateAPI_GetStateVersion: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description The state record (UUID). */
-        state_id: string;
-        /** @description The serial number of the version to retrieve. */
-        serial: number | string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Success */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['admiral.api.state.v1.GetStateVersionResponse'];
-        };
-      };
-    };
-  };
-  UserAPI_GetMe: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Success */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['admiral.api.user.v1.GetMeResponse'];
-        };
-      };
-    };
-  };
-  UserAPI_ListPersonalAccessTokens: {
-    parameters: {
-      query?: {
-        /**
-         * @description Filter expression to narrow results. Uses the Admiral filter DSL.
-         *
-         *      Filterable fields:
-         *        - `name` -- filter by token name.
-         *        - `status` -- filter by token status (ACTIVE, REVOKED, EXPIRED).
-         *
-         *      Example: `field['status'] = 'ACTIVE'`
-         */
-        filter?: string;
-        /** @description Maximum number of tokens to return per page. */
-        page_size?: number;
-        /** @description Opaque pagination token from a previous response. */
-        page_token?: string;
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Success */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['admiral.api.user.v1.ListPersonalAccessTokensResponse'];
-        };
-      };
-    };
-  };
-  UserAPI_CreatePersonalAccessToken: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['admiral.api.user.v1.CreatePersonalAccessTokenRequest'];
-      };
-    };
-    responses: {
-      /** @description Success */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['admiral.api.user.v1.CreatePersonalAccessTokenResponse'];
-        };
-      };
-    };
-  };
-  UserAPI_GetPersonalAccessToken: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description The unique identifier of the token (UUID). */
-        token_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Success */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['admiral.api.user.v1.GetPersonalAccessTokenResponse'];
-        };
-      };
-    };
-  };
-  UserAPI_RevokePersonalAccessToken: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description The unique identifier of the token to revoke (UUID). */
-        token_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': {
-          /**
-           * token_id
-           * Format: uuid
-           * @description The unique identifier of the token to revoke (UUID).
-           */
-          token_id?: string;
-        };
-      };
-    };
-    responses: {
-      /** @description Success */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['admiral.api.user.v1.RevokePersonalAccessTokenResponse'];
-        };
-      };
-    };
-  };
-  UserAPI_GetUser: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description The unique identifier of the user (UUID). */
-        user_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Success */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['admiral.api.user.v1.GetUserResponse'];
-        };
-      };
-    };
-  };
-  VariableAPI_ListVariables: {
-    parameters: {
-      query?: {
-        /**
-         * @description Filter expression using the PEG filter DSL.
-         *
-         *      Common filter fields:
-         *        - `application_id` -- scope to an application (triggers merge with
-         *          app-level variables alongside global variables).
-         *        - `environment_id` -- scope to an environment (requires application_id;
-         *          triggers merge with environment-level variables).
-         *        - `sensitive` -- filter by sensitivity.
-         *        - `type` -- filter by variable type.
-         *        - `key` -- filter by variable key (supports prefix matching).
-         */
-        filter?: string;
-        /** @description Maximum number of variables to return per page. */
-        page_size?: number;
-        /** @description Opaque pagination token from a previous response. */
-        page_token?: string;
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Success */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['admiral.api.variable.v1.ListVariablesResponse'];
-        };
-      };
-    };
-  };
-  VariableAPI_CreateVariable: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['admiral.api.variable.v1.CreateVariableRequest'];
-      };
-    };
-    responses: {
-      /** @description Success */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['admiral.api.variable.v1.CreateVariableResponse'];
-        };
-      };
-    };
-  };
-  VariableAPI_UpdateVariable: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Unique identifier for the variable (UUID). */
-        'variable.id': string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': {
-          /**
-           * variable
-           * @description The variable with updated fields.
-           *      Only fields specified in `update_mask` are updated.
-           */
-          variable: components['schemas']['admiral.api.variable.v1.Variable'];
-          /**
-           * update_mask
-           * @description The set of fields to update. If unset, all mutable fields are updated.
-           *      Supported fields: `value`, `sensitive`, `type`, `description`.
-           */
-          update_mask?: components['schemas']['google.protobuf.FieldMask'];
-        };
-      };
-    };
-    responses: {
-      /** @description Success */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['admiral.api.variable.v1.UpdateVariableResponse'];
-        };
-      };
-    };
-  };
-  VariableAPI_GetVariable: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description The unique identifier of the variable (UUID). */
-        variable_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Success */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['admiral.api.variable.v1.GetVariableResponse'];
-        };
-      };
-    };
-  };
-  VariableAPI_DeleteVariable: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description The unique identifier of the variable to delete (UUID). */
-        variable_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Success */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['admiral.api.variable.v1.DeleteVariableResponse'];
-        };
-      };
-    };
-  };
-  AuthenticationAPI_Callback: {
-    parameters: {
-      query?: {
-        /** @description The authorization code from the IdP. */
-        code?: string;
-        /** @description The state nonce (signed JWT) from the login request. */
-        state?: string;
-        /** @description OAuth error code (set by IdP on failure). */
-        error?: string;
-        /** @description Human-readable error description from the IdP. */
-        error_description?: string;
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Success */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['admiral.api.authentication.v1.CallbackResponse'];
-        };
-      };
-    };
-  };
-  AuthenticationAPI_Login: {
-    parameters: {
-      query?: {
-        /**
-         * @description The URL to redirect to after successful authentication. Must be a relative
-         *      path (no scheme or host). Baked into the signed state nonce.
-         */
-        redirect_url?: string;
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Success */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['admiral.api.authentication.v1.LoginResponse'];
-        };
-      };
-    };
-  };
+    ClusterAPI_GetRevisionBundle: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The revision to fetch the bundle for (UUID). */
+                revision_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["admiral.cluster.v1.GetRevisionBundleResponse"];
+                };
+            };
+        };
+    };
+    ClusterAPI_ReportRevisionResult: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The revision being reported on (UUID). */
+                revision_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /**
+                     * revision_id
+                     * Format: uuid
+                     * @description The revision being reported on (UUID).
+                     */
+                    revision_id?: string;
+                    /**
+                     * result
+                     * @description The result of applying the revision.
+                     */
+                    result: components["schemas"]["admiral.cluster.v1.RevisionResult"];
+                };
+            };
+        };
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["admiral.cluster.v1.ReportRevisionResultResponse"];
+                };
+            };
+        };
+    };
+    ClusterAPI_ReportClusterStatus: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["admiral.cluster.v1.ReportClusterStatusRequest"];
+            };
+        };
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["admiral.cluster.v1.ReportClusterStatusResponse"];
+                };
+            };
+        };
+    };
+    ApplicationAPI_ListApplications: {
+        parameters: {
+            query?: {
+                /**
+                 * @description Filter expression to narrow results. Uses the Admiral filter DSL.
+                 *
+                 *      Syntax: `field['name'] = 'value'` with AND/OR/NOT, comparison operators
+                 *      (=, !=, <, >, <=, >=, ~=), and predicates (IN, BETWEEN, CONTAINS,
+                 *      STARTS_WITH, ENDS_WITH, IS NULL, EXISTS).
+                 *
+                 *      Filterable fields:
+                 *        - `name` -- filter by application name.
+                 *        - `labels.key` -- filter by label key.
+                 *
+                 *      Example: `field['name'] = 'inventory-api' AND field['labels.team'] = 'logistics'`
+                 */
+                filter?: string;
+                /** @description Maximum number of applications to return per page. */
+                page_size?: number;
+                /** @description Opaque pagination token from a previous response. */
+                page_token?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["admiral.application.v1.ListApplicationsResponse"];
+                };
+            };
+        };
+    };
+    ApplicationAPI_CreateApplication: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["admiral.application.v1.CreateApplicationRequest"];
+            };
+        };
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["admiral.application.v1.CreateApplicationResponse"];
+                };
+            };
+        };
+    };
+    ApplicationAPI_UpdateApplication: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Unique identifier for the application (UUID). */
+                "application.id": string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /**
+                     * application
+                     * @description The application with updated fields.
+                     *      Only fields specified in `update_mask` are updated.
+                     */
+                    application: components["schemas"]["admiral.application.v1.Application"];
+                    /**
+                     * update_mask
+                     * @description The set of fields to update. If unset, all mutable fields are updated.
+                     *      Supported fields: `name`, `description`, `labels`.
+                     */
+                    update_mask?: components["schemas"]["google.protobuf.FieldMask"];
+                };
+            };
+        };
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["admiral.application.v1.UpdateApplicationResponse"];
+                };
+            };
+        };
+    };
+    ApplicationAPI_GetApplication: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The unique identifier of the application (UUID). */
+                application_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["admiral.application.v1.GetApplicationResponse"];
+                };
+            };
+        };
+    };
+    ApplicationAPI_DeleteApplication: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The unique identifier of the application to delete (UUID). */
+                application_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["admiral.application.v1.DeleteApplicationResponse"];
+                };
+            };
+        };
+    };
+    ClusterAPI_ListClusters: {
+        parameters: {
+            query?: {
+                /**
+                 * @description Filter expression to narrow results. Uses the Admiral filter DSL.
+                 *
+                 *      Syntax: `field['name'] = 'value'` with AND/OR/NOT, comparison operators
+                 *      (=, !=, <, >, <=, >=, ~=), and predicates (IN, BETWEEN, CONTAINS,
+                 *      STARTS_WITH, ENDS_WITH, IS NULL, EXISTS).
+                 *
+                 *      Filterable fields:
+                 *        - `name` -- filter by cluster name.
+                 *        - `health_status` -- filter by health status.
+                 *        - `labels.key` -- filter by label key.
+                 *
+                 *      Example: `field['health_status'] = 'HEALTHY' AND field['labels.region'] = 'us-east-1'`
+                 */
+                filter?: string;
+                /** @description Maximum number of clusters to return per page. */
+                page_size?: number;
+                /** @description Opaque pagination token from a previous response. */
+                page_token?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["admiral.cluster.v1.ListClustersResponse"];
+                };
+            };
+        };
+    };
+    ClusterAPI_CreateCluster: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["admiral.cluster.v1.CreateClusterRequest"];
+            };
+        };
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["admiral.cluster.v1.CreateClusterResponse"];
+                };
+            };
+        };
+    };
+    ClusterAPI_UpdateCluster: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Unique identifier for the cluster (UUID). */
+                "cluster.id": string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /**
+                     * cluster
+                     * @description The cluster with updated fields. The `id` field is required.
+                     *      Only fields specified in `update_mask` are updated.
+                     */
+                    cluster: components["schemas"]["admiral.cluster.v1.Cluster"];
+                    /**
+                     * update_mask
+                     * @description The set of fields to update. If unset, all mutable fields are updated.
+                     *      Supported fields: `name`, `description`, `labels`.
+                     */
+                    update_mask?: components["schemas"]["google.protobuf.FieldMask"];
+                };
+            };
+        };
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["admiral.cluster.v1.UpdateClusterResponse"];
+                };
+            };
+        };
+    };
+    ClusterAPI_GetCluster: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The unique identifier of the cluster (UUID). */
+                cluster_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["admiral.cluster.v1.GetClusterResponse"];
+                };
+            };
+        };
+    };
+    ClusterAPI_DeleteCluster: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /**
+                 * @description The unique identifier of the cluster to delete (UUID).
+                 *      All associated service access tokens will be revoked.
+                 */
+                cluster_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["admiral.cluster.v1.DeleteClusterResponse"];
+                };
+            };
+        };
+    };
+    ClusterAPI_GetClusterStatus: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The unique identifier of the cluster (UUID). */
+                cluster_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["admiral.cluster.v1.GetClusterStatusResponse"];
+                };
+            };
+        };
+    };
+    ClusterAPI_ListClusterTokens: {
+        parameters: {
+            query?: {
+                /**
+                 * @description Filter expression to narrow results. Uses the Admiral filter DSL.
+                 *
+                 *      Filterable fields:
+                 *        - `name` -- filter by token name.
+                 *        - `status` -- filter by token status (ACTIVE, REVOKED).
+                 *
+                 *      Example: `field['status'] = 'ACTIVE'`
+                 */
+                filter?: string;
+                /** @description Maximum number of tokens to return per page. */
+                page_size?: number;
+                /** @description Opaque pagination token from a previous response. */
+                page_token?: string;
+            };
+            header?: never;
+            path: {
+                /** @description The cluster to list tokens for (UUID). */
+                cluster_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["admiral.cluster.v1.ListClusterTokensResponse"];
+                };
+            };
+        };
+    };
+    ClusterAPI_CreateClusterToken: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The cluster to bind this token to (UUID). */
+                cluster_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /**
+                     * cluster_id
+                     * Format: uuid
+                     * @description The cluster to bind this token to (UUID).
+                     */
+                    cluster_id?: string;
+                    /**
+                     * name
+                     * @description URL-safe, human-readable identifier for the token (e.g., "prod-agent-key").
+                     *      Must be unique within the cluster's tokens. Lowercase alphanumeric and
+                     *      hyphens only.
+                     */
+                    name?: string;
+                    /**
+                     * expires_at
+                     * @description Optional expiration time. If unset, the token does not expire.
+                     */
+                    expires_at?: components["schemas"]["google.protobuf.Timestamp"];
+                };
+            };
+        };
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["admiral.cluster.v1.CreateClusterTokenResponse"];
+                };
+            };
+        };
+    };
+    ClusterAPI_GetClusterToken: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The cluster the token belongs to (UUID). */
+                cluster_id: string;
+                /** @description The unique identifier of the token (UUID). */
+                token_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["admiral.cluster.v1.GetClusterTokenResponse"];
+                };
+            };
+        };
+    };
+    ClusterAPI_RevokeClusterToken: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The cluster the token belongs to (UUID). */
+                cluster_id: string;
+                /** @description The unique identifier of the token to revoke (UUID). */
+                token_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /**
+                     * cluster_id
+                     * Format: uuid
+                     * @description The cluster the token belongs to (UUID).
+                     */
+                    cluster_id?: string;
+                    /**
+                     * token_id
+                     * Format: uuid
+                     * @description The unique identifier of the token to revoke (UUID).
+                     */
+                    token_id?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["admiral.cluster.v1.RevokeClusterTokenResponse"];
+                };
+            };
+        };
+    };
+    ClusterAPI_ListWorkloads: {
+        parameters: {
+            query?: {
+                /**
+                 * @description Filter expression to narrow results. Uses the Admiral filter DSL.
+                 *
+                 *      Filterable fields:
+                 *        - `namespace` -- filter by Kubernetes namespace.
+                 *        - `kind` -- filter by workload kind (Deployment, StatefulSet, DaemonSet).
+                 *        - `name` -- filter by workload name.
+                 *        - `health_status` -- filter by workload health status.
+                 *
+                 *      Example: `field['namespace'] = 'production' AND field['health_status'] = 'DEGRADED'`
+                 */
+                filter?: string;
+                /** @description Maximum number of workloads to return per page. */
+                page_size?: number;
+                /** @description Opaque pagination token from a previous response. */
+                page_token?: string;
+            };
+            header?: never;
+            path: {
+                /** @description The cluster whose workloads to list (UUID). */
+                cluster_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["admiral.cluster.v1.ListWorkloadsResponse"];
+                };
+            };
+        };
+    };
+    ClusterAPI_ReportWorkloadStatus: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The cluster these workloads belong to (UUID). */
+                cluster_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /**
+                     * cluster_id
+                     * Format: uuid
+                     * @description The cluster these workloads belong to (UUID).
+                     */
+                    cluster_id?: string;
+                    /**
+                     * workloads
+                     * @description Per-workload status snapshots.
+                     */
+                    workloads?: components["schemas"]["admiral.cluster.v1.WorkloadStatus"][];
+                    /**
+                     * reported_at
+                     * @description When the agent generated this report.
+                     */
+                    reported_at?: components["schemas"]["google.protobuf.Timestamp"];
+                };
+            };
+        };
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["admiral.cluster.v1.ReportWorkloadStatusResponse"];
+                };
+            };
+        };
+    };
+    ComponentAPI_ListComponents: {
+        parameters: {
+            query?: {
+                /**
+                 * @description Filter expression using the PEG filter DSL.
+                 *
+                 *      Common filter fields:
+                 *        - `application_id` -- scope to an application (required for meaningful
+                 *          results since components always belong to an application).
+                 *        - `environment_id` -- when present, triggers the resolved view with
+                 *          environment overrides applied to each component.
+                 *        - `category` -- filter by component category (INFRASTRUCTURE, WORKLOAD).
+                 *        - `name` -- filter by component name.
+                 */
+                filter?: string;
+                /** @description Maximum number of components to return per page. */
+                page_size?: number;
+                /** @description Opaque pagination token from a previous response. */
+                page_token?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["admiral.component.v1.ListComponentsResponse"];
+                };
+            };
+        };
+    };
+    ComponentAPI_CreateComponent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["admiral.component.v1.CreateComponentRequest"];
+            };
+        };
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["admiral.component.v1.CreateComponentResponse"];
+                };
+            };
+        };
+    };
+    ComponentAPI_UpdateComponent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Unique identifier for the component (UUID). */
+                "component.id": string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /**
+                     * component
+                     * @description The component with updated fields. Only fields specified in
+                     *      `update_mask` are updated.
+                     */
+                    component: components["schemas"]["admiral.component.v1.Component"];
+                    /**
+                     * update_mask
+                     * @description The set of fields to update. If unset, all mutable fields are updated.
+                     *      Supported fields: `name`, `description`, `source_id`, `version`,
+                     *      `values_template`, `depends_on`, `outputs`.
+                     */
+                    update_mask?: components["schemas"]["google.protobuf.FieldMask"];
+                };
+            };
+        };
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["admiral.component.v1.UpdateComponentResponse"];
+                };
+            };
+        };
+    };
+    ComponentAPI_GetComponent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Unique identifier of the component (UUID). */
+                component_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["admiral.component.v1.GetComponentResponse"];
+                };
+            };
+        };
+    };
+    ComponentAPI_DeleteComponent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /**
+                 * @description Unique identifier of the component to delete (UUID).
+                 *      Fails if other components depend on this component (via depends_on
+                 *      or output references in values_template).
+                 */
+                component_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["admiral.component.v1.DeleteComponentResponse"];
+                };
+            };
+        };
+    };
+    ComponentAPI_ListComponentOverrides: {
+        parameters: {
+            query?: {
+                /** @description Maximum number of overrides to return per page. */
+                page_size?: number;
+                /** @description Opaque pagination token from a previous response. */
+                page_token?: string;
+            };
+            header?: never;
+            path: {
+                /** @description Unique identifier of the component to list overrides for (UUID). */
+                component_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["admiral.component.v1.ListComponentOverridesResponse"];
+                };
+            };
+        };
+    };
+    ComponentAPI_GetComponentOverride: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The component (UUID). */
+                component_id: string;
+                /** @description The environment (UUID). */
+                environment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["admiral.component.v1.GetComponentOverrideResponse"];
+                };
+            };
+        };
+    };
+    ComponentAPI_SetComponentOverride: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The component to override (UUID). */
+                component_id: string;
+                /** @description The environment this override applies to (UUID). */
+                environment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /**
+                     * component_id
+                     * Format: uuid
+                     * @description The component to override (UUID).
+                     */
+                    component_id?: string;
+                    /**
+                     * environment_id
+                     * Format: uuid
+                     * @description The environment this override applies to (UUID).
+                     */
+                    environment_id?: string;
+                    /**
+                     * disabled
+                     * @description When true, the component is not deployed in this environment.
+                     */
+                    disabled?: boolean;
+                    /**
+                     * source_id
+                     * Format: uuid
+                     * @description Override source (UUID). When set, replaces the component's default source.
+                     */
+                    source_id?: string | null;
+                    /**
+                     * version
+                     * @description Override version. When set, replaces the component's default version.
+                     */
+                    version?: string | null;
+                    /**
+                     * values_template
+                     * @description Override values template. When set, completely replaces the component's
+                     *      default values template (no merge).
+                     */
+                    values_template?: string | null;
+                    /**
+                     * depends_on
+                     * @description Override depends_on (component UUIDs). When set, replaces the component's
+                     *      default depends_on.
+                     */
+                    depends_on?: string[];
+                    /**
+                     * outputs
+                     * @description Override outputs. When set, replaces the component's declared outputs.
+                     */
+                    outputs?: components["schemas"]["admiral.component.v1.ComponentOutput"][];
+                };
+            };
+        };
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["admiral.component.v1.SetComponentOverrideResponse"];
+                };
+            };
+        };
+    };
+    ComponentAPI_DeleteComponentOverride: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The component (UUID). */
+                component_id: string;
+                /** @description The environment (UUID). */
+                environment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["admiral.component.v1.DeleteComponentOverrideResponse"];
+                };
+            };
+        };
+    };
+    ConnectionAPI_ListConnections: {
+        parameters: {
+            query?: {
+                /**
+                 * @description Filter expression to narrow results. Uses the Admiral filter DSL.
+                 *
+                 *      Syntax: `field['name'] = 'value'` with AND/OR/NOT, comparison operators
+                 *      (=, !=, <, >, <=, >=, ~=), and predicates (IN, BETWEEN, CONTAINS,
+                 *      STARTS_WITH, ENDS_WITH, IS NULL, EXISTS).
+                 *
+                 *      Filterable fields:
+                 *        - `name` -- filter by connection name.
+                 *        - `type` -- filter by connection type (GIT_TOKEN, HELM_HTTP, etc.).
+                 *        - `status` -- filter by connection status (ACTIVE, ERROR, UNTESTED).
+                 *        - `labels.key` -- filter by label key.
+                 *
+                 *      Example: `field['type'] = 'GIT_TOKEN' AND field['status'] = 'ACTIVE'`
+                 */
+                filter?: string;
+                /** @description Maximum number of connections to return per page. */
+                page_size?: number;
+                /** @description Opaque pagination token from a previous response. */
+                page_token?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["admiral.connection.v1.ListConnectionsResponse"];
+                };
+            };
+        };
+    };
+    ConnectionAPI_CreateConnection: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["admiral.connection.v1.CreateConnectionRequest"];
+            };
+        };
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["admiral.connection.v1.CreateConnectionResponse"];
+                };
+            };
+        };
+    };
+    ConnectionAPI_UpdateConnection: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Unique identifier for the connection (UUID). */
+                "connection.id": string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /**
+                     * connection
+                     * @description The connection with updated fields.
+                     *      Only fields specified in `update_mask` are updated.
+                     *
+                     *      When updating auth_config, the entire auth config is replaced.
+                     *      Omitting auth_config from the update_mask leaves credentials unchanged.
+                     */
+                    connection: components["schemas"]["admiral.connection.v1.Connection"];
+                    /**
+                     * update_mask
+                     * @description The set of fields to update. If unset, all mutable fields are updated.
+                     *      Supported fields: `name`, `description`, `auth_config`, `labels`.
+                     */
+                    update_mask?: components["schemas"]["google.protobuf.FieldMask"];
+                };
+            };
+        };
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["admiral.connection.v1.UpdateConnectionResponse"];
+                };
+            };
+        };
+    };
+    ConnectionAPI_GetConnection: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The unique identifier of the connection (UUID). */
+                connection_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["admiral.connection.v1.GetConnectionResponse"];
+                };
+            };
+        };
+    };
+    ConnectionAPI_DeleteConnection: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /**
+                 * @description The unique identifier of the connection to delete (UUID).
+                 *      Fails if any sources still reference this connection.
+                 */
+                connection_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["admiral.connection.v1.DeleteConnectionResponse"];
+                };
+            };
+        };
+    };
+    ConnectionAPI_TestConnection: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The unique identifier of the connection to test (UUID). */
+                connection_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /**
+                     * connection_id
+                     * Format: uuid
+                     * @description The unique identifier of the connection to test (UUID).
+                     */
+                    connection_id?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["admiral.connection.v1.TestConnectionResponse"];
+                };
+            };
+        };
+    };
+    DeploymentAPI_ListDeployments: {
+        parameters: {
+            query?: {
+                /**
+                 * @description Filter expression using the PEG filter DSL.
+                 *
+                 *      Common filter fields:
+                 *        - `application_id` -- deployments for a specific application.
+                 *        - `environment_id` -- deployments to a specific environment.
+                 *        - `status` -- filter by deployment status.
+                 *        - `trigger_type` -- filter by trigger type (MANUAL, CI, DESTROY).
+                 */
+                filter?: string;
+                /** @description Maximum number of deployments to return per page. */
+                page_size?: number;
+                /** @description Opaque pagination token from a previous response. */
+                page_token?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["admiral.deployment.v1.ListDeploymentsResponse"];
+                };
+            };
+        };
+    };
+    DeploymentAPI_CreateDeployment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["admiral.deployment.v1.CreateDeploymentRequest"];
+            };
+        };
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["admiral.deployment.v1.CreateDeploymentResponse"];
+                };
+            };
+        };
+    };
+    DeploymentAPI_GetDeployment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Unique identifier of the deployment (UUID). */
+                deployment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["admiral.deployment.v1.GetDeploymentResponse"];
+                };
+            };
+        };
+    };
+    DeploymentAPI_CancelDeployment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Unique identifier of the deployment to cancel (UUID). */
+                deployment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /**
+                     * deployment_id
+                     * Format: uuid
+                     * @description Unique identifier of the deployment to cancel (UUID).
+                     */
+                    deployment_id?: string;
+                    /**
+                     * reason
+                     * @description Optional reason for cancellation.
+                     */
+                    reason?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["admiral.deployment.v1.CancelDeploymentResponse"];
+                };
+            };
+        };
+    };
+    DeploymentAPI_ListRevisions: {
+        parameters: {
+            query?: {
+                /** @description Maximum number of revisions to return per page. */
+                page_size?: number;
+                /** @description Opaque pagination token from a previous response. */
+                page_token?: string;
+            };
+            header?: never;
+            path: {
+                /** @description Unique identifier of the deployment to list revisions for (UUID). */
+                deployment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["admiral.deployment.v1.ListRevisionsResponse"];
+                };
+            };
+        };
+    };
+    DeploymentAPI_GetRevision: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The deployment (UUID). */
+                deployment_id: string;
+                /** @description The revision (UUID). */
+                revision_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["admiral.deployment.v1.GetRevisionResponse"];
+                };
+            };
+        };
+    };
+    DeploymentAPI_RetryRevision: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The deployment (UUID). */
+                deployment_id: string;
+                /** @description The revision to retry (UUID). Must be in FAILED status. */
+                revision_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /**
+                     * deployment_id
+                     * Format: uuid
+                     * @description The deployment (UUID).
+                     */
+                    deployment_id?: string;
+                    /**
+                     * revision_id
+                     * Format: uuid
+                     * @description The revision to retry (UUID). Must be in FAILED status.
+                     */
+                    revision_id?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["admiral.deployment.v1.RetryRevisionResponse"];
+                };
+            };
+        };
+    };
+    EnvironmentAPI_ListEnvironments: {
+        parameters: {
+            query?: {
+                /**
+                 * @description Filter expression to narrow results. Uses the Admiral filter DSL.
+                 *
+                 *      Syntax: `field['name'] = 'value'` with AND/OR/NOT, comparison operators
+                 *      (=, !=, <, >, <=, >=, ~=), and predicates (IN, BETWEEN, CONTAINS,
+                 *      STARTS_WITH, ENDS_WITH, IS NULL, EXISTS).
+                 *
+                 *      Filterable fields:
+                 *        - `application_id` -- filter by parent application (UUID).
+                 *        - `name` -- filter by environment name.
+                 *        - `runtime_type` -- filter by runtime type (KUBERNETES).
+                 *        - `labels.key` -- filter by label key.
+                 *
+                 *      Example: `field['application_id'] = '<uuid>' AND field['name'] = 'prod'`
+                 */
+                filter?: string;
+                /** @description Maximum number of environments to return per page. */
+                page_size?: number;
+                /** @description Opaque pagination token from a previous response. */
+                page_token?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["admiral.environment.v1.ListEnvironmentsResponse"];
+                };
+            };
+        };
+    };
+    EnvironmentAPI_CreateEnvironment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["admiral.environment.v1.CreateEnvironmentRequest"];
+            };
+        };
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["admiral.environment.v1.CreateEnvironmentResponse"];
+                };
+            };
+        };
+    };
+    EnvironmentAPI_UpdateEnvironment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Unique identifier for the environment (UUID). */
+                "environment.id": string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /**
+                     * environment
+                     * @description The environment with updated fields.
+                     *      Only fields specified in `update_mask` are updated.
+                     */
+                    environment: components["schemas"]["admiral.environment.v1.Environment"];
+                    /**
+                     * update_mask
+                     * @description The set of fields to update. If unset, all mutable fields are updated.
+                     *      Supported fields: `name`, `description`, `runtime_type`, `kubernetes`,
+                     *      `labels`, `infrastructure`.
+                     */
+                    update_mask?: components["schemas"]["google.protobuf.FieldMask"];
+                };
+            };
+        };
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["admiral.environment.v1.UpdateEnvironmentResponse"];
+                };
+            };
+        };
+    };
+    EnvironmentAPI_GetEnvironment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The unique identifier of the environment (UUID). */
+                environment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["admiral.environment.v1.GetEnvironmentResponse"];
+                };
+            };
+        };
+    };
+    EnvironmentAPI_DeleteEnvironment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The unique identifier of the environment to delete (UUID). */
+                environment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["admiral.environment.v1.DeleteEnvironmentResponse"];
+                };
+            };
+        };
+    };
+    HealthcheckAPI_Healthcheck: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["admiral.healthcheck.v1.HealthcheckResponse"];
+                };
+            };
+        };
+    };
+    RunnerAPI_Heartbeat: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["admiral.runner.v1.HeartbeatRequest"];
+            };
+        };
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["admiral.runner.v1.HeartbeatResponse"];
+                };
+            };
+        };
+    };
+    RunnerAPI_ClaimJob: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["admiral.runner.v1.ClaimJobRequest"];
+            };
+        };
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["admiral.runner.v1.ClaimJobResponse"];
+                };
+            };
+        };
+    };
+    RunnerAPI_GetJobBundle: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The job to fetch the bundle for (UUID). */
+                job_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["admiral.runner.v1.GetJobBundleResponse"];
+                };
+            };
+        };
+    };
+    RunnerAPI_ReportJobResult: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The job being reported on (UUID). */
+                job_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /**
+                     * job_id
+                     * Format: uuid
+                     * @description The job being reported on (UUID).
+                     */
+                    job_id?: string;
+                    /**
+                     * result
+                     * @description The job result with status, outputs, and error information.
+                     */
+                    result: components["schemas"]["admiral.runner.v1.JobResult"];
+                };
+            };
+        };
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["admiral.runner.v1.ReportJobResultResponse"];
+                };
+            };
+        };
+    };
+    StateAPI_GetState: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /**
+                 * @description The job to fetch state for (UUID). The server resolves the component
+                 *      and environment from the job's binding.
+                 */
+                job_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["admiral.state.v1.GetStateResponse"];
+                };
+            };
+        };
+    };
+    StateAPI_PushState: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The job pushing state (UUID). */
+                job_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /**
+                     * job_id
+                     * Format: uuid
+                     * @description The job pushing state (UUID).
+                     */
+                    job_id?: string;
+                    /**
+                     * data
+                     * Format: byte
+                     * @description The raw Terraform state data (JSON-encoded). Maximum 64 MiB.
+                     */
+                    data?: string;
+                    /**
+                     * md5
+                     * @description MD5 hash of the state data.
+                     */
+                    md5?: string;
+                    /**
+                     * serial
+                     * Format: int64
+                     * @description Terraform state serial number. Must be greater than the current serial.
+                     */
+                    serial?: number | string;
+                    /**
+                     * lineage
+                     * @description Terraform state lineage. Must match the existing lineage if the state
+                     *      record already exists.
+                     */
+                    lineage?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["admiral.state.v1.PushStateResponse"];
+                };
+            };
+        };
+    };
+    StateAPI_LockState: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The job requesting the lock (UUID). */
+                job_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /**
+                     * job_id
+                     * Format: uuid
+                     * @description The job requesting the lock (UUID).
+                     */
+                    job_id?: string;
+                    /**
+                     * lock_id
+                     * Format: uuid
+                     * @description Terraform-generated lock ID (UUID).
+                     */
+                    lock_id?: string;
+                    /**
+                     * operation
+                     * @description The Terraform operation requesting the lock.
+                     */
+                    operation?: string;
+                    /**
+                     * who
+                     * @description Identifier of who is requesting the lock.
+                     */
+                    who?: string;
+                    /**
+                     * version
+                     * @description Terraform/OpenTofu version of the client requesting the lock.
+                     */
+                    version?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["admiral.state.v1.LockStateResponse"];
+                };
+            };
+        };
+    };
+    StateAPI_UnlockState: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The job releasing the lock (UUID). */
+                job_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /**
+                     * job_id
+                     * Format: uuid
+                     * @description The job releasing the lock (UUID).
+                     */
+                    job_id?: string;
+                    /**
+                     * lock_id
+                     * Format: uuid
+                     * @description The lock_id to release (UUID). Must match the currently held lock.
+                     */
+                    lock_id?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["admiral.state.v1.UnlockStateResponse"];
+                };
+            };
+        };
+    };
+    RunnerAPI_ListRunners: {
+        parameters: {
+            query?: {
+                /**
+                 * @description Filter expression to narrow results. Uses the Admiral filter DSL.
+                 *
+                 *      Syntax: `field['name'] = 'value'` with AND/OR/NOT, comparison operators
+                 *      (=, !=, <, >, <=, >=, ~=), and predicates (IN, BETWEEN, CONTAINS,
+                 *      STARTS_WITH, ENDS_WITH, IS NULL, EXISTS).
+                 *
+                 *      Filterable fields:
+                 *        - `name` -- filter by runner name.
+                 *        - `kind` -- filter by runner kind (TERRAFORM, WORKFLOW).
+                 *        - `health_status` -- filter by health status.
+                 *        - `labels.key` -- filter by label key.
+                 *
+                 *      Example: `field['kind'] = 'TERRAFORM' AND field['health_status'] = 'HEALTHY'`
+                 */
+                filter?: string;
+                /** @description Maximum number of runners to return per page. */
+                page_size?: number;
+                /** @description Opaque pagination token from a previous response. */
+                page_token?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["admiral.runner.v1.ListRunnersResponse"];
+                };
+            };
+        };
+    };
+    RunnerAPI_CreateRunner: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["admiral.runner.v1.CreateRunnerRequest"];
+            };
+        };
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["admiral.runner.v1.CreateRunnerResponse"];
+                };
+            };
+        };
+    };
+    RunnerAPI_UpdateRunner: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Unique identifier for the runner (UUID). */
+                "runner.id": string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /**
+                     * runner
+                     * @description The runner with updated fields. The `id` field is required.
+                     *      Only fields specified in `update_mask` are updated.
+                     */
+                    runner: components["schemas"]["admiral.runner.v1.Runner"];
+                    /**
+                     * update_mask
+                     * @description The set of fields to update. If unset, all mutable fields are updated.
+                     *      Supported fields: `name`, `description`, `labels`.
+                     */
+                    update_mask?: components["schemas"]["google.protobuf.FieldMask"];
+                };
+            };
+        };
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["admiral.runner.v1.UpdateRunnerResponse"];
+                };
+            };
+        };
+    };
+    RunnerAPI_GetRunner: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The unique identifier of the runner (UUID). */
+                runner_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["admiral.runner.v1.GetRunnerResponse"];
+                };
+            };
+        };
+    };
+    RunnerAPI_DeleteRunner: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /**
+                 * @description The unique identifier of the runner to delete (UUID).
+                 *      All associated service access tokens will be revoked.
+                 */
+                runner_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["admiral.runner.v1.DeleteRunnerResponse"];
+                };
+            };
+        };
+    };
+    RunnerAPI_ListRunnerJobs: {
+        parameters: {
+            query?: {
+                /**
+                 * @description Filter expression to narrow results. Uses the Admiral filter DSL.
+                 *
+                 *      Filterable fields:
+                 *        - `status` -- filter by job status (PENDING, ASSIGNED, RUNNING, etc.).
+                 *        - `job_type` -- filter by job type (PLAN, APPLY, DESTROY_PLAN, DESTROY_APPLY).
+                 *        - `deployment_id` -- jobs for a specific deployment (UUID).
+                 *
+                 *      Example: `field['status'] = 'RUNNING'`
+                 */
+                filter?: string;
+                /** @description Maximum number of jobs to return per page. */
+                page_size?: number;
+                /** @description Opaque pagination token from a previous response. */
+                page_token?: string;
+            };
+            header?: never;
+            path: {
+                /** @description The runner whose jobs to list (UUID). */
+                runner_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["admiral.runner.v1.ListRunnerJobsResponse"];
+                };
+            };
+        };
+    };
+    RunnerAPI_GetRunnerStatus: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The unique identifier of the runner (UUID). */
+                runner_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["admiral.runner.v1.GetRunnerStatusResponse"];
+                };
+            };
+        };
+    };
+    RunnerAPI_ListRunnerTokens: {
+        parameters: {
+            query?: {
+                /**
+                 * @description Filter expression to narrow results. Uses the Admiral filter DSL.
+                 *
+                 *      Filterable fields:
+                 *        - `name` -- filter by token name.
+                 *        - `status` -- filter by token status (ACTIVE, REVOKED).
+                 *
+                 *      Example: `field['status'] = 'ACTIVE'`
+                 */
+                filter?: string;
+                /** @description Maximum number of tokens to return per page. */
+                page_size?: number;
+                /** @description Opaque pagination token from a previous response. */
+                page_token?: string;
+            };
+            header?: never;
+            path: {
+                /** @description The runner to list tokens for (UUID). */
+                runner_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["admiral.runner.v1.ListRunnerTokensResponse"];
+                };
+            };
+        };
+    };
+    RunnerAPI_CreateRunnerToken: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The runner to bind this token to (UUID). */
+                runner_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /**
+                     * runner_id
+                     * Format: uuid
+                     * @description The runner to bind this token to (UUID).
+                     */
+                    runner_id?: string;
+                    /**
+                     * name
+                     * @description URL-safe, human-readable identifier for the token (e.g., "prod-runner-key").
+                     *      Must be unique within the runner's tokens. Lowercase alphanumeric and
+                     *      hyphens only.
+                     */
+                    name?: string;
+                    /**
+                     * expires_at
+                     * @description Optional expiration time. If unset, the token does not expire.
+                     */
+                    expires_at?: components["schemas"]["google.protobuf.Timestamp"];
+                };
+            };
+        };
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["admiral.runner.v1.CreateRunnerTokenResponse"];
+                };
+            };
+        };
+    };
+    RunnerAPI_GetRunnerToken: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The runner the token belongs to (UUID). */
+                runner_id: string;
+                /** @description The unique identifier of the token (UUID). */
+                token_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["admiral.runner.v1.GetRunnerTokenResponse"];
+                };
+            };
+        };
+    };
+    RunnerAPI_RevokeRunnerToken: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The runner the token belongs to (UUID). */
+                runner_id: string;
+                /** @description The unique identifier of the token to revoke (UUID). */
+                token_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /**
+                     * runner_id
+                     * Format: uuid
+                     * @description The runner the token belongs to (UUID).
+                     */
+                    runner_id?: string;
+                    /**
+                     * token_id
+                     * Format: uuid
+                     * @description The unique identifier of the token to revoke (UUID).
+                     */
+                    token_id?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["admiral.runner.v1.RevokeRunnerTokenResponse"];
+                };
+            };
+        };
+    };
+    SourceAPI_ListSources: {
+        parameters: {
+            query?: {
+                /**
+                 * @description Filter expression to narrow results. Uses the Admiral filter DSL.
+                 *
+                 *      Syntax: `field['name'] = 'value'` with AND/OR/NOT, comparison operators
+                 *      (=, !=, <, >, <=, >=, ~=), and predicates (IN, BETWEEN, CONTAINS,
+                 *      STARTS_WITH, ENDS_WITH, IS NULL, EXISTS).
+                 *
+                 *      Filterable fields:
+                 *        - `name` -- filter by source name.
+                 *        - `type` -- filter by source type (TERRAFORM_REGISTRY, HELM_OCI, etc.).
+                 *        - `catalog` -- filter by catalog status (true/false).
+                 *        - `labels.key` -- filter by label key.
+                 *
+                 *      Example: `field['type'] = 'TERRAFORM_REGISTRY' AND field['catalog'] = 'true'`
+                 */
+                filter?: string;
+                /** @description Maximum number of sources to return per page. */
+                page_size?: number;
+                /** @description Opaque pagination token from a previous response. */
+                page_token?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["admiral.source.v1.ListSourcesResponse"];
+                };
+            };
+        };
+    };
+    SourceAPI_CreateSource: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["admiral.source.v1.CreateSourceRequest"];
+            };
+        };
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["admiral.source.v1.CreateSourceResponse"];
+                };
+            };
+        };
+    };
+    SourceAPI_UpdateSource: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Unique identifier for the source (UUID). */
+                "source.id": string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /**
+                     * source
+                     * @description The source with updated fields. Only fields specified in `update_mask`
+                     *      are updated.
+                     */
+                    source: components["schemas"]["admiral.source.v1.Source"];
+                    /**
+                     * update_mask
+                     * @description The set of fields to update. If unset, all mutable fields are updated.
+                     *      Supported fields: `name`, `description`, `url`, `connection_id`, `catalog`,
+                     *      `source_config`, `labels`.
+                     */
+                    update_mask?: components["schemas"]["google.protobuf.FieldMask"];
+                };
+            };
+        };
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["admiral.source.v1.UpdateSourceResponse"];
+                };
+            };
+        };
+    };
+    SourceAPI_GetSource: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Unique identifier of the source (UUID). */
+                source_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["admiral.source.v1.GetSourceResponse"];
+                };
+            };
+        };
+    };
+    SourceAPI_DeleteSource: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /**
+                 * @description Unique identifier of the source to delete (UUID).
+                 *      Fails if any application components still reference this source.
+                 */
+                source_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["admiral.source.v1.DeleteSourceResponse"];
+                };
+            };
+        };
+    };
+    SourceAPI_GetSourceInputs: {
+        parameters: {
+            query?: {
+                /**
+                 * @description The version to inspect. For registry sources, a semver string. For Git
+                 *      sources, a tag, branch, or commit SHA. Required.
+                 */
+                version?: string;
+            };
+            header?: never;
+            path: {
+                /** @description Unique identifier of the source to inspect (UUID). */
+                source_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["admiral.source.v1.GetSourceInputsResponse"];
+                };
+            };
+        };
+    };
+    SourceAPI_GetSourceOutputs: {
+        parameters: {
+            query?: {
+                /** @description The version to inspect. Required. */
+                version?: string;
+            };
+            header?: never;
+            path: {
+                /** @description Unique identifier of the source to inspect (UUID). */
+                source_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["admiral.source.v1.GetSourceOutputsResponse"];
+                };
+            };
+        };
+    };
+    SourceAPI_SyncSource: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Unique identifier of the source to sync (UUID). */
+                source_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /**
+                     * source_id
+                     * Format: uuid
+                     * @description Unique identifier of the source to sync (UUID).
+                     */
+                    source_id?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["admiral.source.v1.SyncSourceResponse"];
+                };
+            };
+        };
+    };
+    SourceAPI_ListSourceVersions: {
+        parameters: {
+            query?: {
+                /** @description Maximum number of versions to return. Defaults to 50. */
+                page_size?: number;
+                /** @description Opaque pagination token for fetching additional versions. */
+                page_token?: string;
+            };
+            header?: never;
+            path: {
+                /** @description Unique identifier of the source to query versions for (UUID). */
+                source_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["admiral.source.v1.ListSourceVersionsResponse"];
+                };
+            };
+        };
+    };
+    StateAPI_ListStates: {
+        parameters: {
+            query?: {
+                /**
+                 * @description Filter expression using the PEG filter DSL.
+                 *
+                 *      Common filter fields:
+                 *        - `component_id` -- states for a specific component (UUID).
+                 *        - `environment_id` -- states for a specific environment (UUID).
+                 *        - `application_id` -- states for all components belonging to an
+                 *          application (UUID). The server resolves the application's components
+                 *          and returns states for all of them. Can be combined with
+                 *          `environment_id`.
+                 */
+                filter?: string;
+                /** @description Maximum number of states to return per page. */
+                page_size?: number;
+                /** @description Opaque pagination token from a previous response. */
+                page_token?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["admiral.state.v1.ListStatesResponse"];
+                };
+            };
+        };
+    };
+    StateAPI_GetCurrentState: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The unique identifier of the state record (UUID). */
+                state_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["admiral.state.v1.GetCurrentStateResponse"];
+                };
+            };
+        };
+    };
+    StateAPI_DeleteState: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /**
+                 * @description The unique identifier of the state record to delete (UUID).
+                 *      Fails if the state is currently locked -- force-unlock first.
+                 */
+                state_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["admiral.state.v1.DeleteStateResponse"];
+                };
+            };
+        };
+    };
+    StateAPI_ForceUnlockState: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The state record to force-unlock (UUID). */
+                state_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /**
+                     * state_id
+                     * Format: uuid
+                     * @description The state record to force-unlock (UUID).
+                     */
+                    state_id?: string;
+                    /**
+                     * reason
+                     * @description Reason for force-unlocking (audited). Recommended to provide context
+                     *      for why the lock is being broken (e.g., "runner crashed during apply").
+                     */
+                    reason?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["admiral.state.v1.ForceUnlockStateResponse"];
+                };
+            };
+        };
+    };
+    StateAPI_ListStateVersions: {
+        parameters: {
+            query?: {
+                /** @description Maximum number of versions to return per page. */
+                page_size?: number;
+                /** @description Opaque pagination token from a previous response. */
+                page_token?: string;
+            };
+            header?: never;
+            path: {
+                /** @description The state record to list versions for (UUID). */
+                state_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["admiral.state.v1.ListStateVersionsResponse"];
+                };
+            };
+        };
+    };
+    StateAPI_GetStateVersion: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The state record (UUID). */
+                state_id: string;
+                /** @description The serial number of the version to retrieve. */
+                serial: number | string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["admiral.state.v1.GetStateVersionResponse"];
+                };
+            };
+        };
+    };
+    UserAPI_GetMe: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["admiral.user.v1.GetMeResponse"];
+                };
+            };
+        };
+    };
+    UserAPI_ListPersonalAccessTokens: {
+        parameters: {
+            query?: {
+                /**
+                 * @description Filter expression to narrow results. Uses the Admiral filter DSL.
+                 *
+                 *      Filterable fields:
+                 *        - `name` -- filter by token name.
+                 *        - `status` -- filter by token status (ACTIVE, REVOKED, EXPIRED).
+                 *
+                 *      Example: `field['status'] = 'ACTIVE'`
+                 */
+                filter?: string;
+                /** @description Maximum number of tokens to return per page. */
+                page_size?: number;
+                /** @description Opaque pagination token from a previous response. */
+                page_token?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["admiral.user.v1.ListPersonalAccessTokensResponse"];
+                };
+            };
+        };
+    };
+    UserAPI_CreatePersonalAccessToken: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["admiral.user.v1.CreatePersonalAccessTokenRequest"];
+            };
+        };
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["admiral.user.v1.CreatePersonalAccessTokenResponse"];
+                };
+            };
+        };
+    };
+    UserAPI_GetPersonalAccessToken: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The unique identifier of the token (UUID). */
+                token_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["admiral.user.v1.GetPersonalAccessTokenResponse"];
+                };
+            };
+        };
+    };
+    UserAPI_UpdatePersonalAccessToken: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The unique identifier of the token to update (UUID). */
+                token_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /**
+                     * token_id
+                     * Format: uuid
+                     * @description The unique identifier of the token to update (UUID).
+                     */
+                    token_id?: string;
+                    /**
+                     * name
+                     * @description New name for the token. Must follow the same naming rules as creation.
+                     *      Omit to leave the name unchanged.
+                     */
+                    name?: string | null;
+                    /**
+                     * scopes
+                     * @description New scopes for the token. Replaces all existing scopes.
+                     *      The server enforces that issued scopes are a subset of the caller's own
+                     *      scopes -- a token cannot grant more access than the user holds.
+                     *      Omit to leave scopes unchanged.
+                     */
+                    scopes?: string[];
+                };
+            };
+        };
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["admiral.user.v1.UpdatePersonalAccessTokenResponse"];
+                };
+            };
+        };
+    };
+    UserAPI_RevokePersonalAccessToken: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The unique identifier of the token to revoke (UUID). */
+                token_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /**
+                     * token_id
+                     * Format: uuid
+                     * @description The unique identifier of the token to revoke (UUID).
+                     */
+                    token_id?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["admiral.user.v1.RevokePersonalAccessTokenResponse"];
+                };
+            };
+        };
+    };
+    UserAPI_GetUser: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The unique identifier of the user (UUID). */
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["admiral.user.v1.GetUserResponse"];
+                };
+            };
+        };
+    };
+    VariableAPI_ListVariables: {
+        parameters: {
+            query?: {
+                /**
+                 * @description Filter expression using the PEG filter DSL.
+                 *
+                 *      Common filter fields:
+                 *        - `application_id` -- scope to an application (triggers merge with
+                 *          app-level variables alongside global variables).
+                 *        - `environment_id` -- scope to an environment (requires application_id;
+                 *          triggers merge with environment-level variables).
+                 *        - `sensitive` -- filter by sensitivity.
+                 *        - `type` -- filter by variable type.
+                 *        - `key` -- filter by variable key (supports prefix matching).
+                 */
+                filter?: string;
+                /** @description Maximum number of variables to return per page. */
+                page_size?: number;
+                /** @description Opaque pagination token from a previous response. */
+                page_token?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["admiral.variable.v1.ListVariablesResponse"];
+                };
+            };
+        };
+    };
+    VariableAPI_CreateVariable: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["admiral.variable.v1.CreateVariableRequest"];
+            };
+        };
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["admiral.variable.v1.CreateVariableResponse"];
+                };
+            };
+        };
+    };
+    VariableAPI_UpdateVariable: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Unique identifier for the variable (UUID). */
+                "variable.id": string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /**
+                     * variable
+                     * @description The variable with updated fields.
+                     *      Only fields specified in `update_mask` are updated.
+                     */
+                    variable: components["schemas"]["admiral.variable.v1.Variable"];
+                    /**
+                     * update_mask
+                     * @description The set of fields to update. If unset, all mutable fields are updated.
+                     *      Supported fields: `value`, `sensitive`, `type`, `description`.
+                     */
+                    update_mask?: components["schemas"]["google.protobuf.FieldMask"];
+                };
+            };
+        };
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["admiral.variable.v1.UpdateVariableResponse"];
+                };
+            };
+        };
+    };
+    VariableAPI_GetVariable: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The unique identifier of the variable (UUID). */
+                variable_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["admiral.variable.v1.GetVariableResponse"];
+                };
+            };
+        };
+    };
+    VariableAPI_DeleteVariable: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The unique identifier of the variable to delete (UUID). */
+                variable_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["admiral.variable.v1.DeleteVariableResponse"];
+                };
+            };
+        };
+    };
+    AuthenticationAPI_Callback: {
+        parameters: {
+            query?: {
+                /** @description The authorization code from the IdP. */
+                code?: string;
+                /** @description The state nonce (signed JWT) from the login request. */
+                state?: string;
+                /** @description OAuth error code (set by IdP on failure). */
+                error?: string;
+                /** @description Human-readable error description from the IdP. */
+                error_description?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["admiral.authentication.v1.CallbackResponse"];
+                };
+            };
+        };
+    };
+    AuthenticationAPI_Login: {
+        parameters: {
+            query?: {
+                /**
+                 * @description The URL to redirect to after successful authentication. Must be a relative
+                 *      path (no scheme or host). Baked into the signed state nonce.
+                 */
+                redirect_url?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["admiral.authentication.v1.LoginResponse"];
+                };
+            };
+        };
+    };
 }

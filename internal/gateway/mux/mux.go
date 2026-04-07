@@ -59,7 +59,7 @@ func New(unaryInterceptors []grpc.UnaryServerInterceptor, assets http.FileSystem
 			runtime.MIMEWildcard,
 			&runtime.JSONPb{
 				MarshalOptions: protojson.MarshalOptions{
-					UseProtoNames:   false,
+					UseProtoNames:   true,
 					EmitUnpopulated: true,
 				},
 				UnmarshalOptions: protojson.UnmarshalOptions{},

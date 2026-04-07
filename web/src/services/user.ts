@@ -9,20 +9,27 @@ export async function getMe(): Promise<User> {
     throw parseApiError(error) ?? new Error('Failed to fetch user profile');
   }
 
-  const u = data.user;
-  if (!u) {
+  const raw = data as Record<string, unknown>;
+  if (!raw.user) {
     throw new Error('No user returned from API');
   }
 
-  return userSchema.parse({
-    id: u.id ?? '',
-    email: u.email ?? '',
-    emailVerified: u.email_verified,
-    name: u.display_name ?? undefined,
-    givenName: u.given_name ?? undefined,
-    familyName: u.family_name ?? undefined,
-    pictureUrl: u.avatar_url ?? undefined,
-    createdAt: u.created_at ?? undefined,
-    updatedAt: u.updated_at ?? undefined,
+  return userSchema.parse(raw.user);
+}
+
+export async function get(userId: string): Promise<User> {
+  const { data, error } = await client.GET('/api/v1/users/{user_id}', {
+    params: { path: { user_id: userId } },
   });
+
+  if (error) {
+    throw parseApiError(error) ?? new Error('Failed to fetch user');
+  }
+
+  const raw = data as Record<string, unknown>;
+  if (!raw.user) {
+    throw new Error('No user returned from API');
+  }
+
+  return userSchema.parse(raw.user);
 }
