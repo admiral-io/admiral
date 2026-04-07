@@ -11,12 +11,12 @@ export const Logo: React.FC<LogoProps> = ({ width = 90, height = 25, minWidth = 
   const theme = useTheme();
 
   const primary = useMemo(
-    () => (theme.palette.mode === 'dark' ? '#fff' : '#000'),
-    [theme.palette.mode],
+    () => (theme.palette.mode === 'dark' ? '#fff' : theme.palette.primary.main),
+    [theme.palette.mode, theme.palette.primary],
   );
   const secondary = useMemo(
-    () => (theme.palette.mode === 'dark' ? '#000' : '#fff'),
-    [theme.palette.mode],
+    () => theme.palette.background.paper,
+    [theme.palette.background.paper],
   );
 
   const showSmallLogo = width <= minWidth;

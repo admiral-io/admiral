@@ -151,9 +151,11 @@ const ComponentStyleOverrides = (theme: Theme) => {
         input: {
           color: theme.palette.text.primary,
           '&::placeholder': {
-            color: theme.palette.text.secondary,
-            fontSize: '0.875rem',
-            opacity: 1,
+            // Softer than full-strength secondary — avoids placeholders reading like real values.
+            color: alpha(theme.palette.text.secondary, isDark ? 0.72 : 0.58),
+            // Match the input's font-size (e.g. small fields use 0.8rem); a fixed
+            // 0.875rem here made placeholders look vertically mis-centered.
+            fontSize: 'inherit',
             lineHeight: 'inherit',
           },
         },
@@ -255,9 +257,17 @@ const ComponentStyleOverrides = (theme: Theme) => {
         root: {
           color: isDark ? theme.palette.grey[300] : theme.palette.grey[700],
           fontSize: '0.875rem',
+          // Default (medium) outlined input
           transform: 'translate(14px, 12px) scale(1)',
           '&.MuiInputLabel-shrink': {
             transform: 'translate(14px, -9px) scale(0.75)',
+          },
+          // Align with MUI small OutlinedInput so labels/placeholders match field height
+          '&.MuiInputLabel-sizeSmall': {
+            transform: 'translate(14px, 9px) scale(1)',
+            '&.MuiInputLabel-shrink': {
+              transform: 'translate(14px, -9px) scale(0.75)',
+            },
           },
           '&.Mui-focused': {
             color: theme.palette.primary.main,

@@ -29,3 +29,5 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           locale: "US"
+          exclude: |
+            ./web/src/services/api.d.ts

@@ -4,7 +4,7 @@
 // Layout constants
 export const LAYOUT = {
   HEADER_HEIGHT: 64,
-  SIDEBAR_WIDTH: 280,
+  SIDEBAR_WIDTH: 240,
   SIDEBAR_WIDTH_COLLAPSED: 64,
   FOOTER_HEIGHT: 48,
 } as const;
