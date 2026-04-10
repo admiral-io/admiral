@@ -1,0 +1,14 @@
+[Unit]
+Description=Admiral Platform Orchestrator
+Documentation=https://admiral.io/docs
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/admiral-server start --config /etc/admiral-server/config.yaml
+Restart=on-failure
+RestartSec=5s
+
+[Install]
+WantedBy=multi-user.target
