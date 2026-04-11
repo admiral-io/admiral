@@ -1,10 +1,11 @@
 import React, { type ReactElement, useEffect, useState } from 'react';
 import { useDispatch } from '@/store';
-import { Card, CircularProgress, Stack, Typography, Button, Box } from '@mui/material';
-import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
+import { Box, CircularProgress, Stack, Typography, Button } from '@mui/material';
+import { Refresh as RefreshIcon } from '@mui/icons-material';
 
 import { services } from '@/services';
 import { setUser } from '@/store/slices/user';
+import ErrorContainer from '@/components/ErrorContainer';
 
 interface FallbackComponentProps {
   errorMessage: string;
@@ -12,63 +13,43 @@ interface FallbackComponentProps {
 
 function FallbackComponent({ errorMessage }: FallbackComponentProps): ReactElement {
   return (
-    <Stack
-      direction="row"
-      justifyContent="center"
-      alignItems="center"
-      sx={{
-        minHeight: '100vh',
-        background: 'linear-gradient(180deg, #f5f7fa 0%, #e4e7eb 100%)', // Subtle gradient background
-      }}
-    >
-      <Card
-        elevation={0}
-        sx={{
-          maxWidth: 450,
-          width: '100%',
-          margin: '1.5rem',
-          padding: '2.5rem',
-          borderRadius: '8px',
-          backgroundColor: '#ffffff',
-        }}
-      >
-        <Stack spacing={2} alignItems="center">
-          <ErrorOutlineIcon sx={{ fontSize: 48, color: 'error.main' }} />
-          <Typography
-            variant="h5"
-            component="h1"
-            fontWeight="bold"
-            color="text.primary"
-            textAlign="center"
+    <ErrorContainer>
+      <Box sx={{ maxWidth: 480, width: '100%' }}>
+        <Typography
+          variant="h5"
+          sx={{
+            fontWeight: 600,
+            color: 'text.primary',
+          }}
+        >
+          Something Went Wrong
+        </Typography>
+
+        <Typography
+          variant="body1"
+          sx={{
+            mt: 1.5,
+            color: 'text.secondary',
+            lineHeight: 1.6,
+            maxWidth: 400,
+          }}
+        >
+          {errorMessage ||
+            'We encountered an issue. Please try again later or contact support if the problem persists.'}
+        </Typography>
+
+        <Stack direction="row" spacing={2} sx={{ mt: 4 }}>
+          <Button
+            variant="contained"
+            color="secondary"
+            onClick={() => window.location.reload()}
+            startIcon={<RefreshIcon />}
           >
-            Something Went Wrong
-          </Typography>
-          <Typography
-            variant="body1"
-            color="text.secondary"
-            textAlign="center"
-            sx={{ lineHeight: 1.6 }}
-          >
-            {errorMessage ||
-              'We encountered an issue. Please try again later or contact support if the problem persists.'}
-          </Typography>
-          <Box sx={{ mt: 2 }}>
-            <Button
-              variant="contained"
-              color="primary"
-              onClick={() => window.location.reload()}
-              sx={{
-                textTransform: 'none',
-                padding: '0.5rem 2rem',
-                borderRadius: '8px',
-              }}
-            >
-              Try Again
-            </Button>
-          </Box>
+            Try Again
+          </Button>
         </Stack>
-      </Card>
-    </Stack>
+      </Box>
+    </ErrorContainer>
   );
 }
 

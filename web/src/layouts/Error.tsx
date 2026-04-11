@@ -1,28 +1,13 @@
-import React from 'react';
-import { Box } from '@mui/material';
-import { alpha, useTheme } from '@mui/material/styles';
+import type React from 'react';
 import { Outlet } from 'react-router-dom';
 
-const ErrorLayout: React.FC = () => {
-  const theme = useTheme();
-  const isDark = theme.palette.mode === 'dark';
+import ErrorContainer from '@/components/ErrorContainer';
 
+const ErrorLayout: React.FC = () => {
   return (
-    <Box
-      sx={{
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'center',
-        alignItems: 'center',
-        minHeight: '100vh',
-        px: 3,
-        background: isDark
-          ? `linear-gradient(135deg, ${alpha(theme.palette.primary.dark, 0.15)} 0%, ${theme.palette.background.default} 50%)`
-          : `linear-gradient(135deg, ${alpha(theme.palette.primary.light, 0.4)} 0%, ${theme.palette.background.default} 50%)`,
-      }}
-    >
+    <ErrorContainer>
       <Outlet />
-    </Box>
+    </ErrorContainer>
   );
 };
 
