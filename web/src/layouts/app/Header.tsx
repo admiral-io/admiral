@@ -2,19 +2,26 @@ import React, { useState } from 'react';
 import {
   Box,
   Avatar,
-  Menu,
+  Divider,
   IconButton,
-  Typography,
-  ToggleButtonGroup,
-  ToggleButton,
+  ListItemIcon,
+  ListItemText,
+  Menu,
+  MenuItem,
   Stack,
+  ToggleButton,
+  ToggleButtonGroup,
+  Typography,
   useTheme,
 } from '@mui/material';
 import { alpha } from '@mui/material/styles';
 import DarkModeIcon from '@mui/icons-material/DarkMode';
+import KeyOutlinedIcon from '@mui/icons-material/KeyOutlined';
 import LightModeIcon from '@mui/icons-material/LightMode';
+import PersonOutlineIcon from '@mui/icons-material/PersonOutline';
 import SettingsBrightnessIcon from '@mui/icons-material/SettingsBrightness';
 import { useSelector, useDispatch } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
 
 import type { RootState } from '@/store';
 import { type ThemeMode, setThemeMode } from '@/store/slices/user';
@@ -28,7 +35,7 @@ const ThemeSelector = ({
   onChange: (event: React.MouseEvent<HTMLElement>, value: ThemeMode | null) => void;
 }) => (
   <Box sx={{ px: 1, py: 0.5 }}>
-    <Typography variant="subtitle1" sx={{ mb: 1, fontWeight: 'bold' }}>
+    <Typography variant="caption" color="text.secondary" sx={{ mb: 0.5, display: 'block' }}>
       Theme
     </Typography>
     <ToggleButtonGroup
@@ -38,24 +45,23 @@ const ThemeSelector = ({
       aria-label="theme mode"
       size="small"
       fullWidth
-      sx={{ mb: 1 }}
     >
       <ToggleButton value="light" aria-label="light mode">
-        <Stack direction="row" spacing={1} alignItems="center">
-          <LightModeIcon fontSize="small" />
-          <Typography variant="body2">Light</Typography>
+        <Stack direction="row" spacing={0.5} alignItems="center">
+          <LightModeIcon sx={{ fontSize: 16 }} />
+          <Typography variant="caption">Light</Typography>
         </Stack>
       </ToggleButton>
       <ToggleButton value="dark" aria-label="dark mode">
-        <Stack direction="row" spacing={1} alignItems="center">
-          <DarkModeIcon fontSize="small" />
-          <Typography variant="body2">Dark</Typography>
+        <Stack direction="row" spacing={0.5} alignItems="center">
+          <DarkModeIcon sx={{ fontSize: 16 }} />
+          <Typography variant="caption">Dark</Typography>
         </Stack>
       </ToggleButton>
       <ToggleButton value="system" aria-label="system mode">
-        <Stack direction="row" spacing={1} alignItems="center">
-          <SettingsBrightnessIcon fontSize="small" />
-          <Typography variant="body2">Auto</Typography>
+        <Stack direction="row" spacing={0.5} alignItems="center">
+          <SettingsBrightnessIcon sx={{ fontSize: 16 }} />
+          <Typography variant="caption">Auto</Typography>
         </Stack>
       </ToggleButton>
     </ToggleButtonGroup>
@@ -65,6 +71,7 @@ const ThemeSelector = ({
 const Header: React.FC = () => {
   const theme = useTheme();
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const { display_name, avatar_url, email } = useSelector((s: RootState) => s.user);
   const themeMode = useSelector((s: RootState) => s.user.preferences.themeMode);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
@@ -77,6 +84,11 @@ const Header: React.FC = () => {
     if (newTheme !== null) {
       dispatch(setThemeMode(newTheme));
     }
+  };
+
+  const navigateTo = (path: string) => {
+    handleMenuClose();
+    navigate(path);
   };
 
   return (
@@ -102,13 +114,12 @@ const Header: React.FC = () => {
       <IconButton
         onClick={handleMenuOpen}
         size="small"
+        aria-label="Account menu"
         sx={{
           transition: 'all 0.2s ease-in-out',
-          '&:hover': {
-            transform: 'scale(1.05)',
-          },
-          p: 1, // Use equal padding on all sides for circular shape
-          borderRadius: '50%', // Ensure the hover effect is circular
+          '&:hover': { transform: 'scale(1.05)' },
+          p: 1,
+          borderRadius: '50%',
         }}
       >
         <Avatar
@@ -134,9 +145,12 @@ const Header: React.FC = () => {
             elevation: 0,
             sx: {
               borderRadius: 1.5,
-              minWidth: 220,
+              minWidth: 260,
               backgroundColor: 'background.paper',
-              p: 1,
+              border: `1px solid ${theme.palette.divider}`,
+              p: 0,
+              overflow: 'visible',
+              mt: 0.5,
             },
           },
         }}
@@ -144,7 +158,45 @@ const Header: React.FC = () => {
         transformOrigin={{ vertical: 'top', horizontal: 'right' }}
         disableAutoFocusItem
       >
-        <ThemeSelector value={themeMode} onChange={handleThemeChange} />
+        <Box sx={{ px: 2, py: 1.5 }}>
+          <Stack direction="row" spacing={1.5} alignItems="center">
+            <Avatar
+              alt={display_name || email}
+              src={getValidPictureUrl(avatar_url)}
+              sx={{ width: 40, height: 40 }}
+            >
+              {getAvatarInitial(display_name, email)}
+            </Avatar>
+            <Box sx={{ minWidth: 0 }}>
+              <Typography variant="subtitle2" noWrap>
+                {display_name || 'User'}
+              </Typography>
+              <Typography variant="caption" color="text.secondary" noWrap sx={{ display: 'block' }}>
+                {email}
+              </Typography>
+            </Box>
+          </Stack>
+        </Box>
+
+        <Divider />
+
+        <Box sx={{ py: 0.5 }}>
+          <MenuItem onClick={() => navigateTo('/user/profile')}>
+            <ListItemIcon><PersonOutlineIcon fontSize="small" /></ListItemIcon>
+            <ListItemText>Profile</ListItemText>
+          </MenuItem>
+          <MenuItem onClick={() => navigateTo('/user/tokens')}>
+            <ListItemIcon><KeyOutlinedIcon fontSize="small" /></ListItemIcon>
+            <ListItemText>Personal Access Tokens</ListItemText>
+          </MenuItem>
+        </Box>
+
+        <Divider />
+
+        <Box sx={{ p: 1 }}>
+          <ThemeSelector value={themeMode} onChange={handleThemeChange} />
+        </Box>
+
       </Menu>
     </Box>
   );

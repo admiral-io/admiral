@@ -465,7 +465,7 @@
       "email": "michael.scott@admiral.test",
       "emailVerified": true,
       "attributes": {
-        "picture": ["https://avatar.iran.liara.run/public/45"]
+        "picture": ["https://assets.admiral.io/avatar/placeholder/michael-scott.jpeg"]
       },
       "createdTimestamp": 1710457887327,
       "enabled": true,
@@ -494,7 +494,7 @@
       "email": "dwight.schrute@admiral.test",
       "emailVerified": true,
       "attributes": {
-        "picture": ["https://avatar.iran.liara.run/public/42"]
+        "picture": ["https://assets.admiral.io/avatar/placeholder/dwight-schrute.jpeg"]
       },
       "createdTimestamp": 1710457824381,
       "enabled": true,

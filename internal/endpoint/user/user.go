@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/lib/pq"
 	"github.com/uber-go/tally/v4"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
@@ -208,7 +209,7 @@ func (a *api) UpdatePersonalAccessToken(ctx context.Context, req *userv1.UpdateP
 		if err := authn.ValidateScopes(req.GetScopes()); err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, "invalid scopes: %v", err)
 		}
-		updates["scopes"] = req.GetScopes()
+		updates["scopes"] = pq.StringArray(req.GetScopes())
 	}
 
 	if len(updates) == 0 {

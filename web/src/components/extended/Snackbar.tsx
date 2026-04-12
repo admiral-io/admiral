@@ -90,6 +90,11 @@ const Snackbar = () => {
             ...(alert.variant === 'outlined' && {
               bgcolor: 'background.paper',
             }),
+            ...(alert.variant === 'filled' && {
+              color: '#fff',
+              '& .MuiAlert-icon': { color: '#fff' },
+              '& .MuiAlert-action': { color: '#fff' },
+            }),
           }}
         >
           {message}
