@@ -51,7 +51,7 @@
     "sass-embedded": "^1.99.0",
     "sort-package-json": "^3.4.0",
     "typescript": "~6.0.2",
-    "typescript-eslint": "^8.57.0",
+    "typescript-eslint": "^8.58.1",
     "vite": "^8.0.5",
     "vitest": "^4.1.3"
   }
