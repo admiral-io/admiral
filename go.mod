@@ -4,7 +4,7 @@ go 1.26.1
 
 require (
 	buf.build/go/protovalidate v1.1.3
-	cloud.google.com/go/storage v1.62.0
+	cloud.google.com/go/storage v1.62.1
 	github.com/alexedwards/scs/gormstore v0.0.0-20251002162104-209de6e426de
 	github.com/alexedwards/scs/v2 v2.9.0
 	github.com/aws/aws-sdk-go-v2 v1.41.5
