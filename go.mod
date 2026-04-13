@@ -29,7 +29,7 @@ require (
 	github.com/uber-go/tally/v4 v4.1.17
 	go.admiral.io/sdk v1.0.3
 	go.uber.org/zap v1.27.1
-	golang.org/x/net v0.52.0
+	golang.org/x/net v0.53.0
 	golang.org/x/oauth2 v0.36.0
 	google.golang.org/api v0.275.0
 	google.golang.org/grpc v1.80.0
