@@ -22,7 +22,7 @@
     "@emotion/styled": "^11.14.1",
     "@fontsource-variable/geist": "^5.2.8",
     "@fontsource-variable/geist-mono": "^5.2.7",
-    "@mui/icons-material": "^7.3.9",
+    "@mui/icons-material": "^9.0.0",
     "@mui/material": "^7.3.9",
     "@reduxjs/toolkit": "^2.11.2",
     "openapi-fetch": "^0.17.0",
