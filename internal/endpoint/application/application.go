@@ -74,7 +74,6 @@ func (a *api) CreateApplication(ctx context.Context, req *applicationv1.CreateAp
 		Description: description,
 		Labels:      model.Labels(req.GetLabels()),
 		CreatedBy:   claims.Subject,
-		UpdatedBy:   claims.Subject,
 	}
 
 	app, err = a.store.Create(ctx, app)
@@ -130,8 +129,7 @@ func (a *api) ListApplications(ctx context.Context, req *applicationv1.ListAppli
 }
 
 func (a *api) UpdateApplication(ctx context.Context, req *applicationv1.UpdateApplicationRequest) (*applicationv1.UpdateApplicationResponse, error) {
-	claims, err := authn.ClaimsFromContext(ctx)
-	if err != nil {
+	if _, err := authn.ClaimsFromContext(ctx); err != nil {
 		return nil, status.Error(codes.Unauthenticated, "authentication required")
 	}
 
@@ -151,7 +149,6 @@ func (a *api) UpdateApplication(ctx context.Context, req *applicationv1.UpdateAp
 	}
 
 	fields := map[string]any{
-		"updated_by": claims.Subject,
 		"updated_at": time.Now(),
 	}
 

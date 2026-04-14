@@ -9,7 +9,6 @@ CREATE TABLE IF NOT EXISTS environments (
     has_pending_changes BOOLEAN NOT NULL DEFAULT FALSE,
     last_deployed_at TIMESTAMP WITH TIME ZONE,
     created_by TEXT NOT NULL,
-    updated_by TEXT NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
     deleted_at TIMESTAMP WITH TIME ZONE

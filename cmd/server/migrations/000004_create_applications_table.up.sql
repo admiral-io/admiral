@@ -4,7 +4,6 @@ CREATE TABLE IF NOT EXISTS applications (
     description TEXT NOT NULL DEFAULT '',
     labels JSONB NOT NULL DEFAULT '{}',
     created_by TEXT NOT NULL,
-    updated_by TEXT NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
     deleted_at TIMESTAMP WITH TIME ZONE

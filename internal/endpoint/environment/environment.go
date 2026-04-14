@@ -72,7 +72,6 @@ func (a *api) CreateEnvironment(ctx context.Context, req *environmentv1.CreateEn
 		InfrastructureTargets: model.InfrastructureTargetsFromProto(req.GetInfrastructureTargets()),
 		Labels:                model.Labels(req.GetLabels()),
 		CreatedBy:             claims.Subject,
-		UpdatedBy:             claims.Subject,
 	}
 
 	env, err = a.store.Create(ctx, env)
@@ -128,8 +127,7 @@ func (a *api) ListEnvironments(ctx context.Context, req *environmentv1.ListEnvir
 }
 
 func (a *api) UpdateEnvironment(ctx context.Context, req *environmentv1.UpdateEnvironmentRequest) (*environmentv1.UpdateEnvironmentResponse, error) {
-	claims, err := authn.ClaimsFromContext(ctx)
-	if err != nil {
+	if _, err := authn.ClaimsFromContext(ctx); err != nil {
 		return nil, status.Error(codes.Unauthenticated, "authentication required")
 	}
 
@@ -149,7 +147,6 @@ func (a *api) UpdateEnvironment(ctx context.Context, req *environmentv1.UpdateEn
 	}
 
 	fields := map[string]any{
-		"updated_by": claims.Subject,
 		"updated_at": time.Now(),
 	}
 

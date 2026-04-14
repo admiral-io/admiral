@@ -100,7 +100,6 @@ type Environment struct {
 	HasPendingChanges     bool                  `gorm:"not null;default:false"`
 	LastDeployedAt        *time.Time            `gorm:"type:timestamptz"`
 	CreatedBy             string                `gorm:"not null"`
-	UpdatedBy             string                `gorm:"not null"`
 	CreatedAt             time.Time
 	UpdatedAt             time.Time
 	DeletedAt             gorm.DeletedAt `gorm:"index"`
@@ -115,7 +114,6 @@ func (env *Environment) ToProto() *environmentv1.Environment {
 		Labels:            map[string]string(env.Labels),
 		HasPendingChanges: env.HasPendingChanges,
 		CreatedBy:         &commonv1.ActorRef{Id: env.CreatedBy},
-		UpdatedBy:         &commonv1.ActorRef{Id: env.UpdatedBy},
 		CreatedAt:         timestamppb.New(env.CreatedAt),
 		UpdatedAt:         timestamppb.New(env.UpdatedAt),
 	}

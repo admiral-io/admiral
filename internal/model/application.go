@@ -17,7 +17,6 @@ type Application struct {
 	Description string    `gorm:"type:text"`
 	Labels      Labels    `gorm:"type:jsonb;default:'{}'"`
 	CreatedBy   string    `gorm:"not null"`
-	UpdatedBy   string    `gorm:"not null"`
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
 	DeletedAt   gorm.DeletedAt `gorm:"index"`
@@ -31,9 +30,6 @@ func (app *Application) ToProto() *applicationv1.Application {
 		Labels:      map[string]string(app.Labels),
 		CreatedBy: &commonv1.ActorRef{
 			Id: app.CreatedBy,
-		},
-		UpdatedBy: &commonv1.ActorRef{
-			Id: app.UpdatedBy,
 		},
 		CreatedAt: timestamppb.New(app.CreatedAt),
 		UpdatedAt: timestamppb.New(app.UpdatedAt),

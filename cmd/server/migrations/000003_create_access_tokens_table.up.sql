@@ -1,12 +1,9 @@
-CREATE TYPE access_token_kind AS ENUM ('pat', 'sat', 'session');
-CREATE TYPE access_token_status AS ENUM ('active', 'revoked');
-
 CREATE TABLE IF NOT EXISTS access_tokens (
     id                TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
     name              TEXT NOT NULL DEFAULT '',
     subject           TEXT NOT NULL,
-    kind              access_token_kind NOT NULL,
-    status            access_token_status NOT NULL DEFAULT 'active',
+    kind              TEXT NOT NULL CHECK (kind IN ('pat', 'sat', 'session')),
+    status            TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'revoked')),
     token_hash        BYTEA NOT NULL,
     token_prefix      TEXT NOT NULL,
     scopes            TEXT[] NOT NULL DEFAULT '{}',
