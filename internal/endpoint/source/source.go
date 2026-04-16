@@ -33,6 +33,7 @@ var filterColumns = []string{"name", "type", "catalog"}
 type api struct {
 	store     *store.SourceStore
 	credStore *store.CredentialStore
+	modStore  *store.ModuleStore
 	qb        querybuilder.QueryBuilder
 	logger    *zap.Logger
 	scope     tally.Scope
@@ -54,9 +55,15 @@ func New(_ *config.Config, log *zap.Logger, scope tally.Scope) (endpoint.Endpoin
 		return nil, err
 	}
 
+	modStore, err := store.NewModuleStore(db.GormDB())
+	if err != nil {
+		return nil, err
+	}
+
 	return &api{
 		store:     srcStore,
 		credStore: credStore,
+		modStore:  modStore,
 		logger:    log.Named(Name),
 		scope:     scope.SubScope("source"),
 		qb:        querybuilder.New(filterColumns),
@@ -225,6 +232,15 @@ func (a *api) DeleteSource(ctx context.Context, req *sourcev1.DeleteSourceReques
 	id, err := uuid.Parse(req.GetSourceId())
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "invalid source ID: %v", err)
+	}
+
+	refCount, err := a.modStore.CountBySourceID(ctx, id)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to check source references: %v", err)
+	}
+	if refCount > 0 {
+		return nil, status.Errorf(codes.FailedPrecondition,
+			"source is in use by %d module(s); delete or reassign them before deleting this source", refCount)
 	}
 
 	if err := a.store.Delete(ctx, id); err != nil {

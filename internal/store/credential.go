@@ -105,4 +105,3 @@ func (s *CredentialStore) Delete(ctx context.Context, id uuid.UUID) error {
 
 	return nil
 }
-

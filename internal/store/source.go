@@ -25,6 +25,10 @@ func NewSourceStore(db *gorm.DB) (*SourceStore, error) {
 	return &SourceStore{db: db}, nil
 }
 
+func (s *SourceStore) DB() *gorm.DB {
+	return s.db
+}
+
 func (s *SourceStore) Create(ctx context.Context, src *model.Source) (*model.Source, error) {
 	if err := src.SourceConfig.Validate(src.Type); err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrInvalidSourceConfig, err)
@@ -97,10 +101,6 @@ func (s *SourceStore) Delete(ctx context.Context, id uuid.UUID) error {
 	}
 
 	return nil
-}
-
-func (s *SourceStore) DB() *gorm.DB {
-	return s.db
 }
 
 // CountByCredentialID returns the number of non-deleted Sources that reference the given credential.
