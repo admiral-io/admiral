@@ -2,6 +2,7 @@ package endpoint
 
 import (
 	"context"
+	"net/http"
 
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/uber-go/tally/v4"
@@ -16,6 +17,7 @@ type GatewayRegisterAPIEndpointFunc func(ctx context.Context, mux *runtime.Serve
 type Registrar interface {
 	GRPCServer() *grpc.Server
 	RegisterJSONGateway(GatewayRegisterAPIEndpointFunc) error
+	HTTPMux() *http.ServeMux
 }
 
 type Endpoint interface {

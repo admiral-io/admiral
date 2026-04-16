@@ -145,7 +145,7 @@ func Run(cfg *config.Config, cf *ComponentFactory, assets http.FileSystem) error
 	}()
 
 	// Wire up the registrar so endpoints can bind to both gRPC and JSON gateway.
-	reg := newRegistrar(ctx, rpcMux.JSONGateway, rpcMux.GRPCServer, conn)
+	reg := newRegistrar(ctx, rpcMux.GRPCServer, conn, rpcMux.JSONGateway, rpcMux.RawHTTPMux)
 
 	// Instantiate and register endpoints.
 	for name, factory := range cf.Endpoints {

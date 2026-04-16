@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -79,4 +80,37 @@ func (s *JobStore) Update(ctx context.Context, j *model.Job, fields map[string]a
 		return nil, fmt.Errorf("job not found: %s", j.Id)
 	}
 	return s.Get(ctx, j.Id)
+}
+
+func (s *JobStore) ClaimNextJob(ctx context.Context, runnerID uuid.UUID, instanceID *uuid.UUID) (*model.Job, error) {
+	var j model.Job
+	now := time.Now()
+	const sql = `
+		UPDATE jobs
+		SET status = ?,
+		    claimed_at = ?,
+		    claimed_by_instance_id = ?,
+		    started_at = ?
+		WHERE id = (
+		    SELECT id FROM jobs
+		    WHERE runner_id = ? AND status = ?
+		    ORDER BY created_at ASC
+		    LIMIT 1
+		    FOR UPDATE SKIP LOCKED
+		)
+		RETURNING *
+	`
+	err := s.db.WithContext(ctx).
+		Raw(sql,
+			model.JobStatusRunning, now, instanceID, now,
+			runnerID, model.JobStatusAssigned,
+		).
+		Scan(&j).Error
+	if err != nil {
+		return nil, fmt.Errorf("failed to claim next job: %w", err)
+	}
+	if j.Id == uuid.Nil {
+		return nil, nil
+	}
+	return &j, nil
 }

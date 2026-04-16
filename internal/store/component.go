@@ -55,9 +55,12 @@ func (s *ComponentStore) List(ctx context.Context, scopes ...func(*gorm.DB) *gor
 	return cs, nil
 }
 
-func (s *ComponentStore) ListByApplicationID(ctx context.Context, appID uuid.UUID) ([]model.Component, error) {
+func (s *ComponentStore) ListByApplicationID(ctx context.Context, appID uuid.UUID, scopes ...func(*gorm.DB) *gorm.DB) ([]model.Component, error) {
 	var cs []model.Component
-	err := s.db.WithContext(ctx).Where("application_id = ?", appID).Find(&cs).Error
+	err := s.db.WithContext(ctx).
+		Where("application_id = ?", appID).
+		Scopes(scopes...).
+		Find(&cs).Error
 	if err != nil {
 		return nil, fmt.Errorf("failed to list components by application: %w", err)
 	}
@@ -110,7 +113,6 @@ func (s *ComponentStore) CountByApplicationID(ctx context.Context, appID uuid.UU
 	return count, nil
 }
 
-// ComponentOverrideStore manages environment-level overrides for components.
 type ComponentOverrideStore struct {
 	db *gorm.DB
 }

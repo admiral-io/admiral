@@ -37,6 +37,7 @@ type Mux struct {
 	JSONGateway *runtime.ServeMux
 	GRPCServer  *grpc.Server
 	HTTPMux     http.Handler
+	RawHTTPMux  *http.ServeMux
 }
 
 type Route struct {
@@ -87,6 +88,7 @@ func New(unaryInterceptors []grpc.UnaryServerInterceptor, assets http.FileSystem
 		JSONGateway: jsonGateway,
 		GRPCServer:  grpcServer,
 		HTTPMux:     sessionService.HTTPMiddleware()(httpMux),
+		RawHTTPMux:  httpMux,
 	}
 	return mux, nil
 }
