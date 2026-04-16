@@ -80,7 +80,7 @@ func (a *api) CreateSource(ctx context.Context, req *sourcev1.CreateSourceReques
 		Type:         model.SourceTypeFromProto(req.GetType()),
 		URL:          req.GetUrl(),
 		Catalog:      req.GetCatalog(),
-		SourceConfig: model.SourceConfigFromCreateRequest(req),
+		SourceConfig: model.SourceConfigFromProto(req.GetSourceConfig()),
 		Labels:       model.Labels(req.GetLabels()),
 		CreatedBy:    claims.Subject,
 	}
@@ -188,7 +188,7 @@ func (a *api) UpdateSource(ctx context.Context, req *sourcev1.UpdateSourceReques
 		case "catalog":
 			fields["catalog"] = srcProto.GetCatalog()
 		case "source_config":
-			fields["source_config"] = model.SourceConfigFromProto(srcProto)
+			fields["source_config"] = model.SourceConfigFromProto(srcProto.GetSourceConfig())
 		case "labels":
 			fields["labels"] = model.Labels(srcProto.GetLabels())
 		case "credential_id":
@@ -245,7 +245,7 @@ func (a *api) TestSource(ctx context.Context, req *sourcev1.TestSourceRequest) (
 		return nil, status.Errorf(codes.NotFound, "source not found: %s", id)
 	}
 
-	d, err := backend.For(src.Type)
+	b, err := backend.For(src.Type)
 	if err != nil {
 		return nil, status.Errorf(codes.Unimplemented, "no backend registered for source type %s", src.Type)
 	}
@@ -258,7 +258,7 @@ func (a *api) TestSource(ctx context.Context, req *sourcev1.TestSourceRequest) (
 		}
 	}
 
-	testErr := d.Probe(ctx, cred, src)
+	testErr := b.Probe(ctx, cred, src)
 
 	statusStr := model.SourceTestStatusSuccess
 	errMsg := ""
@@ -301,7 +301,7 @@ func (a *api) ListSourceVersions(ctx context.Context, req *sourcev1.ListSourceVe
 		return nil, status.Errorf(codes.NotFound, "source not found: %s", id)
 	}
 
-	d, err := backend.For(src.Type)
+	b, err := backend.For(src.Type)
 	if err != nil {
 		return nil, status.Errorf(codes.Unimplemented, "no backend registered for source type %s", src.Type)
 	}
@@ -314,7 +314,7 @@ func (a *api) ListSourceVersions(ctx context.Context, req *sourcev1.ListSourceVe
 		}
 	}
 
-	versions, err := d.ListVersions(ctx, cred, src)
+	versions, err := b.ListVersions(ctx, cred, src)
 	if err != nil {
 		if errors.Is(err, backend.ErrOperationNotSupported) {
 			return nil, status.Errorf(codes.Unimplemented, "ListSourceVersions not yet supported for source type %s", src.Type)

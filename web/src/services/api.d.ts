@@ -4569,6 +4569,22 @@ export interface components {
             connection?: components["schemas"]["admiral.connection.v1.Connection"];
         };
         /**
+         * AuthConfig
+         * @description AuthConfig is the polymorphic auth configuration attached to a Credential.
+         *      Exactly one variant is populated, corresponding to the credential's type.
+         *      Sensitive fields within each variant are write-only.
+         */
+        "admiral.credential.v1.AuthConfig": {
+            /** basic_auth */
+            basic_auth: components["schemas"]["admiral.credential.v1.BasicAuth"];
+        } | {
+            /** bearer_token */
+            bearer_token: components["schemas"]["admiral.credential.v1.BearerTokenAuth"];
+        } | {
+            /** ssh_key */
+            ssh_key: components["schemas"]["admiral.credential.v1.SSHKeyAuth"];
+        };
+        /**
          * BasicAuth
          * @description BasicAuth holds HTTP Basic credentials (username + password). Reused across
          *      any Source type that accepts HTTP Basic (Helm, OCI, HTTP archive, Git
@@ -4626,22 +4642,18 @@ export interface components {
              */
             type?: components["schemas"]["admiral.credential.v1.CredentialType"];
             /**
+             * auth_config
+             * @description Auth material corresponding to `type`.
+             */
+            auth_config?: components["schemas"]["admiral.credential.v1.AuthConfig"];
+            /**
              * labels
              * @description Arbitrary key-value labels for organizing and filtering credentials.
              */
             labels?: {
                 [key: string]: string;
             };
-        } & ({
-            /** basic_auth */
-            basic_auth: components["schemas"]["admiral.credential.v1.BasicAuth"];
-        } | {
-            /** bearer_token */
-            bearer_token: components["schemas"]["admiral.credential.v1.BearerTokenAuth"];
-        } | {
-            /** ssh_key */
-            ssh_key: components["schemas"]["admiral.credential.v1.SSHKeyAuth"];
-        });
+        };
         /** LabelsEntry */
         "admiral.credential.v1.CreateCredentialRequest.LabelsEntry": {
             /** key */
@@ -4695,6 +4707,12 @@ export interface components {
              */
             type?: components["schemas"]["admiral.credential.v1.CredentialType"];
             /**
+             * auth_config
+             * @description Auth material corresponding to `type`. Sensitive fields are write-only
+             *      and masked in responses.
+             */
+            auth_config?: components["schemas"]["admiral.credential.v1.AuthConfig"];
+            /**
              * labels
              * @description Arbitrary key-value labels for organizing and filtering credentials
              *      (e.g., `{"team": "platform", "environment": "prod"}`).
@@ -4717,16 +4735,7 @@ export interface components {
              * @description When the credential was last updated.
              */
             updated_at?: components["schemas"]["google.protobuf.Timestamp"];
-        } & ({
-            /** basic_auth */
-            basic_auth: components["schemas"]["admiral.credential.v1.BasicAuth"];
-        } | {
-            /** bearer_token */
-            bearer_token: components["schemas"]["admiral.credential.v1.BearerTokenAuth"];
-        } | {
-            /** ssh_key */
-            ssh_key: components["schemas"]["admiral.credential.v1.SSHKeyAuth"];
-        });
+        };
         /** LabelsEntry */
         "admiral.credential.v1.Credential.LabelsEntry": {
             /** key */
@@ -6751,19 +6760,19 @@ export interface components {
              */
             catalog?: boolean;
             /**
+             * source_config
+             * @description Type-specific configuration. Only required for TERRAFORM and HELM;
+             *      omit for GIT, OCI, HTTP.
+             */
+            source_config?: components["schemas"]["admiral.source.v1.SourceConfig"];
+            /**
              * labels
              * @description Arbitrary key-value labels.
              */
             labels?: {
                 [key: string]: string;
             };
-        } & ({
-            /** helm */
-            helm: components["schemas"]["admiral.source.v1.HelmConfig"];
-        } | {
-            /** terraform */
-            terraform: components["schemas"]["admiral.source.v1.TerraformConfig"];
-        });
+        };
         /** LabelsEntry */
         "admiral.source.v1.CreateSourceRequest.LabelsEntry": {
             /** key */
@@ -7001,6 +7010,14 @@ export interface components {
              */
             catalog?: boolean;
             /**
+             * source_config
+             * @description Type-specific configuration. Only set for source types whose location is
+             *      not fully expressed by `url` alone (currently TERRAFORM and HELM, which
+             *      both host multiple artifacts and need a selector). Other source types
+             *      (GIT, OCI, HTTP) carry all location information in `url`.
+             */
+            source_config?: components["schemas"]["admiral.source.v1.SourceConfig"];
+            /**
              * labels
              * @description Arbitrary key-value labels for organizing and filtering sources
              *      (e.g., `{"team": "platform", "category": "database"}`).
@@ -7042,7 +7059,22 @@ export interface components {
              * @description When the source was last updated.
              */
             updated_at?: components["schemas"]["google.protobuf.Timestamp"];
-        } & ({
+        };
+        /** LabelsEntry */
+        "admiral.source.v1.Source.LabelsEntry": {
+            /** key */
+            key?: string;
+            /** value */
+            value?: string;
+        };
+        /**
+         * SourceConfig
+         * @description SourceConfig is the type-specific configuration attached to a Source. Only
+         *      source types whose location is not fully expressed by `url` alone (TERRAFORM,
+         *      HELM) populate a variant. Source types whose URL is self-contained (GIT, OCI,
+         *      HTTP) leave this message unset.
+         */
+        "admiral.source.v1.SourceConfig": {
             /**
              * helm
              * @description Helm HTTP repository config (for SOURCE_TYPE_HELM).
@@ -7054,13 +7086,6 @@ export interface components {
              * @description Terraform Registry Protocol config (for SOURCE_TYPE_TERRAFORM).
              */
             terraform: components["schemas"]["admiral.source.v1.TerraformConfig"];
-        });
-        /** LabelsEntry */
-        "admiral.source.v1.Source.LabelsEntry": {
-            /** key */
-            key?: string;
-            /** value */
-            value?: string;
         };
         /**
          * SourceTestStatus

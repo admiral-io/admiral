@@ -14,101 +14,80 @@ import (
 	sourcev1 "go.admiral.io/sdk/proto/admiral/source/v1"
 )
 
-// Source config discriminators stored in the JSONB "type" field.
 const (
-	SourceConfigTypeTerraformRegistry = "terraform_registry"
-	SourceConfigTypeTerraformGit      = "terraform_git"
-	SourceConfigTypeHelmRepository    = "helm_repository"
-	SourceConfigTypeHelmOCI           = "helm_oci"
-	SourceConfigTypeHelmGit           = "helm_git"
-	SourceConfigTypeKustomizeGit      = "kustomize_git"
-	SourceConfigTypeManifestGit       = "manifest_git"
-	SourceConfigTypeArchive           = "archive"
+	SourceConfigKindTerraform = "terraform"
+	SourceConfigKindHelm      = "helm"
 )
 
-// SourceType string constants matching the CHECK constraint values.
 const (
-	SourceTypeTerraformRegistry = "TERRAFORM_REGISTRY"
-	SourceTypeTerraformGit      = "TERRAFORM_GIT"
-	SourceTypeHelmRepository    = "HELM_REPOSITORY"
-	SourceTypeHelmOCI           = "HELM_OCI"
-	SourceTypeHelmGit           = "HELM_GIT"
-	SourceTypeKustomizeGit      = "KUSTOMIZE_GIT"
-	SourceTypeManifestGit       = "MANIFEST_GIT"
-	SourceTypeArchive           = "ARCHIVE"
+	SourceTypeGit       = "GIT"
+	SourceTypeTerraform = "TERRAFORM"
+	SourceTypeHelm      = "HELM"
+	SourceTypeOCI       = "OCI"
+	SourceTypeHTTP      = "HTTP"
 )
 
-// Source test status values matching the CHECK constraint. Null in the DB
-// represents "never tested" (proto SOURCE_TEST_STATUS_UNSPECIFIED).
 const (
 	SourceTestStatusSuccess = "SUCCESS"
 	SourceTestStatusFailure = "FAILURE"
 )
 
-type TerraformRegistryConfig struct {
+var sourceTypeToProto = map[string]sourcev1.SourceType{
+	SourceTypeGit:       sourcev1.SourceType_SOURCE_TYPE_GIT,
+	SourceTypeTerraform: sourcev1.SourceType_SOURCE_TYPE_TERRAFORM,
+	SourceTypeHelm:      sourcev1.SourceType_SOURCE_TYPE_HELM,
+	SourceTypeOCI:       sourcev1.SourceType_SOURCE_TYPE_OCI,
+	SourceTypeHTTP:      sourcev1.SourceType_SOURCE_TYPE_HTTP,
+}
+
+var sourceTypeFromProto = map[sourcev1.SourceType]string{
+	sourcev1.SourceType_SOURCE_TYPE_GIT:       SourceTypeGit,
+	sourcev1.SourceType_SOURCE_TYPE_TERRAFORM: SourceTypeTerraform,
+	sourcev1.SourceType_SOURCE_TYPE_HELM:      SourceTypeHelm,
+	sourcev1.SourceType_SOURCE_TYPE_OCI:       SourceTypeOCI,
+	sourcev1.SourceType_SOURCE_TYPE_HTTP:      SourceTypeHTTP,
+}
+
+var sourceTestStatusToProto = map[string]sourcev1.SourceTestStatus{
+	SourceTestStatusSuccess: sourcev1.SourceTestStatus_SOURCE_TEST_STATUS_SUCCESS,
+	SourceTestStatusFailure: sourcev1.SourceTestStatus_SOURCE_TEST_STATUS_FAILURE,
+}
+
+// SourceTypeFromProto returns the DB string for a proto SourceType, or "" if
+// the enum is unrecognized (callers Validate will surface the error).
+func SourceTypeFromProto(t sourcev1.SourceType) string {
+	return sourceTypeFromProto[t]
+}
+
+type TerraformConfig struct {
 	Namespace  string `json:"namespace"`
 	ModuleName string `json:"module_name"`
 	System     string `json:"system"`
 }
 
-type TerraformGitConfig struct {
-	Path       string `json:"path,omitempty"`
-	DefaultRef string `json:"default_ref,omitempty"`
-}
-
-type HelmRepositoryConfig struct {
+type HelmConfig struct {
 	ChartName string `json:"chart_name"`
 }
 
-type HelmOCIConfig struct {
-	Repository string `json:"repository"`
-}
-
-type HelmGitConfig struct {
-	Path       string `json:"path"`
-	DefaultRef string `json:"default_ref,omitempty"`
-}
-
-type KustomizeGitConfig struct {
-	Path       string `json:"path"`
-	DefaultRef string `json:"default_ref,omitempty"`
-}
-
-type ManifestGitConfig struct {
-	Path       string `json:"path"`
-	Recursive  bool   `json:"recursive,omitempty"`
-	DefaultRef string `json:"default_ref,omitempty"`
-}
-
-type ArchiveConfig struct {
-	Path     string `json:"path,omitempty"`
-	Checksum string `json:"checksum,omitempty"`
-}
-
 // SourceConfig is the JSONB-backed polymorphic per-type configuration.
-// The Type field is the discriminator; exactly one of the pointer fields is
-// non-nil when populated.
+// Kind is the discriminator; exactly one of the pointer fields is non-nil
+// when populated. Source types whose location is fully expressed by `url`
+// (GIT, OCI, HTTP) leave this empty.
 type SourceConfig struct {
-	Type               string                   `json:"type,omitempty"`
-	TerraformRegistry  *TerraformRegistryConfig `json:"terraform_registry,omitempty"`
-	TerraformGit       *TerraformGitConfig      `json:"terraform_git,omitempty"`
-	HelmRepository     *HelmRepositoryConfig    `json:"helm_repository,omitempty"`
-	HelmOCI            *HelmOCIConfig           `json:"helm_oci,omitempty"`
-	HelmGit            *HelmGitConfig           `json:"helm_git,omitempty"`
-	KustomizeGit       *KustomizeGitConfig      `json:"kustomize_git,omitempty"`
-	ManifestGit        *ManifestGitConfig       `json:"manifest_git,omitempty"`
-	Archive            *ArchiveConfig           `json:"archive,omitempty"`
+	Kind      string           `json:"type,omitempty"`
+	Terraform *TerraformConfig `json:"terraform,omitempty"`
+	Helm      *HelmConfig      `json:"helm,omitempty"`
 }
 
-func (s SourceConfig) Value() (driver.Value, error) {
-	b, err := json.Marshal(s)
+func (c SourceConfig) Value() (driver.Value, error) {
+	b, err := json.Marshal(c)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal source config: %w", err)
 	}
 	return string(b), nil
 }
 
-func (s *SourceConfig) Scan(value any) error {
+func (c *SourceConfig) Scan(value any) error {
 	if value == nil {
 		return nil
 	}
@@ -121,54 +100,109 @@ func (s *SourceConfig) Scan(value any) error {
 	default:
 		return fmt.Errorf("unsupported type for SourceConfig: %T", value)
 	}
-	return json.Unmarshal(bytes, s)
+	return json.Unmarshal(bytes, c)
 }
 
-// Source represents a registered pointer to an external artifact location.
-// Sources carry the URL and (optionally) reference a Credential for auth.
+func (c SourceConfig) Validate(sourceType string) error {
+	switch sourceType {
+	case SourceTypeGit, SourceTypeOCI, SourceTypeHTTP:
+		if c.Kind != "" || c.Terraform != nil || c.Helm != nil {
+			return fmt.Errorf("source type %s must not carry a source_config", sourceType)
+		}
+	case SourceTypeTerraform:
+		if c.Kind != SourceConfigKindTerraform || c.Terraform == nil {
+			return fmt.Errorf("source type %s requires terraform source_config", sourceType)
+		}
+		if c.Terraform.Namespace == "" || c.Terraform.ModuleName == "" || c.Terraform.System == "" {
+			return fmt.Errorf("terraform source_config requires non-empty namespace, module_name, and system")
+		}
+	case SourceTypeHelm:
+		if c.Kind != SourceConfigKindHelm || c.Helm == nil {
+			return fmt.Errorf("source type %s requires helm source_config", sourceType)
+		}
+		if c.Helm.ChartName == "" {
+			return fmt.Errorf("helm source_config requires a non-empty chart_name")
+		}
+	case "":
+		return fmt.Errorf("source type is required")
+	default:
+		return fmt.Errorf("unsupported source type: %s", sourceType)
+	}
+	return nil
+}
+
+func (c SourceConfig) ToProto() *sourcev1.SourceConfig {
+	switch c.Kind {
+	case SourceConfigKindTerraform:
+		if c.Terraform == nil {
+			return nil
+		}
+		return &sourcev1.SourceConfig{
+			Variant: &sourcev1.SourceConfig_Terraform{
+				Terraform: &sourcev1.TerraformConfig{
+					Namespace:  c.Terraform.Namespace,
+					ModuleName: c.Terraform.ModuleName,
+					System:     c.Terraform.System,
+				},
+			},
+		}
+	case SourceConfigKindHelm:
+		if c.Helm == nil {
+			return nil
+		}
+		return &sourcev1.SourceConfig{
+			Variant: &sourcev1.SourceConfig_Helm{
+				Helm: &sourcev1.HelmConfig{ChartName: c.Helm.ChartName},
+			},
+		}
+	}
+	return nil
+}
+
+func SourceConfigFromProto(p *sourcev1.SourceConfig) SourceConfig {
+	if p == nil {
+		return SourceConfig{}
+	}
+	switch v := p.GetVariant().(type) {
+	case nil:
+		return SourceConfig{}
+	case *sourcev1.SourceConfig_Terraform:
+		tf := v.Terraform
+		return SourceConfig{
+			Kind: SourceConfigKindTerraform,
+			Terraform: &TerraformConfig{
+				Namespace:  tf.GetNamespace(),
+				ModuleName: tf.GetModuleName(),
+				System:     tf.GetSystem(),
+			},
+		}
+	case *sourcev1.SourceConfig_Helm:
+		return SourceConfig{
+			Kind: SourceConfigKindHelm,
+			Helm: &HelmConfig{ChartName: v.Helm.GetChartName()},
+		}
+	default:
+		panic(fmt.Sprintf("model: unmapped SourceConfig variant %T", v))
+	}
+}
+
 type Source struct {
-	Id             uuid.UUID      `gorm:"type:uuid;default:gen_random_uuid();primaryKey"`
-	Name           string         `gorm:"uniqueIndex;not null"`
-	Description    string         `gorm:"type:text"`
-	Type           string         `gorm:"not null"`
-	URL            string         `gorm:"column:url;not null"`
-	CredentialId   *uuid.UUID     `gorm:"type:uuid"`
-	Catalog        bool           `gorm:"not null;default:false"`
-	SourceConfig   SourceConfig   `gorm:"type:jsonb;not null;default:'{}'"`
-	Labels         Labels         `gorm:"type:jsonb;default:'{}'"`
-	LastTestStatus *string        `gorm:"type:text"`
-	LastTestError  string         `gorm:"type:text;not null;default:''"`
+	Id             uuid.UUID    `gorm:"type:uuid;default:gen_random_uuid();primaryKey"`
+	Name           string       `gorm:"uniqueIndex;not null"`
+	Description    string       `gorm:"type:text"`
+	Type           string       `gorm:"not null"`
+	URL            string       `gorm:"column:url;not null"`
+	CredentialId   *uuid.UUID   `gorm:"type:uuid"`
+	Catalog        bool         `gorm:"not null;default:false"`
+	SourceConfig   SourceConfig `gorm:"type:jsonb;not null;default:'{}'"`
+	Labels         Labels       `gorm:"type:jsonb;default:'{}'"`
+	LastTestStatus *string      `gorm:"type:text"`
+	LastTestError  string       `gorm:"type:text;not null;default:''"`
 	LastTestedAt   *time.Time
-	LastSyncedAt   *time.Time
-	CreatedBy      string         `gorm:"not null"`
+	CreatedBy      string `gorm:"not null"`
 	CreatedAt      time.Time
 	UpdatedAt      time.Time
 	DeletedAt      gorm.DeletedAt `gorm:"index"`
-}
-
-var sourceTypeToProto = map[string]sourcev1.SourceType{
-	SourceTypeTerraformRegistry: sourcev1.SourceType_SOURCE_TYPE_TERRAFORM_REGISTRY,
-	SourceTypeTerraformGit:      sourcev1.SourceType_SOURCE_TYPE_TERRAFORM_GIT,
-	SourceTypeHelmRepository:    sourcev1.SourceType_SOURCE_TYPE_HELM_REPOSITORY,
-	SourceTypeHelmOCI:           sourcev1.SourceType_SOURCE_TYPE_HELM_OCI,
-	SourceTypeHelmGit:           sourcev1.SourceType_SOURCE_TYPE_HELM_GIT,
-	SourceTypeKustomizeGit:      sourcev1.SourceType_SOURCE_TYPE_KUSTOMIZE_GIT,
-	SourceTypeManifestGit:       sourcev1.SourceType_SOURCE_TYPE_MANIFEST_GIT,
-	SourceTypeArchive:           sourcev1.SourceType_SOURCE_TYPE_ARCHIVE,
-}
-
-func SourceTypeFromProto(t sourcev1.SourceType) string {
-	for k, v := range sourceTypeToProto {
-		if v == t {
-			return k
-		}
-	}
-	return ""
-}
-
-var sourceTestStatusToProto = map[string]sourcev1.SourceTestStatus{
-	SourceTestStatusSuccess: sourcev1.SourceTestStatus_SOURCE_TEST_STATUS_SUCCESS,
-	SourceTestStatusFailure: sourcev1.SourceTestStatus_SOURCE_TEST_STATUS_FAILURE,
 }
 
 func (s *Source) ToProto() *sourcev1.Source {
@@ -197,167 +231,8 @@ func (s *Source) ToProto() *sourcev1.Source {
 	if s.LastTestedAt != nil {
 		out.LastTestedAt = timestamppb.New(*s.LastTestedAt)
 	}
-	if s.LastSyncedAt != nil {
-		out.LastSyncedAt = timestamppb.New(*s.LastSyncedAt)
-	}
 
-	s.SourceConfig.setProtoSourceConfig(out)
+	out.SourceConfig = s.SourceConfig.ToProto()
 
 	return out
-}
-
-func (c *SourceConfig) setProtoSourceConfig(out *sourcev1.Source) {
-	if c == nil {
-		return
-	}
-	switch c.Type {
-	case SourceConfigTypeTerraformRegistry:
-		if c.TerraformRegistry != nil {
-			out.SourceConfig = &sourcev1.Source_TerraformRegistry{
-				TerraformRegistry: &sourcev1.TerraformRegistryConfig{
-					Namespace:  c.TerraformRegistry.Namespace,
-					ModuleName: c.TerraformRegistry.ModuleName,
-					System:     c.TerraformRegistry.System,
-				},
-			}
-		}
-	case SourceConfigTypeTerraformGit:
-		if c.TerraformGit != nil {
-			out.SourceConfig = &sourcev1.Source_TerraformGit{
-				TerraformGit: &sourcev1.TerraformGitConfig{
-					Path:       c.TerraformGit.Path,
-					DefaultRef: c.TerraformGit.DefaultRef,
-				},
-			}
-		}
-	case SourceConfigTypeHelmRepository:
-		if c.HelmRepository != nil {
-			out.SourceConfig = &sourcev1.Source_HelmRepository{
-				HelmRepository: &sourcev1.HelmRepositoryConfig{
-					ChartName: c.HelmRepository.ChartName,
-				},
-			}
-		}
-	case SourceConfigTypeHelmOCI:
-		if c.HelmOCI != nil {
-			out.SourceConfig = &sourcev1.Source_HelmOci{
-				HelmOci: &sourcev1.HelmOCIConfig{
-					Repository: c.HelmOCI.Repository,
-				},
-			}
-		}
-	case SourceConfigTypeHelmGit:
-		if c.HelmGit != nil {
-			out.SourceConfig = &sourcev1.Source_HelmGit{
-				HelmGit: &sourcev1.HelmGitConfig{
-					Path:       c.HelmGit.Path,
-					DefaultRef: c.HelmGit.DefaultRef,
-				},
-			}
-		}
-	case SourceConfigTypeKustomizeGit:
-		if c.KustomizeGit != nil {
-			out.SourceConfig = &sourcev1.Source_KustomizeGit{
-				KustomizeGit: &sourcev1.KustomizeGitConfig{
-					Path:       c.KustomizeGit.Path,
-					DefaultRef: c.KustomizeGit.DefaultRef,
-				},
-			}
-		}
-	case SourceConfigTypeManifestGit:
-		if c.ManifestGit != nil {
-			out.SourceConfig = &sourcev1.Source_ManifestGit{
-				ManifestGit: &sourcev1.ManifestGitConfig{
-					Path:       c.ManifestGit.Path,
-					Recursive:  c.ManifestGit.Recursive,
-					DefaultRef: c.ManifestGit.DefaultRef,
-				},
-			}
-		}
-	case SourceConfigTypeArchive:
-		if c.Archive != nil {
-			out.SourceConfig = &sourcev1.Source_Archive{
-				Archive: &sourcev1.ArchiveConfig{
-					Path:     c.Archive.Path,
-					Checksum: c.Archive.Checksum,
-				},
-			}
-		}
-	}
-}
-
-func SourceConfigFromProto(src *sourcev1.Source) SourceConfig {
-	switch c := src.GetSourceConfig().(type) {
-	case *sourcev1.Source_TerraformRegistry:
-		return SourceConfig{Type: SourceConfigTypeTerraformRegistry, TerraformRegistry: &TerraformRegistryConfig{
-			Namespace: c.TerraformRegistry.GetNamespace(), ModuleName: c.TerraformRegistry.GetModuleName(), System: c.TerraformRegistry.GetSystem(),
-		}}
-	case *sourcev1.Source_TerraformGit:
-		return SourceConfig{Type: SourceConfigTypeTerraformGit, TerraformGit: &TerraformGitConfig{
-			Path: c.TerraformGit.GetPath(), DefaultRef: c.TerraformGit.GetDefaultRef(),
-		}}
-	case *sourcev1.Source_HelmRepository:
-		return SourceConfig{Type: SourceConfigTypeHelmRepository, HelmRepository: &HelmRepositoryConfig{
-			ChartName: c.HelmRepository.GetChartName(),
-		}}
-	case *sourcev1.Source_HelmOci:
-		return SourceConfig{Type: SourceConfigTypeHelmOCI, HelmOCI: &HelmOCIConfig{
-			Repository: c.HelmOci.GetRepository(),
-		}}
-	case *sourcev1.Source_HelmGit:
-		return SourceConfig{Type: SourceConfigTypeHelmGit, HelmGit: &HelmGitConfig{
-			Path: c.HelmGit.GetPath(), DefaultRef: c.HelmGit.GetDefaultRef(),
-		}}
-	case *sourcev1.Source_KustomizeGit:
-		return SourceConfig{Type: SourceConfigTypeKustomizeGit, KustomizeGit: &KustomizeGitConfig{
-			Path: c.KustomizeGit.GetPath(), DefaultRef: c.KustomizeGit.GetDefaultRef(),
-		}}
-	case *sourcev1.Source_ManifestGit:
-		return SourceConfig{Type: SourceConfigTypeManifestGit, ManifestGit: &ManifestGitConfig{
-			Path: c.ManifestGit.GetPath(), Recursive: c.ManifestGit.GetRecursive(), DefaultRef: c.ManifestGit.GetDefaultRef(),
-		}}
-	case *sourcev1.Source_Archive:
-		return SourceConfig{Type: SourceConfigTypeArchive, Archive: &ArchiveConfig{
-			Path: c.Archive.GetPath(), Checksum: c.Archive.GetChecksum(),
-		}}
-	}
-	return SourceConfig{}
-}
-
-func SourceConfigFromCreateRequest(req *sourcev1.CreateSourceRequest) SourceConfig {
-	switch c := req.GetSourceConfig().(type) {
-	case *sourcev1.CreateSourceRequest_TerraformRegistry:
-		return SourceConfig{Type: SourceConfigTypeTerraformRegistry, TerraformRegistry: &TerraformRegistryConfig{
-			Namespace: c.TerraformRegistry.GetNamespace(), ModuleName: c.TerraformRegistry.GetModuleName(), System: c.TerraformRegistry.GetSystem(),
-		}}
-	case *sourcev1.CreateSourceRequest_TerraformGit:
-		return SourceConfig{Type: SourceConfigTypeTerraformGit, TerraformGit: &TerraformGitConfig{
-			Path: c.TerraformGit.GetPath(), DefaultRef: c.TerraformGit.GetDefaultRef(),
-		}}
-	case *sourcev1.CreateSourceRequest_HelmRepository:
-		return SourceConfig{Type: SourceConfigTypeHelmRepository, HelmRepository: &HelmRepositoryConfig{
-			ChartName: c.HelmRepository.GetChartName(),
-		}}
-	case *sourcev1.CreateSourceRequest_HelmOci:
-		return SourceConfig{Type: SourceConfigTypeHelmOCI, HelmOCI: &HelmOCIConfig{
-			Repository: c.HelmOci.GetRepository(),
-		}}
-	case *sourcev1.CreateSourceRequest_HelmGit:
-		return SourceConfig{Type: SourceConfigTypeHelmGit, HelmGit: &HelmGitConfig{
-			Path: c.HelmGit.GetPath(), DefaultRef: c.HelmGit.GetDefaultRef(),
-		}}
-	case *sourcev1.CreateSourceRequest_KustomizeGit:
-		return SourceConfig{Type: SourceConfigTypeKustomizeGit, KustomizeGit: &KustomizeGitConfig{
-			Path: c.KustomizeGit.GetPath(), DefaultRef: c.KustomizeGit.GetDefaultRef(),
-		}}
-	case *sourcev1.CreateSourceRequest_ManifestGit:
-		return SourceConfig{Type: SourceConfigTypeManifestGit, ManifestGit: &ManifestGitConfig{
-			Path: c.ManifestGit.GetPath(), Recursive: c.ManifestGit.GetRecursive(), DefaultRef: c.ManifestGit.GetDefaultRef(),
-		}}
-	case *sourcev1.CreateSourceRequest_Archive:
-		return SourceConfig{Type: SourceConfigTypeArchive, Archive: &ArchiveConfig{
-			Path: c.Archive.GetPath(), Checksum: c.Archive.GetChecksum(),
-		}}
-	}
-	return SourceConfig{}
 }

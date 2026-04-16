@@ -75,7 +75,7 @@ func (a *api) CreateCredential(ctx context.Context, req *credentialv1.CreateCred
 		Name:        req.GetName(),
 		Description: req.GetDescription(),
 		Type:        model.CredentialTypeFromProto(req.GetType()),
-		AuthConfig:  model.AuthConfigFromCreateRequest(req),
+		AuthConfig:  model.AuthConfigFromProto(req.GetAuthConfig()),
 		Labels:      model.Labels(req.GetLabels()),
 		CreatedBy:   claims.Subject,
 	}
@@ -173,7 +173,7 @@ func (a *api) UpdateCredential(ctx context.Context, req *credentialv1.UpdateCred
 		case "labels":
 			fields["labels"] = model.Labels(credProto.GetLabels())
 		case "auth_config":
-			fields["auth_config"] = model.AuthConfigFromProto(credProto)
+			fields["auth_config"] = model.AuthConfigFromProto(credProto.GetAuthConfig())
 		case "type":
 			return nil, status.Error(codes.InvalidArgument, "credential type is immutable; delete and recreate to change types")
 		default:
