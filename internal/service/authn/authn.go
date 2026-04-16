@@ -42,7 +42,7 @@ type SessionProvider interface {
 
 // TokenIssuer handles access token (PAT/SAT) CRUD.
 type TokenIssuer interface {
-	CreateToken(ctx context.Context, kind TokenKind, name string, subject string, scopes []string, expiry *time.Duration) (*model.AccessToken, string, error)
+	CreateToken(ctx context.Context, kind TokenKind, binding model.AccessTokenBindingType, name string, subject string, scopes []string, expiry *time.Duration) (*model.AccessToken, string, error)
 	RevokeToken(ctx context.Context, rawToken string) error
 	RevokeAllTokens(ctx context.Context, subject string) (int64, error)
 }

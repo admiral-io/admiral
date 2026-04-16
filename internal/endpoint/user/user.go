@@ -127,7 +127,7 @@ func (a *api) CreatePersonalAccessToken(ctx context.Context, req *userv1.CreateP
 		expiry = &d
 	}
 
-	accessToken, plaintext, err := a.tokenIssuer.CreateToken(ctx, authn.TokenKindPAT, req.GetName(), claims.Subject, scopes, expiry)
+	accessToken, plaintext, err := a.tokenIssuer.CreateToken(ctx, authn.TokenKindPAT, model.AccessTokenBindingTypeUser, req.GetName(), claims.Subject, scopes, expiry)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to create token: %v", err)
 	}

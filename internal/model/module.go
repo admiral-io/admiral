@@ -1,6 +1,7 @@
 package model
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/google/uuid"
@@ -36,20 +37,59 @@ func ModuleTypeFromProto(t modulev1.ModuleType) string {
 	return moduleTypeFromProto[t]
 }
 
+var moduleSourceCompat = map[string]map[string]bool{
+	ModuleTypeTerraform: {
+		SourceTypeGit:       true,
+		SourceTypeTerraform: true,
+		SourceTypeHTTP:      true,
+	},
+	ModuleTypeHelm: {
+		SourceTypeGit:  true,
+		SourceTypeHelm: true,
+		SourceTypeOCI:  true,
+		SourceTypeHTTP: true,
+	},
+	ModuleTypeKustomize: {
+		SourceTypeGit:  true,
+		SourceTypeHTTP: true,
+	},
+	ModuleTypeManifest: {
+		SourceTypeGit:  true,
+		SourceTypeHTTP: true,
+	},
+}
+
+func ValidateModuleSourceCompat(modType, srcType string) error {
+	if modType == "" {
+		return fmt.Errorf("module type is required")
+	}
+	if srcType == "" {
+		return fmt.Errorf("source type is required")
+	}
+	compat, ok := moduleSourceCompat[modType]
+	if !ok {
+		return fmt.Errorf("unsupported module type: %s", modType)
+	}
+	if !compat[srcType] {
+		return fmt.Errorf("module type %s is not compatible with source type %s", modType, srcType)
+	}
+	return nil
+}
+
 type Module struct {
-	Id        uuid.UUID `gorm:"type:uuid;default:gen_random_uuid();primaryKey"`
-	Name      string    `gorm:"uniqueIndex;not null"`
-	Description string  `gorm:"type:text"`
-	Type      string    `gorm:"not null"`
-	SourceId  uuid.UUID `gorm:"type:uuid;not null"`
-	Ref       string    `gorm:"type:text;not null;default:''"`
-	Root      string    `gorm:"type:text;not null;default:''"`
-	Path      string    `gorm:"type:text;not null;default:''"`
-	Labels    Labels    `gorm:"type:jsonb;default:'{}'"`
-	CreatedBy string    `gorm:"not null"`
-	CreatedAt time.Time
-	UpdatedAt time.Time
-	DeletedAt gorm.DeletedAt `gorm:"index"`
+	Id          uuid.UUID `gorm:"type:uuid;default:gen_random_uuid();primaryKey"`
+	Name        string    `gorm:"uniqueIndex;not null"`
+	Description string    `gorm:"type:text"`
+	Type        string    `gorm:"not null"`
+	SourceId    uuid.UUID `gorm:"type:uuid;not null"`
+	Ref         string    `gorm:"type:text;not null;default:''"`
+	Root        string    `gorm:"type:text;not null;default:''"`
+	Path        string    `gorm:"type:text;not null;default:''"`
+	Labels      Labels    `gorm:"type:jsonb;default:'{}'"`
+	CreatedBy   string    `gorm:"not null"`
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
+	DeletedAt   gorm.DeletedAt `gorm:"index"`
 }
 
 func (m *Module) ToProto() *modulev1.Module {

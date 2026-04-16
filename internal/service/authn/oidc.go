@@ -167,6 +167,7 @@ func (p *OIDCProvider) Exchange(ctx context.Context, code string) (string, error
 		Id:          uuid.NewString(),
 		Subject:     authenticatedUser.Id.String(),
 		Kind:        model.AccessTokenKindSession,
+		BindingType: model.AccessTokenBindingTypeUser,
 		TokenHash:   tokenHash,
 		TokenPrefix: plaintext[:len(PrefixSession)],
 		Scopes:      pq.StringArray(SessionScopes),
@@ -269,7 +270,7 @@ func (p *OIDCProvider) RefreshSession(ctx context.Context, sessionToken string) 
 	return p.tokenStore.UpdateIdPTokens(ctx, session.Id, idpToken, idpTokenExpiry(idpToken))
 }
 
-func (p *OIDCProvider) CreateToken(ctx context.Context, kind TokenKind, name string, subject string, scopes []string, expiry *time.Duration) (*model.AccessToken, string, error) {
+func (p *OIDCProvider) CreateToken(ctx context.Context, kind TokenKind, binding model.AccessTokenBindingType, name string, subject string, scopes []string, expiry *time.Duration) (*model.AccessToken, string, error) {
 	if subject == "" {
 		return nil, "", errors.New("subject is empty")
 	}
@@ -280,6 +281,20 @@ func (p *OIDCProvider) CreateToken(ctx context.Context, kind TokenKind, name str
 
 	if kind != TokenKindPAT && kind != TokenKindSAT {
 		return nil, "", fmt.Errorf("unsupported token kind for CreateToken: %q", kind)
+	}
+
+	switch binding {
+	case model.AccessTokenBindingTypeUser, model.AccessTokenBindingTypeCluster, model.AccessTokenBindingTypeRunner:
+	default:
+		return nil, "", fmt.Errorf("unsupported binding type: %q", binding)
+	}
+
+	if kind == TokenKindPAT && binding != model.AccessTokenBindingTypeUser {
+		return nil, "", fmt.Errorf("PAT tokens must bind to a user, got %q", binding)
+	}
+
+	if kind == TokenKindSAT && binding == model.AccessTokenBindingTypeUser {
+		return nil, "", errors.New("SAT tokens cannot bind to a user")
 	}
 
 	if len(scopes) == 0 {
@@ -309,6 +324,7 @@ func (p *OIDCProvider) CreateToken(ctx context.Context, kind TokenKind, name str
 		Name:        name,
 		Subject:     subject,
 		Kind:        dbKind,
+		BindingType: binding,
 		TokenHash:   tokenHash,
 		TokenPrefix: plaintext[:len(PrefixPAT)],
 		Scopes:      pq.StringArray(scopes),

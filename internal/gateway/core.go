@@ -4,10 +4,13 @@ import (
 	"go.admiral.io/admiral/internal/endpoint"
 	applicationep "go.admiral.io/admiral/internal/endpoint/application"
 	authnep "go.admiral.io/admiral/internal/endpoint/authn"
+	componentep "go.admiral.io/admiral/internal/endpoint/component"
 	credentialep "go.admiral.io/admiral/internal/endpoint/credential"
+	deploymentep "go.admiral.io/admiral/internal/endpoint/deployment"
 	environmentep "go.admiral.io/admiral/internal/endpoint/environment"
 	healthcheckep "go.admiral.io/admiral/internal/endpoint/healthcheck"
 	moduleep "go.admiral.io/admiral/internal/endpoint/module"
+	runnerep "go.admiral.io/admiral/internal/endpoint/runner"
 	sourceep "go.admiral.io/admiral/internal/endpoint/source"
 	userep "go.admiral.io/admiral/internal/endpoint/user"
 	"go.admiral.io/admiral/internal/middleware"
@@ -39,10 +42,13 @@ var Middleware = middleware.Factory{
 var Endpoints = endpoint.Factory{
 	applicationep.Name:  applicationep.New,
 	authnep.Name:        authnep.New,
+	componentep.Name:    componentep.New,
 	credentialep.Name:   credentialep.New,
+	deploymentep.Name:   deploymentep.New,
 	environmentep.Name:  environmentep.New,
 	healthcheckep.Name:  healthcheckep.New,
 	moduleep.Name:       moduleep.New,
+	runnerep.Name:       runnerep.New,
 	sourceep.Name:       sourceep.New,
 	userep.Name:         userep.New,
 }

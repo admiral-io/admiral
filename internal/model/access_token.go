@@ -63,6 +63,50 @@ const (
 	AccessTokenStatusRevoked AccessTokenStatus = "revoked"
 )
 
+type AccessTokenBindingType string
+
+const (
+	AccessTokenBindingTypeUser    AccessTokenBindingType = "user"
+	AccessTokenBindingTypeCluster AccessTokenBindingType = "cluster"
+	AccessTokenBindingTypeRunner  AccessTokenBindingType = "runner"
+)
+
+func (b *AccessTokenBindingType) Value() (driver.Value, error) {
+	switch *b {
+	case AccessTokenBindingTypeUser, AccessTokenBindingTypeCluster, AccessTokenBindingTypeRunner:
+		return string(*b), nil
+	default:
+		return nil, fmt.Errorf("invalid AccessTokenBindingType value: %q", *b)
+	}
+}
+
+func (b *AccessTokenBindingType) Scan(value any) error {
+	if value == nil {
+		*b = ""
+		return nil
+	}
+
+	switch v := value.(type) {
+	case string:
+		*b = AccessTokenBindingType(v)
+	case []byte:
+		*b = AccessTokenBindingType(v)
+	default:
+		return fmt.Errorf("cannot scan %T into AccessTokenBindingType", value)
+	}
+
+	return nil
+}
+
+func (b *AccessTokenBindingType) String() string {
+	switch *b {
+	case AccessTokenBindingTypeUser, AccessTokenBindingTypeCluster, AccessTokenBindingTypeRunner:
+		return string(*b)
+	default:
+		return ""
+	}
+}
+
 func (s *AccessTokenStatus) Value() (driver.Value, error) {
 	switch *s {
 	case AccessTokenStatusActive, AccessTokenStatusRevoked:
@@ -100,22 +144,23 @@ func (s *AccessTokenStatus) String() string {
 }
 
 type AccessToken struct {
-	Id              string            `gorm:"column:id;primaryKey"`
-	Name            string            `gorm:"column:name"`
-	Subject         string            `gorm:"column:subject"`
-	Kind            AccessTokenKind   `gorm:"column:kind"`
-	Status          AccessTokenStatus `gorm:"column:status;default:active"`
-	TokenHash       []byte            `gorm:"column:token_hash"`
-	TokenPrefix     string            `gorm:"column:token_prefix"`
-	Scopes          pq.StringArray    `gorm:"column:scopes;type:text[]"`
-	Issuer          string            `gorm:"column:issuer"`
-	IdpAccessToken  []byte            `gorm:"column:idp_access_token"`
-	IdpRefreshToken []byte            `gorm:"column:idp_refresh_token"`
-	IdpIdToken      []byte            `gorm:"column:idp_id_token"`
-	CreatedAt       time.Time         `gorm:"column:created_at"`
-	UpdatedAt       time.Time         `gorm:"column:updated_at"`
-	ExpiresAt       *time.Time        `gorm:"column:expires_at"`
-	DeletedAt       gorm.DeletedAt    `gorm:"column:deleted_at"`
+	Id              string                 `gorm:"column:id;primaryKey"`
+	Name            string                 `gorm:"column:name"`
+	Subject         string                 `gorm:"column:subject"`
+	Kind            AccessTokenKind        `gorm:"column:kind"`
+	BindingType     AccessTokenBindingType `gorm:"column:binding_type"`
+	Status          AccessTokenStatus      `gorm:"column:status;default:active"`
+	TokenHash       []byte                 `gorm:"column:token_hash"`
+	TokenPrefix     string                 `gorm:"column:token_prefix"`
+	Scopes          pq.StringArray         `gorm:"column:scopes;type:text[]"`
+	Issuer          string                 `gorm:"column:issuer"`
+	IdpAccessToken  []byte                 `gorm:"column:idp_access_token"`
+	IdpRefreshToken []byte                 `gorm:"column:idp_refresh_token"`
+	IdpIdToken      []byte                 `gorm:"column:idp_id_token"`
+	CreatedAt       time.Time              `gorm:"column:created_at"`
+	UpdatedAt       time.Time              `gorm:"column:updated_at"`
+	ExpiresAt       *time.Time             `gorm:"column:expires_at"`
+	DeletedAt       gorm.DeletedAt         `gorm:"column:deleted_at"`
 }
 
 func (AccessToken) TableName() string {
@@ -144,13 +189,19 @@ func (at *AccessToken) ToProto() *commonv1.AccessToken {
 	switch at.Kind {
 	case AccessTokenKindPAT:
 		proto.TokenType = commonv1.TokenType_TOKEN_TYPE_PAT
-		proto.BindingType = commonv1.BindingType_BINDING_TYPE_USER
-		proto.BindingId = at.Subject
 	case AccessTokenKindSAT:
 		proto.TokenType = commonv1.TokenType_TOKEN_TYPE_SAT
-		proto.BindingType = commonv1.BindingType_BINDING_TYPE_CLUSTER
-		proto.BindingId = at.Subject
 	}
+
+	switch at.BindingType {
+	case AccessTokenBindingTypeUser:
+		proto.BindingType = commonv1.BindingType_BINDING_TYPE_USER
+	case AccessTokenBindingTypeCluster:
+		proto.BindingType = commonv1.BindingType_BINDING_TYPE_CLUSTER
+	case AccessTokenBindingTypeRunner:
+		proto.BindingType = commonv1.BindingType_BINDING_TYPE_RUNNER
+	}
+	proto.BindingId = at.Subject
 
 	return proto
 }

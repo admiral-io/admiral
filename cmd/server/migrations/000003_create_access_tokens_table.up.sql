@@ -3,6 +3,7 @@ CREATE TABLE IF NOT EXISTS access_tokens (
     name              TEXT NOT NULL DEFAULT '',
     subject           TEXT NOT NULL,
     kind              TEXT NOT NULL CHECK (kind IN ('pat', 'sat', 'session')),
+    binding_type      TEXT NOT NULL CHECK (binding_type IN ('user', 'cluster', 'runner')),
     status            TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'revoked')),
     token_hash        BYTEA NOT NULL,
     token_prefix      TEXT NOT NULL,
