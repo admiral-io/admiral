@@ -23,6 +23,10 @@ func NewUserStore(db *gorm.DB) (*UserStore, error) {
 	return &UserStore{db: db}, nil
 }
 
+func (s *UserStore) DB() *gorm.DB {
+	return s.db
+}
+
 func (s *UserStore) GetByID(ctx context.Context, id uuid.UUID) (*model.User, error) {
 	var user model.User
 	err := s.db.WithContext(ctx).Where("id = ?", id).First(&user).Error

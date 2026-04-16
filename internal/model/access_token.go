@@ -155,7 +155,6 @@ func (at *AccessToken) ToProto() *commonv1.AccessToken {
 	return proto
 }
 
-// IdPToken reconstructs an oauth2.Token from the stored IdP token fields.
 func (at *AccessToken) IdPToken() *oauth2.Token {
 	token := &oauth2.Token{
 		TokenType: "Bearer",

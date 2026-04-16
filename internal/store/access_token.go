@@ -25,6 +25,10 @@ func NewAccessTokenStore(db *gorm.DB) (*AccessTokenStore, error) {
 	return &AccessTokenStore{db: db}, nil
 }
 
+func (s *AccessTokenStore) DB() *gorm.DB {
+	return s.db
+}
+
 func (s *AccessTokenStore) Create(ctx context.Context, token *model.AccessToken) (*model.AccessToken, error) {
 	if token == nil {
 		return nil, errors.New("token cannot be nil")
@@ -107,54 +111,6 @@ func (s *AccessTokenStore) ListBySubject(ctx context.Context, subject string, ki
 	}
 
 	return tokens, nil
-}
-
-func (s *AccessTokenStore) Delete(ctx context.Context, id string) error {
-	if id == "" {
-		return errors.New("id cannot be empty")
-	}
-
-	now := time.Now()
-	result := s.db.WithContext(ctx).
-		Model(&model.AccessToken{}).
-		Where("id = ? AND deleted_at IS NULL", id).
-		Updates(map[string]any{
-			"status":     model.AccessTokenStatusRevoked,
-			"deleted_at": now,
-			"updated_at": now,
-		})
-
-	if result.Error != nil {
-		return fmt.Errorf("failed to revoke access token: %w", result.Error)
-	}
-
-	if result.RowsAffected == 0 {
-		return errors.New("no access token found to revoke")
-	}
-
-	return nil
-}
-
-func (s *AccessTokenStore) DeleteBySubject(ctx context.Context, subject string) (int64, error) {
-	if subject == "" {
-		return 0, errors.New("subject cannot be empty")
-	}
-
-	now := time.Now()
-	result := s.db.WithContext(ctx).
-		Model(&model.AccessToken{}).
-		Where("subject = ? AND deleted_at IS NULL", subject).
-		Updates(map[string]any{
-			"status":     model.AccessTokenStatusRevoked,
-			"deleted_at": now,
-			"updated_at": now,
-		})
-
-	if result.Error != nil {
-		return 0, fmt.Errorf("failed to revoke access tokens for subject %s: %w", subject, result.Error)
-	}
-
-	return result.RowsAffected, nil
 }
 
 func (s *AccessTokenStore) UpdateIdPTokens(ctx context.Context, id string, idpToken *oauth2.Token, expiresAt *time.Time) error {
@@ -243,4 +199,52 @@ func (s *AccessTokenStore) Update(ctx context.Context, id string, updates map[st
 	}
 
 	return nil
+}
+
+func (s *AccessTokenStore) Delete(ctx context.Context, id string) error {
+	if id == "" {
+		return errors.New("id cannot be empty")
+	}
+
+	now := time.Now()
+	result := s.db.WithContext(ctx).
+		Model(&model.AccessToken{}).
+		Where("id = ? AND deleted_at IS NULL", id).
+		Updates(map[string]any{
+			"status":     model.AccessTokenStatusRevoked,
+			"deleted_at": now,
+			"updated_at": now,
+		})
+
+	if result.Error != nil {
+		return fmt.Errorf("failed to revoke access token: %w", result.Error)
+	}
+
+	if result.RowsAffected == 0 {
+		return errors.New("no access token found to revoke")
+	}
+
+	return nil
+}
+
+func (s *AccessTokenStore) DeleteBySubject(ctx context.Context, subject string) (int64, error) {
+	if subject == "" {
+		return 0, errors.New("subject cannot be empty")
+	}
+
+	now := time.Now()
+	result := s.db.WithContext(ctx).
+		Model(&model.AccessToken{}).
+		Where("subject = ? AND deleted_at IS NULL", subject).
+		Updates(map[string]any{
+			"status":     model.AccessTokenStatusRevoked,
+			"deleted_at": now,
+			"updated_at": now,
+		})
+
+	if result.Error != nil {
+		return 0, fmt.Errorf("failed to revoke access tokens for subject %s: %w", subject, result.Error)
+	}
+
+	return result.RowsAffected, nil
 }

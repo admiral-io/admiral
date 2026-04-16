@@ -600,6 +600,84 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/credentials": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List credentials
+         * @description Scope: `credential:read`
+         */
+        get: operations["CredentialAPI_ListCredentials"];
+        put?: never;
+        /**
+         * Create a credential
+         * @description The credential type and auth config must match -- for example, a GIT_TOKEN
+         *      credential requires a matching auth_config (e.g. BEARER_TOKEN → bearer_token).
+         *
+         *      Scope: `credential:write`
+         */
+        post: operations["CredentialAPI_CreateCredential"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/credentials/{credential.id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Update a credential
+         * @description When updating auth_config, the entire auth config is replaced -- partial
+         *      updates within the auth config oneof are not supported. Omitting auth_config
+         *      from the update_mask leaves credentials unchanged.
+         *
+         *      Scope: `credential:write`
+         */
+        patch: operations["CredentialAPI_UpdateCredential"];
+        trace?: never;
+    };
+    "/api/v1/credentials/{credential_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Retrieve a credential
+         * @description Returns credential metadata only. Sensitive fields are never included
+         *      in the response.
+         *
+         *      Scope: `credential:read`
+         */
+        get: operations["CredentialAPI_GetCredential"];
+        put?: never;
+        post?: never;
+        /**
+         * Delete a credential
+         * @description Scope: `credential:write`
+         */
+        delete: operations["CredentialAPI_DeleteCredential"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/deployments": {
         parameters: {
             query?: never;
@@ -1222,7 +1300,7 @@ export interface paths {
         /**
          * Create a source
          * @description The source type and source_config must match -- for example, a
-         *      TERRAFORM_REGISTRY source requires a TerraformRegistryConfig.
+         *      TERRAFORM source requires a TerraformConfig.
          *
          *      Scope: `source:write`
          */
@@ -1277,62 +1355,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/sources/{source_id}/inputs": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Retrieve source inputs
-         * @description For Terraform modules, this parses HCL variable blocks using
-         *      terraform-config-inspect. For Helm charts, this extracts values.yaml and
-         *      optionally values.schema.json. For Kustomize and raw manifests, inputs
-         *      are not discoverable and the response will be empty.
-         *
-         *      This operation fetches and parses the external artifact in real time and
-         *      may take several seconds.
-         *
-         *      Scope: `source:read`
-         */
-        get: operations["SourceAPI_GetSourceInputs"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/sources/{source_id}/outputs": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Retrieve source outputs
-         * @description Only meaningful for Terraform modules, which declare formal output blocks.
-         *      Helm charts, Kustomize, and raw manifests do not have formal outputs --
-         *      workload component outputs are user-declared, not discovered.
-         *
-         *      This operation queries the external system in real time and may take
-         *      several seconds.
-         *
-         *      Scope: `source:read`
-         */
-        get: operations["SourceAPI_GetSourceOutputs"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/sources/{source_id}/sync": {
+    "/api/v1/sources/{source_id}/test": {
         parameters: {
             query?: never;
             header?: never;
@@ -1342,16 +1365,17 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Sync a source
-         * @description Use this after updating credentials on the referenced connection, or to
-         *      force a refresh when you know the upstream has changed.
+         * Test a source
+         * @description A credential in isolation cannot be meaningfully tested -- a GitHub PAT is
+         *      just a string until a target URL is known. TestSource is where the
+         *      "attach credential, verify it works" flow lives.
          *
          *      This operation queries the external system in real time and may take
          *      several seconds.
          *
          *      Scope: `source:write`
          */
-        post: operations["SourceAPI_SyncSource"];
+        post: operations["SourceAPI_TestSource"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1712,7 +1736,6 @@ export interface components {
          *         "tier": "critical"
          *       },
          *       "created_by": "d290f1ee-6c54-4b01-90e6-d701748f0851",
-         *       "updated_by": "d290f1ee-6c54-4b01-90e6-d701748f0851",
          *       "created_at": "2025-09-15T10:30:00Z",
          *       "updated_at": "2025-11-02T14:22:00Z"
          *     }
@@ -1750,11 +1773,6 @@ export interface components {
              * @description The user or agent who created this application (server-populated from token).
              */
             created_by?: components["schemas"]["admiral.common.v1.ActorRef"];
-            /**
-             * updated_by
-             * @description The user or agent who last updated this application (server-populated from token).
-             */
-            updated_by?: components["schemas"]["admiral.common.v1.ActorRef"];
             /**
              * created_at
              * @description When the application was created.
@@ -1947,7 +1965,6 @@ export interface components {
          *       "cluster_uid": "kube-system-uid-9f8e7d6c",
          *       "health_status": "CLUSTER_HEALTH_STATUS_HEALTHY",
          *       "created_by": "d290f1ee-6c54-4b01-90e6-d701748f0851",
-         *       "updated_by": "d290f1ee-6c54-4b01-90e6-d701748f0851",
          *       "created_at": "2025-06-10T08:00:00Z",
          *       "updated_at": "2025-11-20T16:45:00Z"
          *     }
@@ -1997,11 +2014,6 @@ export interface components {
              * @description The user or agent who created this cluster (server-populated from token).
              */
             created_by?: components["schemas"]["admiral.common.v1.ActorRef"];
-            /**
-             * updated_by
-             * @description The user or agent who last updated this cluster (server-populated from token).
-             */
-            updated_by?: components["schemas"]["admiral.common.v1.ActorRef"];
             /**
              * created_at
              * @description When the cluster record was created.
@@ -3263,7 +3275,6 @@ export interface components {
          *         "redis"
          *       ],
          *       "created_by": "d290f1ee-6c54-4b01-90e6-d701748f0851",
-         *       "updated_by": "d290f1ee-6c54-4b01-90e6-d701748f0851",
          *       "created_at": "2025-09-16T09:00:00Z",
          *       "updated_at": "2025-10-28T11:30:00Z"
          *     }
@@ -3389,11 +3400,6 @@ export interface components {
              * @description The user or agent who created this component (server-populated from token).
              */
             created_by?: components["schemas"]["admiral.common.v1.ActorRef"];
-            /**
-             * updated_by
-             * @description The user or agent who last updated this component (server-populated from token).
-             */
-            updated_by?: components["schemas"]["admiral.common.v1.ActorRef"];
             /**
              * created_at
              * @description When the component was created.
@@ -3529,11 +3535,6 @@ export interface components {
              * @description The user or agent who created this override (server-populated from token).
              */
             created_by?: components["schemas"]["admiral.common.v1.ActorRef"];
-            /**
-             * updated_by
-             * @description The user or agent who last updated this override (server-populated from token).
-             */
-            updated_by?: components["schemas"]["admiral.common.v1.ActorRef"];
             /**
              * created_at
              * @description When the override was created.
@@ -4033,7 +4034,6 @@ export interface components {
          *         "team": "platform"
          *       },
          *       "created_by": "d290f1ee-6c54-4b01-90e6-d701748f0851",
-         *       "updated_by": "d290f1ee-6c54-4b01-90e6-d701748f0851",
          *       "created_at": "2025-07-20T14:00:00Z",
          *       "updated_at": "2025-10-15T10:30:00Z",
          *       "last_tested_at": "2025-11-01T08:00:00Z"
@@ -4567,6 +4567,318 @@ export interface components {
              * @description The updated connection. Sensitive credential fields are masked.
              */
             connection?: components["schemas"]["admiral.connection.v1.Connection"];
+        };
+        /**
+         * BasicAuth
+         * @description BasicAuth holds HTTP Basic credentials (username + password). Reused across
+         *      any Source type that accepts HTTP Basic (Helm, OCI, HTTP archive, Git
+         *      HTTPS).
+         */
+        "admiral.credential.v1.BasicAuth": {
+            /**
+             * username
+             * @description Username for authentication.
+             */
+            username?: string;
+            /**
+             * password
+             * @description Password (or PAT / registry-scoped token / app password).
+             *      Write-only: masked in responses.
+             */
+            password?: string;
+        };
+        /**
+         * BearerTokenAuth
+         * @description BearerTokenAuth holds a single token value. Presentation is per target
+         *      protocol:
+         *        - Terraform registries, Helm bearer, OCI bearer, HTTP archives:
+         *          `Authorization: Bearer <token>`
+         *        - Git HTTPS (GitHub PAT, GitLab PAT): HTTP Basic with the token as
+         *          password and a dummy username
+         */
+        "admiral.credential.v1.BearerTokenAuth": {
+            /**
+             * token
+             * @description Token value.
+             *      Write-only: masked in responses.
+             */
+            token?: string;
+        };
+        /**
+         * CreateCredentialRequest
+         * @description CreateCredentialRequest contains the parameters for creating a new credential.
+         */
+        "admiral.credential.v1.CreateCredentialRequest": {
+            /**
+             * name
+             * @description URL-safe, human-readable identifier (e.g., "github-org", "ecr-prod").
+             *      Must be unique within the tenant.
+             */
+            name?: string;
+            /**
+             * description
+             * @description Optional description of the credential's purpose.
+             */
+            description?: string;
+            /**
+             * type
+             * @description The type of external system and authentication mechanism.
+             */
+            type?: components["schemas"]["admiral.credential.v1.CredentialType"];
+            /**
+             * labels
+             * @description Arbitrary key-value labels for organizing and filtering credentials.
+             */
+            labels?: {
+                [key: string]: string;
+            };
+        } & ({
+            /** basic_auth */
+            basic_auth: components["schemas"]["admiral.credential.v1.BasicAuth"];
+        } | {
+            /** bearer_token */
+            bearer_token: components["schemas"]["admiral.credential.v1.BearerTokenAuth"];
+        } | {
+            /** ssh_key */
+            ssh_key: components["schemas"]["admiral.credential.v1.SSHKeyAuth"];
+        });
+        /** LabelsEntry */
+        "admiral.credential.v1.CreateCredentialRequest.LabelsEntry": {
+            /** key */
+            key?: string;
+            /** value */
+            value?: string;
+        };
+        /**
+         * CreateCredentialResponse
+         * @description CreateCredentialResponse contains the newly created credential.
+         */
+        "admiral.credential.v1.CreateCredentialResponse": {
+            /**
+             * credential
+             * @description The created credential. Auth config sensitive fields are masked.
+             */
+            credential?: components["schemas"]["admiral.credential.v1.Credential"];
+        };
+        /**
+         * Credential
+         * @description Credential represents stored authentication configuration for accessing an
+         *      external system. Credentials are tenant-scoped and referenced by sources
+         *      when fetching artifacts.
+         *
+         *      Sensitive fields within auth_config are write-only -- they are accepted on
+         *      create and update but never returned in API responses.
+         */
+        "admiral.credential.v1.Credential": {
+            /**
+             * id
+             * Format: uuid
+             * @description Unique identifier for the credential (UUID).
+             */
+            id?: string;
+            /**
+             * name
+             * @description URL-safe, human-readable identifier (e.g., "github-org", "ecr-prod").
+             *      Unique within the tenant. Lowercase alphanumeric and hyphens only, must
+             *      start with a letter and end with an alphanumeric character (1-63 chars).
+             */
+            name?: string;
+            /**
+             * description
+             * @description Optional longer-form description of what this credential is for
+             *      (e.g., "Read-only access to the platform team's GitHub org").
+             */
+            description?: string;
+            /**
+             * type
+             * @description The type of external system and authentication mechanism.
+             */
+            type?: components["schemas"]["admiral.credential.v1.CredentialType"];
+            /**
+             * labels
+             * @description Arbitrary key-value labels for organizing and filtering credentials
+             *      (e.g., `{"team": "platform", "environment": "prod"}`).
+             */
+            labels?: {
+                [key: string]: string;
+            };
+            /**
+             * created_by
+             * @description The user or agent who created this credential (server-populated from token).
+             */
+            created_by?: components["schemas"]["admiral.common.v1.ActorRef"];
+            /**
+             * created_at
+             * @description When the credential was created.
+             */
+            created_at?: components["schemas"]["google.protobuf.Timestamp"];
+            /**
+             * updated_at
+             * @description When the credential was last updated.
+             */
+            updated_at?: components["schemas"]["google.protobuf.Timestamp"];
+        } & ({
+            /** basic_auth */
+            basic_auth: components["schemas"]["admiral.credential.v1.BasicAuth"];
+        } | {
+            /** bearer_token */
+            bearer_token: components["schemas"]["admiral.credential.v1.BearerTokenAuth"];
+        } | {
+            /** ssh_key */
+            ssh_key: components["schemas"]["admiral.credential.v1.SSHKeyAuth"];
+        });
+        /** LabelsEntry */
+        "admiral.credential.v1.Credential.LabelsEntry": {
+            /** key */
+            key?: string;
+            /** value */
+            value?: string;
+        };
+        /**
+         * CredentialType
+         * @description CredentialType identifies the shape of the stored auth material (the
+         *      mechanism), not the system it targets. The target system is determined by
+         *      the Source that references the credential. One credential can be reused
+         *      across multiple Sources of different types, provided the Source accepts
+         *      that credential type (see the Source compatibility matrix).
+         * @enum {string}
+         */
+        "admiral.credential.v1.CredentialType": "CREDENTIAL_TYPE_UNSPECIFIED" | "CREDENTIAL_TYPE_SSH_KEY" | "CREDENTIAL_TYPE_BASIC_AUTH" | "CREDENTIAL_TYPE_BEARER_TOKEN";
+        /**
+         * DeleteCredentialRequest
+         * @description DeleteCredentialRequest identifies a credential to delete.
+         */
+        "admiral.credential.v1.DeleteCredentialRequest": {
+            /**
+             * credential_id
+             * Format: uuid
+             * @description The unique identifier of the credential to delete (UUID).
+             *      Fails if any sources still reference this credential.
+             */
+            credential_id?: string;
+        };
+        /**
+         * DeleteCredentialResponse
+         * @description DeleteCredentialResponse is empty on success.
+         */
+        "admiral.credential.v1.DeleteCredentialResponse": Record<string, never>;
+        /**
+         * GetCredentialRequest
+         * @description GetCredentialRequest identifies a credential to retrieve.
+         */
+        "admiral.credential.v1.GetCredentialRequest": {
+            /**
+             * credential_id
+             * Format: uuid
+             * @description The unique identifier of the credential (UUID).
+             */
+            credential_id?: string;
+        };
+        /**
+         * GetCredentialResponse
+         * @description GetCredentialResponse contains the credential record.
+         */
+        "admiral.credential.v1.GetCredentialResponse": {
+            /**
+             * credential
+             * @description The credential record. Sensitive fields are masked.
+             */
+            credential?: components["schemas"]["admiral.credential.v1.Credential"];
+        };
+        /**
+         * ListCredentialsRequest
+         * @description ListCredentialsRequest contains pagination and filter parameters.
+         */
+        "admiral.credential.v1.ListCredentialsRequest": {
+            /**
+             * filter
+             * @description Filter expression to narrow results. Uses the Admiral filter DSL.
+             *
+             *      Filterable fields:
+             *        - `name` -- filter by credential name.
+             *        - `type` -- filter by credential type (SSH_KEY, BASIC_AUTH, BEARER_TOKEN).
+             *        - `labels.key` -- filter by label key.
+             *
+             *      Example: `field['type'] = 'BEARER_TOKEN'`
+             */
+            filter?: string;
+            /**
+             * page_size
+             * Format: int32
+             * @description Maximum number of credentials to return per page.
+             */
+            page_size?: number;
+            /**
+             * page_token
+             * @description Opaque pagination token from a previous response.
+             */
+            page_token?: string;
+        };
+        /**
+         * ListCredentialsResponse
+         * @description ListCredentialsResponse contains a page of credentials.
+         */
+        "admiral.credential.v1.ListCredentialsResponse": {
+            /**
+             * credentials
+             * @description The list of credentials. Sensitive fields are masked.
+             */
+            credentials?: components["schemas"]["admiral.credential.v1.Credential"][];
+            /**
+             * next_page_token
+             * @description Pagination token for the next page. Empty when there are no more results.
+             */
+            next_page_token?: string;
+        };
+        /**
+         * SSHKeyAuth
+         * @description SSHKeyAuth holds an SSH private key and optional passphrase.
+         */
+        "admiral.credential.v1.SSHKeyAuth": {
+            /**
+             * private_key
+             * @description PEM-encoded SSH private key.
+             *      Write-only: masked in responses.
+             */
+            private_key?: string;
+            /**
+             * passphrase
+             * @description Optional passphrase for the private key.
+             *      Write-only: masked in responses.
+             */
+            passphrase?: string;
+        };
+        /**
+         * UpdateCredentialRequest
+         * @description UpdateCredentialRequest contains the credential fields to update.
+         */
+        "admiral.credential.v1.UpdateCredentialRequest": {
+            /**
+             * credential
+             * @description The credential with updated fields.
+             *      Only fields specified in `update_mask` are updated.
+             *
+             *      When updating auth_config, the entire auth config is replaced.
+             *      Omitting auth_config from the update_mask leaves credentials unchanged.
+             */
+            credential: components["schemas"]["admiral.credential.v1.Credential"];
+            /**
+             * update_mask
+             * @description The set of fields to update. If unset, all mutable fields are updated.
+             *      Supported fields: `name`, `description`, `auth_config`, `labels`.
+             */
+            update_mask?: components["schemas"]["google.protobuf.FieldMask"];
+        };
+        /**
+         * UpdateCredentialResponse
+         * @description UpdateCredentialResponse contains the updated credential.
+         */
+        "admiral.credential.v1.UpdateCredentialResponse": {
+            /**
+             * credential
+             * @description The updated credential. Sensitive fields are masked.
+             */
+            credential?: components["schemas"]["admiral.credential.v1.Credential"];
         };
         /**
          * CancelDeploymentRequest
@@ -5237,7 +5549,6 @@ export interface components {
          *       "has_pending_changes": true,
          *       "last_deployed_at": "2025-11-01T09:15:00Z",
          *       "created_by": "d290f1ee-6c54-4b01-90e6-d701748f0851",
-         *       "updated_by": "d290f1ee-6c54-4b01-90e6-d701748f0851",
          *       "created_at": "2025-09-15T11:00:00Z",
          *       "updated_at": "2025-11-02T14:30:00Z"
          *     }
@@ -5320,11 +5631,6 @@ export interface components {
              * @description The user or agent who created this environment (server-populated from token).
              */
             created_by?: components["schemas"]["admiral.common.v1.ActorRef"];
-            /**
-             * updated_by
-             * @description The user or agent who last updated this environment (server-populated from token).
-             */
-            updated_by?: components["schemas"]["admiral.common.v1.ActorRef"];
             /**
              * created_at
              * @description When the environment was created.
@@ -6238,7 +6544,6 @@ export interface components {
          *       },
          *       "health_status": "RUNNER_HEALTH_STATUS_HEALTHY",
          *       "created_by": "d290f1ee-6c54-4b01-90e6-d701748f0851",
-         *       "updated_by": "d290f1ee-6c54-4b01-90e6-d701748f0851",
          *       "created_at": "2025-07-15T10:00:00Z",
          *       "updated_at": "2025-11-18T08:30:00Z"
          *     }
@@ -6286,11 +6591,6 @@ export interface components {
              * @description The user or agent who created this runner (server-populated from token).
              */
             created_by?: components["schemas"]["admiral.common.v1.ActorRef"];
-            /**
-             * updated_by
-             * @description The user or agent who last updated this runner (server-populated from token).
-             */
-            updated_by?: components["schemas"]["admiral.common.v1.ActorRef"];
             /**
              * created_at
              * @description When the runner record was created.
@@ -6414,25 +6714,6 @@ export interface components {
             runner?: components["schemas"]["admiral.runner.v1.Runner"];
         };
         /**
-         * ArchiveConfig
-         * @description ArchiveConfig provides additional parameters for archive sources
-         *      (tar.gz, zip) fetched via HTTP, S3, or GCS.
-         */
-        "admiral.source.v1.ArchiveConfig": {
-            /**
-             * path
-             * @description Subdirectory within the extracted archive to use. Empty means archive root.
-             */
-            path?: string;
-            /**
-             * checksum
-             * @description Expected checksum for integrity verification (e.g., "sha256:abc123...").
-             *      When set, the fetched archive is verified against this checksum before
-             *      extraction.
-             */
-            checksum?: string;
-        };
-        /**
          * CreateSourceRequest
          * @description CreateSourceRequest contains the parameters for creating a new source.
          */
@@ -6458,12 +6739,12 @@ export interface components {
              */
             url?: string;
             /**
-             * connection_id
+             * credential_id
              * Format: uuid
-             * @description Reference to the connection providing credentials (UUID). Optional for
+             * @description Reference to the credential providing authentication (UUID). Optional for
              *      public sources.
              */
-            connection_id?: string | null;
+            credential_id?: string | null;
             /**
              * catalog
              * @description Whether this is a curated catalog entry.
@@ -6477,29 +6758,11 @@ export interface components {
                 [key: string]: string;
             };
         } & ({
-            /** archive */
-            archive: components["schemas"]["admiral.source.v1.ArchiveConfig"];
+            /** helm */
+            helm: components["schemas"]["admiral.source.v1.HelmConfig"];
         } | {
-            /** helm_git */
-            helm_git: components["schemas"]["admiral.source.v1.HelmGitConfig"];
-        } | {
-            /** helm_oci */
-            helm_oci: components["schemas"]["admiral.source.v1.HelmOCIConfig"];
-        } | {
-            /** helm_repository */
-            helm_repository: components["schemas"]["admiral.source.v1.HelmRepositoryConfig"];
-        } | {
-            /** kustomize_git */
-            kustomize_git: components["schemas"]["admiral.source.v1.KustomizeGitConfig"];
-        } | {
-            /** manifest_git */
-            manifest_git: components["schemas"]["admiral.source.v1.ManifestGitConfig"];
-        } | {
-            /** terraform_git */
-            terraform_git: components["schemas"]["admiral.source.v1.TerraformGitConfig"];
-        } | {
-            /** terraform_registry */
-            terraform_registry: components["schemas"]["admiral.source.v1.TerraformRegistryConfig"];
+            /** terraform */
+            terraform: components["schemas"]["admiral.source.v1.TerraformConfig"];
         });
         /** LabelsEntry */
         "admiral.source.v1.CreateSourceRequest.LabelsEntry": {
@@ -6538,81 +6801,6 @@ export interface components {
          */
         "admiral.source.v1.DeleteSourceResponse": Record<string, never>;
         /**
-         * GetSourceInputsRequest
-         * @description GetSourceInputsRequest fetches discoverable inputs for a source at a
-         *      specific version.
-         */
-        "admiral.source.v1.GetSourceInputsRequest": {
-            /**
-             * source_id
-             * Format: uuid
-             * @description Unique identifier of the source to inspect (UUID).
-             */
-            source_id?: string;
-            /**
-             * version
-             * @description The version to inspect. For registry sources, a semver string. For Git
-             *      sources, a tag, branch, or commit SHA. Required.
-             */
-            version?: string;
-        };
-        /**
-         * GetSourceInputsResponse
-         * @description GetSourceInputsResponse contains the discovered inputs for the source at
-         *      the requested version.
-         */
-        "admiral.source.v1.GetSourceInputsResponse": {
-            /**
-             * inputs
-             * @description Discovered input parameters. Empty for source types that do not support
-             *      input discovery (Kustomize, raw manifests).
-             */
-            inputs?: components["schemas"]["admiral.source.v1.SourceInput"][];
-            /**
-             * resolved_version
-             * @description The version that was actually inspected (resolved from the requested
-             *      version -- e.g., a branch name resolved to a commit SHA).
-             */
-            resolved_version?: string;
-        };
-        /**
-         * GetSourceOutputsRequest
-         * @description GetSourceOutputsRequest fetches discoverable outputs for a source at a
-         *      specific version.
-         */
-        "admiral.source.v1.GetSourceOutputsRequest": {
-            /**
-             * source_id
-             * Format: uuid
-             * @description Unique identifier of the source to inspect (UUID).
-             */
-            source_id?: string;
-            /**
-             * version
-             * @description The version to inspect. Required.
-             */
-            version?: string;
-        };
-        /**
-         * GetSourceOutputsResponse
-         * @description GetSourceOutputsResponse contains the discovered outputs for the source at
-         *      the requested version.
-         */
-        "admiral.source.v1.GetSourceOutputsResponse": {
-            /**
-             * outputs
-             * @description Discovered output definitions. Only populated for Terraform module sources.
-             *      Workload sources (Helm, Kustomize, manifests) do not have formal outputs --
-             *      workload component outputs are user-declared at the component level.
-             */
-            outputs?: components["schemas"]["admiral.source.v1.SourceOutput"][];
-            /**
-             * resolved_version
-             * @description The version that was actually inspected.
-             */
-            resolved_version?: string;
-        };
-        /**
          * GetSourceRequest
          * @description GetSourceRequest identifies a source to retrieve.
          */
@@ -6636,65 +6824,17 @@ export interface components {
             source?: components["schemas"]["admiral.source.v1.Source"];
         };
         /**
-         * HelmGitConfig
-         * @description HelmGitConfig provides additional parameters for Helm charts sourced from
-         *      Git repositories.
+         * HelmConfig
+         * @description HelmConfig identifies which chart within a Helm HTTP repository the source
+         *      points to. A single Helm repository hosts many charts; the chart name
+         *      selects one.
          */
-        "admiral.source.v1.HelmGitConfig": {
-            /**
-             * path
-             * @description Path within the repository to the chart directory (must contain Chart.yaml).
-             */
-            path?: string;
-            /**
-             * default_ref
-             * @description Default Git ref (branch, tag, or commit SHA).
-             */
-            default_ref?: string;
-        };
-        /**
-         * HelmOCIConfig
-         * @description HelmOCIConfig provides additional parameters for Helm charts stored in
-         *      OCI registries.
-         */
-        "admiral.source.v1.HelmOCIConfig": {
-            /**
-             * repository
-             * @description The full OCI repository path (e.g., "ghcr.io/myorg/charts/my-app").
-             *      The url field on the Source message holds the registry host, while this
-             *      field holds the full repository path.
-             */
-            repository?: string;
-        };
-        /**
-         * HelmRepositoryConfig
-         * @description HelmRepositoryConfig provides additional parameters for Helm charts from
-         *      classic HTTP/S chart repositories.
-         */
-        "admiral.source.v1.HelmRepositoryConfig": {
+        "admiral.source.v1.HelmConfig": {
             /**
              * chart_name
              * @description The chart name within the repository (e.g., "nginx-ingress", "redis").
              */
             chart_name?: string;
-        };
-        /**
-         * KustomizeGitConfig
-         * @description KustomizeGitConfig provides additional parameters for Kustomize overlays
-         *      sourced from Git repositories.
-         */
-        "admiral.source.v1.KustomizeGitConfig": {
-            /**
-             * path
-             * @description Path within the repository to the overlay directory (must contain
-             *      kustomization.yaml).
-             */
-            path?: string;
-            /**
-             * default_ref
-             * @description Default Git ref (branch, tag, or commit SHA).
-             */
-            default_ref?: string;
         };
         /**
          * ListSourceVersionsRequest
@@ -6750,11 +6890,11 @@ export interface components {
              *
              *      Filterable fields:
              *        - `name` -- filter by source name.
-             *        - `type` -- filter by source type (TERRAFORM_REGISTRY, HELM_OCI, etc.).
+             *        - `type` -- filter by source type (GIT, TERRAFORM, HELM, OCI, HTTP).
              *        - `catalog` -- filter by catalog status (true/false).
              *        - `labels.key` -- filter by label key.
              *
-             *      Example: `field['type'] = 'TERRAFORM_REGISTRY' AND field['catalog'] = 'true'`
+             *      Example: `field['type'] = 'TERRAFORM' AND field['catalog'] = 'true'`
              */
             filter?: string;
             /**
@@ -6786,29 +6926,6 @@ export interface components {
             next_page_token?: string;
         };
         /**
-         * ManifestGitConfig
-         * @description ManifestGitConfig provides additional parameters for raw Kubernetes manifests
-         *      sourced from Git repositories.
-         */
-        "admiral.source.v1.ManifestGitConfig": {
-            /**
-             * path
-             * @description Path within the repository to the directory containing manifest files.
-             *      All .yaml, .yml, and .json files in this directory are collected.
-             */
-            path?: string;
-            /**
-             * recursive
-             * @description Whether to recursively include files from subdirectories.
-             */
-            recursive?: boolean;
-            /**
-             * default_ref
-             * @description Default Git ref (branch, tag, or commit SHA).
-             */
-            default_ref?: string;
-        };
-        /**
          * Source
          * @description Source represents a fetchable artifact definition -- a pointer to an external
          *      module, chart, or manifest set that Admiral can fetch, inspect, and render
@@ -6828,7 +6945,6 @@ export interface components {
          *         "team": "platform"
          *       },
          *       "created_by": "d290f1ee-6c54-4b01-90e6-d701748f0851",
-         *       "updated_by": "d290f1ee-6c54-4b01-90e6-d701748f0851",
          *       "created_at": "2025-08-01T12:00:00Z",
          *       "updated_at": "2025-10-20T09:00:00Z"
          *     }
@@ -6861,21 +6977,22 @@ export interface components {
             /**
              * url
              * @description Base URL for the source. The meaning varies by source type:
-             *        - TERRAFORM_REGISTRY: registry hostname (e.g., "registry.terraform.io")
-             *        - TERRAFORM_GIT, HELM_GIT, KUSTOMIZE_GIT, MANIFEST_GIT: Git repo URL
-             *        - HELM_REPOSITORY: Helm repo URL (e.g., "https://charts.bitnami.com/bitnami")
-             *        - HELM_OCI: OCI registry URL (e.g., "oci://ghcr.io")
-             *        - ARCHIVE: HTTP/S3/GCS URL to the archive
+             *        - GIT: Git repo URL (https:// or git@host:...)
+             *        - TERRAFORM: registry hostname (e.g., "registry.terraform.io")
+             *        - HELM: chart repo URL (e.g., "https://charts.bitnami.com/bitnami")
+             *        - OCI: OCI repository URL (e.g., "oci://ghcr.io/myorg/charts/my-app")
+             *        - HTTP: full HTTP(S) URL to the archive (tar/zip) -- covers plain
+             *          HTTP hosts and presigned S3/GCS/Azure Blob URLs.
              */
             url?: string;
             /**
-             * connection_id
+             * credential_id
              * Format: uuid
-             * @description Reference to the connection providing credentials for this source (UUID).
+             * @description Reference to the credential providing authentication for this source (UUID).
              *      Optional -- null for public sources that require no authentication
              *      (e.g., public Terraform registry, public Helm repos).
              */
-            connection_id?: string | null;
+            credential_id?: string | null;
             /**
              * catalog
              * @description Whether this source is a curated catalog entry. Catalog sources are managed
@@ -6897,18 +7014,24 @@ export interface components {
              */
             created_by?: components["schemas"]["admiral.common.v1.ActorRef"];
             /**
-             * updated_by
-             * @description The user or agent who last updated this source (server-populated from token).
+             * last_test_status
+             * @description Outcome of the most recent TestSource invocation. Reflects whether the
+             *      attached credential successfully authenticated against `url` the last time
+             *      a test was run. Absent if the source has never been tested.
              */
-            updated_by?: components["schemas"]["admiral.common.v1.ActorRef"];
+            last_test_status?: components["schemas"]["admiral.source.v1.SourceTestStatus"] | null;
             /**
-             * last_synced_at
-             * @description When the source metadata was last synced from the external system
-             *      (registry, Git, Helm repo). Updated by SyncSource and by automatic
-             *      background refresh when discovery RPCs encounter stale cached data.
-             *      Absent if no sync has occurred yet.
+             * last_test_error
+             * @description Human-readable error message from the most recent failed TestSource.
+             *      Empty when `last_test_status` is SUCCESS or unset.
              */
-            last_synced_at?: components["schemas"]["google.protobuf.Timestamp"];
+            last_test_error?: string;
+            /**
+             * last_tested_at
+             * @description When TestSource was last invoked against this source. Absent if never
+             *      tested.
+             */
+            last_tested_at?: components["schemas"]["google.protobuf.Timestamp"];
             /**
              * created_at
              * @description When the source was created.
@@ -6921,52 +7044,16 @@ export interface components {
             updated_at?: components["schemas"]["google.protobuf.Timestamp"];
         } & ({
             /**
-             * archive
-             * @description Archive config (for SOURCE_TYPE_ARCHIVE).
+             * helm
+             * @description Helm HTTP repository config (for SOURCE_TYPE_HELM).
              */
-            archive: components["schemas"]["admiral.source.v1.ArchiveConfig"];
+            helm: components["schemas"]["admiral.source.v1.HelmConfig"];
         } | {
             /**
-             * helm_git
-             * @description Helm Git config (for SOURCE_TYPE_HELM_GIT).
+             * terraform
+             * @description Terraform Registry Protocol config (for SOURCE_TYPE_TERRAFORM).
              */
-            helm_git: components["schemas"]["admiral.source.v1.HelmGitConfig"];
-        } | {
-            /**
-             * helm_oci
-             * @description Helm OCI config (for SOURCE_TYPE_HELM_OCI).
-             */
-            helm_oci: components["schemas"]["admiral.source.v1.HelmOCIConfig"];
-        } | {
-            /**
-             * helm_repository
-             * @description Helm HTTP repository config (for SOURCE_TYPE_HELM_REPOSITORY).
-             */
-            helm_repository: components["schemas"]["admiral.source.v1.HelmRepositoryConfig"];
-        } | {
-            /**
-             * kustomize_git
-             * @description Kustomize Git config (for SOURCE_TYPE_KUSTOMIZE_GIT).
-             */
-            kustomize_git: components["schemas"]["admiral.source.v1.KustomizeGitConfig"];
-        } | {
-            /**
-             * manifest_git
-             * @description Raw manifest Git config (for SOURCE_TYPE_MANIFEST_GIT).
-             */
-            manifest_git: components["schemas"]["admiral.source.v1.ManifestGitConfig"];
-        } | {
-            /**
-             * terraform_git
-             * @description Terraform Git module config (for SOURCE_TYPE_TERRAFORM_GIT).
-             */
-            terraform_git: components["schemas"]["admiral.source.v1.TerraformGitConfig"];
-        } | {
-            /**
-             * terraform_registry
-             * @description Terraform Registry Protocol config (for SOURCE_TYPE_TERRAFORM_REGISTRY).
-             */
-            terraform_registry: components["schemas"]["admiral.source.v1.TerraformRegistryConfig"];
+            terraform: components["schemas"]["admiral.source.v1.TerraformConfig"];
         });
         /** LabelsEntry */
         "admiral.source.v1.Source.LabelsEntry": {
@@ -6976,90 +7063,20 @@ export interface components {
             value?: string;
         };
         /**
-         * SourceInput
-         * @description SourceInput represents a configurable parameter discovered from the source
-         *      artifact. For Terraform modules, these are variable blocks. For Helm charts,
-         *      these are entries from values.yaml (with optional type info from
-         *      values.schema.json).
-         */
-        "admiral.source.v1.SourceInput": {
-            /**
-             * name
-             * @description Parameter name (e.g., "instance_class", "replicaCount").
-             */
-            name?: string;
-            /**
-             * type
-             * @description Type constraint as a string. For Terraform: HCL type expression
-             *      (e.g., "string", "number", "list(string)", "object({name=string})").
-             *      For Helm: JSON Schema type (e.g., "string", "integer", "object").
-             *      Empty if type cannot be determined.
-             */
-            type?: string;
-            /**
-             * description
-             * @description Human-readable description of the parameter. From Terraform variable
-             *      description or Helm values.schema.json description field.
-             */
-            description?: string;
-            /**
-             * default_value
-             * @description JSON-encoded default value. Null/absent means no default (parameter is
-             *      required). For Terraform, this is the default from the variable block.
-             *      For Helm, this is the value from values.yaml.
-             */
-            default_value?: string | null;
-            /**
-             * required
-             * @description Whether this parameter is required (no default value provided).
-             *      For Terraform: true when the variable has no default.
-             *      For Helm: true when values.schema.json marks it as required.
-             */
-            required?: boolean;
-            /**
-             * sensitive
-             * @description Whether this parameter is sensitive (should be masked in logs and UI).
-             *      For Terraform: from the variable's sensitive attribute.
-             *      For Helm: not typically available.
-             */
-            sensitive?: boolean;
-        };
-        /**
-         * SourceOutput
-         * @description SourceOutput represents a value produced by the source after apply. Only
-         *      meaningful for Terraform modules, which declare formal output blocks.
-         *      Workload sources (Helm, Kustomize, manifests) do not have formal outputs --
-         *      workload component outputs are user-declared at the component level, not
-         *      discovered from the source.
-         */
-        "admiral.source.v1.SourceOutput": {
-            /**
-             * name
-             * @description Output name (e.g., "endpoint", "db_arn", "connection_string").
-             */
-            name?: string;
-            /**
-             * type
-             * @description Type of the output value, if declared (e.g., "string", "list(string)").
-             */
-            type?: string;
-            /**
-             * description
-             * @description Human-readable description of the output.
-             */
-            description?: string;
-            /**
-             * sensitive
-             * @description Whether this output is sensitive (masked in logs and CLI output).
-             */
-            sensitive?: boolean;
-        };
-        /**
-         * SourceType
-         * @description SourceType identifies the kind of artifact and the protocol used to fetch it.
+         * SourceTestStatus
+         * @description SourceTestStatus reports the outcome of the last TestSource invocation.
          * @enum {string}
          */
-        "admiral.source.v1.SourceType": "SOURCE_TYPE_UNSPECIFIED" | "SOURCE_TYPE_TERRAFORM_REGISTRY" | "SOURCE_TYPE_TERRAFORM_GIT" | "SOURCE_TYPE_HELM_REPOSITORY" | "SOURCE_TYPE_HELM_OCI" | "SOURCE_TYPE_HELM_GIT" | "SOURCE_TYPE_KUSTOMIZE_GIT" | "SOURCE_TYPE_MANIFEST_GIT" | "SOURCE_TYPE_ARCHIVE";
+        "admiral.source.v1.SourceTestStatus": "SOURCE_TEST_STATUS_UNSPECIFIED" | "SOURCE_TEST_STATUS_SUCCESS" | "SOURCE_TEST_STATUS_FAILURE";
+        /**
+         * SourceType
+         * @description SourceType identifies the fetch protocol -- how Admiral's Fetcher layer
+         *      retrieves content from the source URL. Types are carved by wire protocol,
+         *      not by content semantics. "This is a Terraform module" vs "this is a Helm
+         *      chart" is a Module/Component concern, not a Source concern.
+         * @enum {string}
+         */
+        "admiral.source.v1.SourceType": "SOURCE_TYPE_UNSPECIFIED" | "SOURCE_TYPE_GIT" | "SOURCE_TYPE_TERRAFORM" | "SOURCE_TYPE_HELM" | "SOURCE_TYPE_OCI" | "SOURCE_TYPE_HTTP";
         /**
          * SourceVersion
          * @description SourceVersion represents an available version of a source artifact, as
@@ -7087,53 +7104,10 @@ export interface components {
             description?: string;
         };
         /**
-         * SyncSourceRequest
-         * @description SyncSourceRequest triggers a metadata refresh for a source.
+         * TerraformConfig
+         * @description TerraformConfig identifies a module within a Terraform registry.
          */
-        "admiral.source.v1.SyncSourceRequest": {
-            /**
-             * source_id
-             * Format: uuid
-             * @description Unique identifier of the source to sync (UUID).
-             */
-            source_id?: string;
-        };
-        /**
-         * SyncSourceResponse
-         * @description SyncSourceResponse confirms the sync was triggered.
-         */
-        "admiral.source.v1.SyncSourceResponse": {
-            /**
-             * source
-             * @description The source with refreshed metadata.
-             */
-            source?: components["schemas"]["admiral.source.v1.Source"];
-        };
-        /**
-         * TerraformGitConfig
-         * @description TerraformGitConfig provides additional parameters for Terraform modules
-         *      sourced from Git repositories.
-         */
-        "admiral.source.v1.TerraformGitConfig": {
-            /**
-             * path
-             * @description Subdirectory within the repository containing the module root.
-             *      Uses double-slash convention (e.g., "modules/vpc"). Empty means repo root.
-             */
-            path?: string;
-            /**
-             * default_ref
-             * @description Default Git ref (branch, tag, or commit SHA) to use when no version is
-             *      specified. Typically a branch name like "main" or a tag like "v1.0.0".
-             */
-            default_ref?: string;
-        };
-        /**
-         * TerraformRegistryConfig
-         * @description TerraformRegistryConfig provides additional parameters for Terraform module
-         *      registry sources.
-         */
-        "admiral.source.v1.TerraformRegistryConfig": {
+        "admiral.source.v1.TerraformConfig": {
             /**
              * namespace
              * @description Module namespace in the registry (e.g., "hashicorp", "myorg").
@@ -7151,6 +7125,41 @@ export interface components {
             system?: string;
         };
         /**
+         * TestSourceRequest
+         * @description TestSourceRequest identifies a source to test.
+         */
+        "admiral.source.v1.TestSourceRequest": {
+            /**
+             * source_id
+             * Format: uuid
+             * @description Unique identifier of the source to test (UUID).
+             */
+            source_id?: string;
+        };
+        /**
+         * TestSourceResponse
+         * @description TestSourceResponse reports the outcome of the test against the external
+         *      system. The same outcome is persisted on the Source (`last_test_status`,
+         *      `last_test_error`, `last_tested_at`).
+         */
+        "admiral.source.v1.TestSourceResponse": {
+            /**
+             * status
+             * @description The outcome of the test.
+             */
+            status?: components["schemas"]["admiral.source.v1.SourceTestStatus"];
+            /**
+             * error
+             * @description Human-readable error message when `status` is FAILURE. Empty on success.
+             */
+            error?: string;
+            /**
+             * source
+             * @description The source with test status fields refreshed.
+             */
+            source?: components["schemas"]["admiral.source.v1.Source"];
+        };
+        /**
          * UpdateSourceRequest
          * @description UpdateSourceRequest contains the source fields to update.
          */
@@ -7164,7 +7173,7 @@ export interface components {
             /**
              * update_mask
              * @description The set of fields to update. If unset, all mutable fields are updated.
-             *      Supported fields: `name`, `description`, `url`, `connection_id`, `catalog`,
+             *      Supported fields: `name`, `description`, `url`, `credential_id`, `catalog`,
              *      `source_config`, `labels`.
              */
             update_mask?: components["schemas"]["google.protobuf.FieldMask"];
@@ -8197,7 +8206,6 @@ export interface components {
          *       "application_id": "a1b2c3d4-5678-9abc-def0-1234567890ab",
          *       "environment_id": "e5f6a7b8-9012-3cde-f456-789012345678",
          *       "created_by": "d290f1ee-6c54-4b01-90e6-d701748f0851",
-         *       "updated_by": "d290f1ee-6c54-4b01-90e6-d701748f0851",
          *       "created_at": "2025-09-16T12:00:00Z",
          *       "updated_at": "2025-10-30T15:00:00Z"
          *     }
@@ -8266,11 +8274,6 @@ export interface components {
              * @description The user or agent who created this variable (server-populated from token).
              */
             created_by?: components["schemas"]["admiral.common.v1.ActorRef"];
-            /**
-             * updated_by
-             * @description The user or agent who last updated this variable (server-populated from token).
-             */
-            updated_by?: components["schemas"]["admiral.common.v1.ActorRef"];
             /**
              * created_at
              * @description When the variable was created.
@@ -9800,6 +9803,158 @@ export interface operations {
             };
         };
     };
+    CredentialAPI_ListCredentials: {
+        parameters: {
+            query?: {
+                /**
+                 * @description Filter expression to narrow results. Uses the Admiral filter DSL.
+                 *
+                 *      Filterable fields:
+                 *        - `name` -- filter by credential name.
+                 *        - `type` -- filter by credential type (SSH_KEY, BASIC_AUTH, BEARER_TOKEN).
+                 *        - `labels.key` -- filter by label key.
+                 *
+                 *      Example: `field['type'] = 'BEARER_TOKEN'`
+                 */
+                filter?: string;
+                /** @description Maximum number of credentials to return per page. */
+                page_size?: number;
+                /** @description Opaque pagination token from a previous response. */
+                page_token?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["admiral.credential.v1.ListCredentialsResponse"];
+                };
+            };
+        };
+    };
+    CredentialAPI_CreateCredential: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["admiral.credential.v1.CreateCredentialRequest"];
+            };
+        };
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["admiral.credential.v1.CreateCredentialResponse"];
+                };
+            };
+        };
+    };
+    CredentialAPI_UpdateCredential: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Unique identifier for the credential (UUID). */
+                "credential.id": string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /**
+                     * credential
+                     * @description The credential with updated fields.
+                     *      Only fields specified in `update_mask` are updated.
+                     *
+                     *      When updating auth_config, the entire auth config is replaced.
+                     *      Omitting auth_config from the update_mask leaves credentials unchanged.
+                     */
+                    credential: components["schemas"]["admiral.credential.v1.Credential"];
+                    /**
+                     * update_mask
+                     * @description The set of fields to update. If unset, all mutable fields are updated.
+                     *      Supported fields: `name`, `description`, `auth_config`, `labels`.
+                     */
+                    update_mask?: components["schemas"]["google.protobuf.FieldMask"];
+                };
+            };
+        };
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["admiral.credential.v1.UpdateCredentialResponse"];
+                };
+            };
+        };
+    };
+    CredentialAPI_GetCredential: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The unique identifier of the credential (UUID). */
+                credential_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["admiral.credential.v1.GetCredentialResponse"];
+                };
+            };
+        };
+    };
+    CredentialAPI_DeleteCredential: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /**
+                 * @description The unique identifier of the credential to delete (UUID).
+                 *      Fails if any sources still reference this credential.
+                 */
+                credential_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["admiral.credential.v1.DeleteCredentialResponse"];
+                };
+            };
+        };
+    };
     DeploymentAPI_ListDeployments: {
         parameters: {
             query?: {
@@ -10859,11 +11014,11 @@ export interface operations {
                  *
                  *      Filterable fields:
                  *        - `name` -- filter by source name.
-                 *        - `type` -- filter by source type (TERRAFORM_REGISTRY, HELM_OCI, etc.).
+                 *        - `type` -- filter by source type (GIT, TERRAFORM, HELM, OCI, HTTP).
                  *        - `catalog` -- filter by catalog status (true/false).
                  *        - `labels.key` -- filter by label key.
                  *
-                 *      Example: `field['type'] = 'TERRAFORM_REGISTRY' AND field['catalog'] = 'true'`
+                 *      Example: `field['type'] = 'TERRAFORM' AND field['catalog'] = 'true'`
                  */
                 filter?: string;
                 /** @description Maximum number of sources to return per page. */
@@ -10934,7 +11089,7 @@ export interface operations {
                     /**
                      * update_mask
                      * @description The set of fields to update. If unset, all mutable fields are updated.
-                     *      Supported fields: `name`, `description`, `url`, `connection_id`, `catalog`,
+                     *      Supported fields: `name`, `description`, `url`, `credential_id`, `catalog`,
                      *      `source_config`, `labels`.
                      */
                     update_mask?: components["schemas"]["google.protobuf.FieldMask"];
@@ -11002,67 +11157,12 @@ export interface operations {
             };
         };
     };
-    SourceAPI_GetSourceInputs: {
-        parameters: {
-            query?: {
-                /**
-                 * @description The version to inspect. For registry sources, a semver string. For Git
-                 *      sources, a tag, branch, or commit SHA. Required.
-                 */
-                version?: string;
-            };
-            header?: never;
-            path: {
-                /** @description Unique identifier of the source to inspect (UUID). */
-                source_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Success */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["admiral.source.v1.GetSourceInputsResponse"];
-                };
-            };
-        };
-    };
-    SourceAPI_GetSourceOutputs: {
-        parameters: {
-            query?: {
-                /** @description The version to inspect. Required. */
-                version?: string;
-            };
-            header?: never;
-            path: {
-                /** @description Unique identifier of the source to inspect (UUID). */
-                source_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Success */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["admiral.source.v1.GetSourceOutputsResponse"];
-                };
-            };
-        };
-    };
-    SourceAPI_SyncSource: {
+    SourceAPI_TestSource: {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                /** @description Unique identifier of the source to sync (UUID). */
+                /** @description Unique identifier of the source to test (UUID). */
                 source_id: string;
             };
             cookie?: never;
@@ -11073,7 +11173,7 @@ export interface operations {
                     /**
                      * source_id
                      * Format: uuid
-                     * @description Unique identifier of the source to sync (UUID).
+                     * @description Unique identifier of the source to test (UUID).
                      */
                     source_id?: string;
                 };
@@ -11086,7 +11186,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["admiral.source.v1.SyncSourceResponse"];
+                    "application/json": components["schemas"]["admiral.source.v1.TestSourceResponse"];
                 };
             };
         };

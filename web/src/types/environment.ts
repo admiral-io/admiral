@@ -34,7 +34,6 @@ export const environmentSchema = z.looseObject({
   has_pending_changes: z.boolean().optional(),
   last_deployed_at: z.string().optional(),
   created_by: actorRefSchema.optional(),
-  updated_by: actorRefSchema.optional(),
   created_at: z.string().optional(),
   updated_at: z.string().optional(),
 });

@@ -2,7 +2,7 @@ CREATE TABLE IF NOT EXISTS credentials (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name TEXT NOT NULL CHECK (length(name) > 0 AND name ~ '^[a-z]([a-z0-9-]{0,61}[a-z0-9])?$'),
     description TEXT NOT NULL DEFAULT '',
-    type TEXT NOT NULL CHECK (type IN ('GIT_TOKEN', 'GIT_SSH', 'GIT_GITHUB_APP', 'HELM_HTTP', 'OCI_BASIC', 'CLOUD_AWS', 'CLOUD_GCP', 'CLOUD_AZURE', 'CLOUD_AWS_STATIC', 'CLOUD_GCP_STATIC', 'CLOUD_AZURE_STATIC', 'TERRAFORM_REGISTRY', 'S3', 'GCS')),
+    type TEXT NOT NULL CHECK (type IN ('SSH_KEY', 'BASIC_AUTH', 'BEARER_TOKEN')),
     auth_config JSONB NOT NULL DEFAULT '{}',
     labels JSONB NOT NULL DEFAULT '{}',
     created_by TEXT NOT NULL,

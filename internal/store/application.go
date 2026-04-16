@@ -23,6 +23,10 @@ func NewApplicationStore(db *gorm.DB) (*ApplicationStore, error) {
 	return &ApplicationStore{db: db}, nil
 }
 
+func (s *ApplicationStore) DB() *gorm.DB {
+	return s.db
+}
+
 func (s *ApplicationStore) Create(ctx context.Context, app *model.Application) (*model.Application, error) {
 	if err := s.db.WithContext(ctx).Create(app).Error; err != nil {
 		return nil, fmt.Errorf("failed to create application: %w", err)
@@ -82,8 +86,4 @@ func (s *ApplicationStore) Delete(ctx context.Context, id uuid.UUID) error {
 	}
 
 	return nil
-}
-
-func (s *ApplicationStore) DB() *gorm.DB {
-	return s.db
 }

@@ -39,12 +39,21 @@ export const SCOPE_GROUPS: ScopeGroup[] = [
     ],
   },
   {
-    id: 'connection',
-    label: 'connection',
-    description: 'Manage external connections',
+    id: 'credential',
+    label: 'credential',
+    description: 'Manage credentials for external systems',
     scopes: [
-      { value: 'connection:read', label: 'View connections' },
-      { value: 'connection:write', label: 'Create, update, and delete connections' },
+      { value: 'credential:read', label: 'View credentials' },
+      { value: 'credential:write', label: 'Create, update, and delete credentials' },
+    ],
+  },
+  {
+    id: 'source',
+    label: 'source',
+    description: 'Manage external artifact sources',
+    scopes: [
+      { value: 'source:read', label: 'View sources' },
+      { value: 'source:write', label: 'Create, update, and delete sources' },
     ],
   },
   {

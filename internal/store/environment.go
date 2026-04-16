@@ -23,6 +23,10 @@ func NewEnvironmentStore(db *gorm.DB) (*EnvironmentStore, error) {
 	return &EnvironmentStore{db: db}, nil
 }
 
+func (s *EnvironmentStore) DB() *gorm.DB {
+	return s.db
+}
+
 func (s *EnvironmentStore) Create(ctx context.Context, env *model.Environment) (*model.Environment, error) {
 	if err := s.db.WithContext(ctx).Create(env).Error; err != nil {
 		return nil, fmt.Errorf("failed to create environment: %w", err)
@@ -81,8 +85,4 @@ func (s *EnvironmentStore) Delete(ctx context.Context, id uuid.UUID) error {
 	}
 
 	return nil
-}
-
-func (s *EnvironmentStore) DB() *gorm.DB {
-	return s.db
 }

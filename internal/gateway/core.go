@@ -7,6 +7,7 @@ import (
 	credentialep "go.admiral.io/admiral/internal/endpoint/credential"
 	environmentep "go.admiral.io/admiral/internal/endpoint/environment"
 	healthcheckep "go.admiral.io/admiral/internal/endpoint/healthcheck"
+	sourceep "go.admiral.io/admiral/internal/endpoint/source"
 	userep "go.admiral.io/admiral/internal/endpoint/user"
 	"go.admiral.io/admiral/internal/middleware"
 	authnmw "go.admiral.io/admiral/internal/middleware/authn"
@@ -40,6 +41,7 @@ var Endpoints = endpoint.Factory{
 	credentialep.Name:   credentialep.New,
 	environmentep.Name:  environmentep.New,
 	healthcheckep.Name:  healthcheckep.New,
+	sourceep.Name:       sourceep.New,
 	userep.Name:         userep.New,
 }
 

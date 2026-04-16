@@ -3,6 +3,7 @@ package credential
 import (
 	"context"
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"time"
 
@@ -28,10 +29,11 @@ const Name = "endpoint.credential"
 var filterColumns = []string{"name", "type"}
 
 type api struct {
-	store  *store.CredentialStore
-	qb     querybuilder.QueryBuilder
-	logger *zap.Logger
-	scope  tally.Scope
+	store       *store.CredentialStore
+	sourceStore *store.SourceStore
+	qb          querybuilder.QueryBuilder
+	logger      *zap.Logger
+	scope       tally.Scope
 }
 
 func New(_ *config.Config, log *zap.Logger, scope tally.Scope) (endpoint.Endpoint, error) {
@@ -44,12 +46,17 @@ func New(_ *config.Config, log *zap.Logger, scope tally.Scope) (endpoint.Endpoin
 	if err != nil {
 		return nil, err
 	}
+	srcStore, err := store.NewSourceStore(db.GormDB())
+	if err != nil {
+		return nil, err
+	}
 
 	return &api{
-		store:  credStore,
-		logger: log.Named(Name),
-		scope:  scope.SubScope("credential"),
-		qb:     querybuilder.New(filterColumns),
+		store:       credStore,
+		sourceStore: srcStore,
+		logger:      log.Named(Name),
+		scope:       scope.SubScope("credential"),
+		qb:          querybuilder.New(filterColumns),
 	}, nil
 }
 
@@ -75,6 +82,9 @@ func (a *api) CreateCredential(ctx context.Context, req *credentialv1.CreateCred
 
 	cred, err = a.store.Create(ctx, cred)
 	if err != nil {
+		if errors.Is(err, store.ErrInvalidAuthConfig) {
+			return nil, status.Errorf(codes.InvalidArgument, "%v", err)
+		}
 		return nil, status.Errorf(codes.Internal, "failed to create credential: %v", err)
 	}
 
@@ -135,6 +145,11 @@ func (a *api) UpdateCredential(ctx context.Context, req *credentialv1.UpdateCred
 		return nil, status.Error(codes.InvalidArgument, "credential is required")
 	}
 
+	mask := req.GetUpdateMask()
+	if mask == nil || len(mask.GetPaths()) == 0 {
+		return nil, status.Error(codes.InvalidArgument, "update_mask is required; specify which fields to update")
+	}
+
 	id, err := uuid.Parse(credProto.GetId())
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "invalid credential ID: %v", err)
@@ -149,31 +164,28 @@ func (a *api) UpdateCredential(ctx context.Context, req *credentialv1.UpdateCred
 		"updated_at": time.Now(),
 	}
 
-	mask := req.GetUpdateMask()
-	if mask == nil || len(mask.GetPaths()) == 0 {
-		fields["name"] = credProto.GetName()
-		fields["description"] = credProto.GetDescription()
-		fields["labels"] = model.Labels(credProto.GetLabels())
-		fields["auth_config"] = model.AuthConfigFromProto(credProto)
-	} else {
-		for _, path := range mask.GetPaths() {
-			switch path {
-			case "name":
-				fields["name"] = credProto.GetName()
-			case "description":
-				fields["description"] = credProto.GetDescription()
-			case "labels":
-				fields["labels"] = model.Labels(credProto.GetLabels())
-			case "auth_config":
-				fields["auth_config"] = model.AuthConfigFromProto(credProto)
-			default:
-				return nil, status.Errorf(codes.InvalidArgument, "unsupported update field: %s", path)
-			}
+	for _, path := range mask.GetPaths() {
+		switch path {
+		case "name":
+			fields["name"] = credProto.GetName()
+		case "description":
+			fields["description"] = credProto.GetDescription()
+		case "labels":
+			fields["labels"] = model.Labels(credProto.GetLabels())
+		case "auth_config":
+			fields["auth_config"] = model.AuthConfigFromProto(credProto)
+		case "type":
+			return nil, status.Error(codes.InvalidArgument, "credential type is immutable; delete and recreate to change types")
+		default:
+			return nil, status.Errorf(codes.InvalidArgument, "unsupported update field: %s", path)
 		}
 	}
 
 	cred, err = a.store.Update(ctx, cred, fields)
 	if err != nil {
+		if errors.Is(err, store.ErrInvalidAuthConfig) {
+			return nil, status.Errorf(codes.InvalidArgument, "%v", err)
+		}
 		return nil, status.Errorf(codes.Internal, "failed to update credential: %v", err)
 	}
 
@@ -186,6 +198,15 @@ func (a *api) DeleteCredential(ctx context.Context, req *credentialv1.DeleteCred
 	id, err := uuid.Parse(req.GetCredentialId())
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "invalid credential ID: %v", err)
+	}
+	
+	refCount, err := a.sourceStore.CountByCredentialID(ctx, id)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to check credential references: %v", err)
+	}
+	if refCount > 0 {
+		return nil, status.Errorf(codes.FailedPrecondition,
+			"credential is in use by %d source(s); detach or delete them before deleting this credential", refCount)
 	}
 
 	if err := a.store.Delete(ctx, id); err != nil {

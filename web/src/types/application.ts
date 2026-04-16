@@ -12,7 +12,6 @@ export const applicationSchema = z.object({
   description: z.string().optional(),
   labels: z.record(z.string(), z.string()).optional(),
   created_by: actorRefSchema.optional(),
-  updated_by: actorRefSchema.optional(),
   created_at: z.string().optional(),
   updated_at: z.string().optional(),
 });
