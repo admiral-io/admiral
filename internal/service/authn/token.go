@@ -14,13 +14,15 @@ var AllScopes = []string{
 	"app:read", "app:write",
 	"env:read", "env:write",
 	"var:read", "var:write",
-	"cluster:read", "cluster:write",
+	"cluster:read", "cluster:write", "cluster:status", "cluster:deploy",
 	"credential:read", "credential:write",
 	"source:read", "source:write",
+	"module:read", "module:write",
+	"deploy:read", "deploy:write",
+	"runner:read", "runner:write", "runner:exec",
 	"state:read", "state:write", "state:admin",
 	"token:read", "token:write",
 	"user:read",
-	"runner:exec",
 }
 
 var SessionScopes = []string{

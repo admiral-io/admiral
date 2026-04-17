@@ -114,6 +114,24 @@ func DeriveDeploymentStatus(revisions []Revision) string {
 	return DeploymentStatusPartiallyFailed
 }
 
+func IsTerminalDeploymentStatus(s string) bool {
+	switch s {
+	case DeploymentStatusSucceeded,
+		DeploymentStatusFailed,
+		DeploymentStatusPartiallyFailed,
+		DeploymentStatusCancelled:
+		return true
+	}
+	return false
+}
+
+func DeploymentStatusToProtoEnum(s string) deploymentv1.DeploymentStatus {
+	if e, ok := deploymentStatusToProto[s]; ok {
+		return e
+	}
+	return deploymentv1.DeploymentStatus_DEPLOYMENT_STATUS_UNSPECIFIED
+}
+
 func (d *Deployment) ToProto(summary *deploymentv1.RevisionSummary) *deploymentv1.Deployment {
 	proto := &deploymentv1.Deployment{
 		Id:              d.Id.String(),

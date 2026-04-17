@@ -149,7 +149,20 @@ func (env *Environment) ToProto() *environmentv1.Environment {
 	return e
 }
 
-// WorkloadTargetsFromProto converts proto workload targets to the DB model.
+func (e *Environment) TerraformRunnerID() (uuid.UUID, error) {
+	for _, t := range e.InfrastructureTargets {
+		if t.Type != "terraform" || t.RunnerId == "" {
+			continue
+		}
+		id, err := uuid.Parse(t.RunnerId)
+		if err != nil {
+			return uuid.Nil, fmt.Errorf("environment %s has invalid runner_id: %v", e.Id, err)
+		}
+		return id, nil
+	}
+	return uuid.Nil, fmt.Errorf("environment %s has no terraform runner configured", e.Id)
+}
+
 func WorkloadTargetsFromProto(targets []*environmentv1.WorkloadTarget) WorkloadTargets {
 	if len(targets) == 0 {
 		return nil
@@ -167,7 +180,6 @@ func WorkloadTargetsFromProto(targets []*environmentv1.WorkloadTarget) WorkloadT
 	return result
 }
 
-// InfrastructureTargetsFromProto converts proto infrastructure targets to the DB model.
 func InfrastructureTargetsFromProto(targets []*environmentv1.InfrastructureTarget) InfrastructureTargets {
 	if len(targets) == 0 {
 		return nil

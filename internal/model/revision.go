@@ -4,6 +4,7 @@ import (
 	"database/sql/driver"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -11,6 +12,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	deploymentv1 "go.admiral.io/sdk/proto/admiral/deployment/v1"
+	runnerv1 "go.admiral.io/sdk/proto/admiral/runner/v1"
 )
 
 const (
@@ -37,8 +39,6 @@ var revisionStatusToProto = map[string]deploymentv1.RevisionStatus{
 	RevisionStatusCancelled:        deploymentv1.RevisionStatus_REVISION_STATUS_CANCELLED,
 }
 
-// revisionKindToProto maps the DB string form to the proto enum. Shares
-// values with ComponentKind but the enum types differ.
 var revisionKindToProto = map[string]deploymentv1.RevisionKind{
 	ComponentKindInfrastructure: deploymentv1.RevisionKind_REVISION_KIND_INFRASTRUCTURE,
 	ComponentKindWorkload:       deploymentv1.RevisionKind_REVISION_KIND_WORKLOAD,
@@ -140,3 +140,55 @@ func (r *Revision) ToProto() *deploymentv1.Revision {
 	return proto
 }
 
+func ParseResolvedValuesAsVars(raw string) (map[string]string, error) {
+	if strings.TrimSpace(raw) == "" {
+		return map[string]string{}, nil
+	}
+	var parsed map[string]any
+	if err := json.Unmarshal([]byte(raw), &parsed); err != nil {
+		return nil, fmt.Errorf("resolved_values is not a JSON object: %w", err)
+	}
+	out := make(map[string]string, len(parsed))
+	for k, v := range parsed {
+		switch t := v.(type) {
+		case string:
+			out[k] = t
+		case nil:
+			out[k] = ""
+		default:
+			b, err := json.Marshal(v)
+			if err != nil {
+				return nil, fmt.Errorf("marshal var %q: %w", k, err)
+			}
+			out[k] = string(b)
+		}
+	}
+	return out, nil
+}
+
+func DeriveRevisionUpdate(jobType, reportedStatus string, result *runnerv1.JobResult) map[string]any {
+	fields := map[string]any{}
+	if reportedStatus == JobStatusFailed {
+		fields["status"] = RevisionStatusFailed
+		fields["error_message"] = result.GetErrorMessage()
+		return fields
+	}
+
+	switch jobType {
+	case JobTypePlan, JobTypeDestroyPlan:
+		fields["status"] = RevisionStatusAwaitingApproval
+		fields["plan_output"] = result.GetPlanOutput()
+		fields["error_message"] = ""
+		if ps := result.GetPlanSummary(); ps != nil {
+			fields["plan_summary"] = &TerraformPlanSummary{
+				Additions:    ps.GetAdditions(),
+				Changes:      ps.GetChanges(),
+				Destructions: ps.GetDestructions(),
+			}
+		}
+	case JobTypeApply, JobTypeDestroyApply:
+		fields["status"] = RevisionStatusSucceeded
+		fields["error_message"] = ""
+	}
+	return fields
+}

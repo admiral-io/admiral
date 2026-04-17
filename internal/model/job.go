@@ -1,6 +1,7 @@
 package model
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/google/uuid"
@@ -39,6 +40,16 @@ var jobStatusToProto = map[string]runnerv1.JobStatus{
 	JobStatusSucceeded: runnerv1.JobStatus_JOB_STATUS_SUCCEEDED,
 	JobStatusFailed:    runnerv1.JobStatus_JOB_STATUS_FAILED,
 	JobStatusCanceled:  runnerv1.JobStatus_JOB_STATUS_CANCELED,
+}
+
+func JobStatusFromProto(s runnerv1.JobStatus) (string, error) {
+	switch s {
+	case runnerv1.JobStatus_JOB_STATUS_SUCCEEDED:
+		return JobStatusSucceeded, nil
+	case runnerv1.JobStatus_JOB_STATUS_FAILED:
+		return JobStatusFailed, nil
+	}
+	return "", fmt.Errorf("reported job status must be SUCCEEDED or FAILED (got %s)", s)
 }
 
 type Job struct {

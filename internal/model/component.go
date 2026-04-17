@@ -4,6 +4,7 @@ import (
 	"database/sql/driver"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -155,6 +156,28 @@ func (o *ComponentOverride) TableName() string {
 	return "component_overrides"
 }
 
+func (o *ComponentOverride) ApplyTo(p *componentv1.Component) {
+	p.Disabled = o.Disabled
+	if o.Disabled {
+		return
+	}
+	if o.ModuleId != nil {
+		p.ModuleId = o.ModuleId.String()
+	}
+	if o.Version != nil {
+		p.Version = *o.Version
+	}
+	if o.ValuesTemplate != nil {
+		p.ValuesTemplate = *o.ValuesTemplate
+	}
+	if o.DependsOn != nil {
+		p.DependsOn = []string(o.DependsOn)
+	}
+	if o.Outputs != nil {
+		p.Outputs = o.Outputs.ToProto()
+	}
+}
+
 func (o *ComponentOverride) ToProto() *componentv1.ComponentOverride {
 	out := &componentv1.ComponentOverride{
 		ComponentId:   o.ComponentId.String(),
@@ -183,4 +206,30 @@ func (o *ComponentOverride) ToProto() *componentv1.ComponentOverride {
 		out.Outputs = o.Outputs.ToProto()
 	}
 	return out
+}
+
+func ValidateValuesTemplate(s string) error {
+	if strings.TrimSpace(s) == "" {
+		return nil
+	}
+	var m map[string]any
+	if err := json.Unmarshal([]byte(s), &m); err != nil {
+		return fmt.Errorf("values_template is not a valid JSON object: %w", err)
+	}
+	return nil
+}
+
+func ParseDependsOn(deps []string) ([]string, error) {
+	if len(deps) == 0 {
+		return nil, nil
+	}
+	out := make([]string, 0, len(deps))
+	for _, d := range deps {
+		id, err := uuid.Parse(d)
+		if err != nil {
+			return nil, fmt.Errorf("not a valid UUID: %s", d)
+		}
+		out = append(out, id.String())
+	}
+	return out, nil
 }
