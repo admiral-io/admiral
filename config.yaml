@@ -18,11 +18,6 @@ server:
     go_runtime_stats:
       collection_interval: 5s
     reporter_type: prometheus
-endpoints:
-  manifest:
-    bucket_name: ${MANIFEST_BUCKET_NAME}
-  revision:
-    bucket_name: ${REVISION_BUCKET_NAME}
 services:
   authn:
     name: ${OAUTH2_NAME}
@@ -47,6 +42,7 @@ services:
     ssl_mode: ${DATABASE_SSL_MODE}
   object_storage:
     type: ${STORAGE_TYPE}
+    bucket: ${STORAGE_BUCKET}
     s3:
       endpoint: ${STORAGE_ENDPOINT}
       region: ${STORAGE_REGION}

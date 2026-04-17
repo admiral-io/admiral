@@ -389,8 +389,14 @@ func (a *api) SetComponentOverride(ctx context.Context, req *componentv1.SetComp
 		if err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, "invalid override module ID: %v", err)
 		}
-		if _, err := a.modStore.Get(ctx, modID); err != nil {
+		mod, err := a.modStore.Get(ctx, modID)
+		if err != nil {
 			return nil, status.Errorf(codes.NotFound, "override module not found: %s", modID)
+		}
+		overrideKind := model.DeriveComponentKind(mod.Type)
+		if overrideKind != comp.Kind {
+			return nil, status.Errorf(codes.InvalidArgument,
+				"override module %s has kind %s, but component %s is %s", modID, overrideKind, comp.Name, comp.Kind)
 		}
 		o.ModuleId = &modID
 	}

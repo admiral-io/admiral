@@ -178,6 +178,28 @@ func (o *ComponentOverride) ApplyTo(p *componentv1.Component) {
 	}
 }
 
+func (o *ComponentOverride) ApplyToModel(c *Component) bool {
+	if o.Disabled {
+		return true
+	}
+	if o.ModuleId != nil {
+		c.ModuleId = *o.ModuleId
+	}
+	if o.Version != nil {
+		c.Version = *o.Version
+	}
+	if o.ValuesTemplate != nil {
+		c.ValuesTemplate = *o.ValuesTemplate
+	}
+	if o.DependsOn != nil {
+		c.DependsOn = pq.StringArray(o.DependsOn)
+	}
+	if o.Outputs != nil {
+		c.Outputs = ComponentOutputs(*o.Outputs)
+	}
+	return false
+}
+
 func (o *ComponentOverride) ToProto() *componentv1.ComponentOverride {
 	out := &componentv1.ComponentOverride{
 		ComponentId:   o.ComponentId.String(),

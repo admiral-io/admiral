@@ -84,8 +84,9 @@ func (a *api) GetJobBundle(ctx context.Context, req *runnerv1.GetJobBundleReques
 
 	return &runnerv1.GetJobBundleResponse{
 		Bundle: &runnerv1.JobBundle{
-			ArtifactUrl: artifactURLForJob(jobID),
-			Variables:   vars,
+			ArtifactUrl:      artifactURLForJob(jobID),
+			Variables:        vars,
+			WorkingDirectory: rev.WorkingDirectory,
 			// backend_config is empty for 6.3: modules bring their own
 			// backend block. Admiral HTTP state backend is a later phase.
 			BackendConfig:    "",
@@ -139,6 +140,16 @@ func (a *api) ReportJobResult(ctx context.Context, req *runnerv1.ReportJobResult
 
 	revFields := model.DeriveRevisionUpdate(job.JobType, jobStatus, result)
 	revFields["completed_at"] = now
+
+	// Persist plan output to object storage.
+	if planOutput := result.GetPlanOutput(); planOutput != "" {
+		key := fmt.Sprintf("plans/%s/plan.txt", rev.Id)
+		if err := a.objStore.PutObject(ctx, a.objBucket, key, []byte(planOutput)); err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to write plan output to object storage: %v", err)
+		}
+		revFields["plan_output_key"] = key
+	}
+
 	if _, err := a.revisionStore.Update(ctx, rev, revFields); err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to update revision: %v", err)
 	}
@@ -300,10 +311,9 @@ func (a *api) serveArtifact(w http.ResponseWriter, r *http.Request) {
 	}
 	defer fetch.Cleanup()
 
-	workDir := fetch.Dir
 	if mod.Path != "" {
-		workDir = filepath.Join(fetch.Dir, mod.Path)
-		info, err := os.Stat(workDir)
+		pathDir := filepath.Join(fetch.Dir, mod.Path)
+		info, err := os.Stat(pathDir)
 		if err != nil || !info.IsDir() {
 			a.logger.Error("artifact: module path not found",
 				zap.String("path", mod.Path), zap.Error(err))
@@ -316,7 +326,7 @@ func (a *api) serveArtifact(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Disposition",
 		fmt.Sprintf(`attachment; filename="%s.tar.gz"`, jobID))
 
-	if err := writeTarGz(w, workDir); err != nil {
+	if err := writeTarGz(w, fetch.Dir); err != nil {
 		a.logger.Error("artifact: tar write failed",
 			zap.String("job_id", jobID.String()), zap.Error(err))
 		// Headers already written; log-and-return.

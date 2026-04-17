@@ -20,6 +20,7 @@ import (
 	"go.admiral.io/admiral/internal/service"
 	"go.admiral.io/admiral/internal/service/authn"
 	"go.admiral.io/admiral/internal/service/database"
+	"go.admiral.io/admiral/internal/service/objectstorage"
 	"go.admiral.io/admiral/internal/store"
 	runnerv1 "go.admiral.io/sdk/proto/admiral/runner/v1"
 )
@@ -49,13 +50,15 @@ type api struct {
 	credentialStore *store.CredentialStore
 	tokenIssuer     authn.TokenIssuer
 	sessionProvider authn.SessionProvider
+	objStore        objectstorage.Service
+	objBucket       string
 	qb              querybuilder.QueryBuilder
 	jobsQB          querybuilder.QueryBuilder
 	logger          *zap.Logger
 	scope           tally.Scope
 }
 
-func New(_ *config.Config, log *zap.Logger, scope tally.Scope) (endpoint.Endpoint, error) {
+func New(cfg *config.Config, log *zap.Logger, scope tally.Scope) (endpoint.Endpoint, error) {
 	db, err := service.GetService[database.Service]("service.database")
 	if err != nil {
 		return nil, err
@@ -103,6 +106,12 @@ func New(_ *config.Config, log *zap.Logger, scope tally.Scope) (endpoint.Endpoin
 		return nil, err
 	}
 
+	objStore, err := service.GetService[objectstorage.Service](objectstorage.Name)
+	if err != nil {
+		return nil, fmt.Errorf("object storage is required: %w", err)
+	}
+	objBucket := cfg.Services.ObjectStorage.Bucket
+
 	return &api{
 		store:           runnerStore,
 		tokenStore:      tokenStore,
@@ -115,6 +124,8 @@ func New(_ *config.Config, log *zap.Logger, scope tally.Scope) (endpoint.Endpoin
 		credentialStore: credentialStore,
 		tokenIssuer:     authnService,
 		sessionProvider: authnService,
+		objStore:        objStore,
+		objBucket:       objBucket,
 		logger:          log.Named(Name),
 		scope:           scope.SubScope("runner"),
 		qb:              querybuilder.New(filterColumns),

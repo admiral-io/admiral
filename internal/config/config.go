@@ -18,8 +18,7 @@ type Configurable interface {
 }
 
 type Config struct {
-	Server *Server `yaml:"server"`
-	//Endpoints *Endpoints `yaml:"endpoints"`
+	Server   *Server  `yaml:"server"`
 	Services Services `yaml:"services"`
 }
 
@@ -109,7 +108,6 @@ func setDefaults(cfg *Config) *Config {
 
 	configs := []Configurable{
 		cfg.Server,
-		//cfg.Endpoints,
 		cfg.Services.Authn,
 		cfg.Services.Database,
 		cfg.Services.Session,
@@ -139,7 +137,6 @@ func (c *Config) validate() error {
 	}{
 		// Optional configs
 		{c.Server, "server", false},
-		//{c.Endpoints, "endpoints", false},
 		{c.Services.Authn, "services.authn", false},
 		{c.Services.Database, "services.database", true},
 		{c.Services.Session, "services.session", false},

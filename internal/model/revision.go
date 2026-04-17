@@ -92,14 +92,16 @@ type Revision struct {
 	ComponentName    string                `gorm:"not null"`
 	Kind             string                `gorm:"not null"`
 	Status           string                `gorm:"not null"`
+	ModuleId         uuid.UUID             `gorm:"type:uuid;not null"`
 	SourceId         *uuid.UUID            `gorm:"type:uuid"`
 	Version          string                `gorm:"type:text;not null;default:''"`
 	ResolvedValues   string                `gorm:"type:text;not null;default:''"`
 	DependsOn        pq.StringArray        `gorm:"type:text[];not null;default:'{}'"`
 	BlockedBy        pq.StringArray        `gorm:"type:text[];not null;default:'{}'"`
+	WorkingDirectory string                `gorm:"type:text;not null;default:''"`
 	ArtifactChecksum string                `gorm:"type:text;not null;default:''"`
 	ArtifactUrl      string                `gorm:"type:text;not null;default:''"`
-	PlanOutput       string                `gorm:"type:text;not null;default:''"`
+	PlanOutputKey    string                `gorm:"type:text;not null;default:''"`
 	PlanSummary      *TerraformPlanSummary `gorm:"type:jsonb"`
 	ErrorMessage     string                `gorm:"type:text;not null;default:''"`
 	RetryCount       int32                 `gorm:"not null;default:0"`
@@ -116,13 +118,15 @@ func (r *Revision) ToProto() *deploymentv1.Revision {
 		ComponentName:    r.ComponentName,
 		Kind:             revisionKindToProto[r.Kind],
 		Status:           revisionStatusToProto[r.Status],
+		ModuleId:         r.ModuleId.String(),
 		Version:          r.Version,
 		ResolvedValues:   r.ResolvedValues,
 		DependsOn:        []string(r.DependsOn),
 		BlockedBy:        []string(r.BlockedBy),
+		WorkingDirectory: r.WorkingDirectory,
 		ArtifactChecksum: r.ArtifactChecksum,
 		ArtifactUrl:      r.ArtifactUrl,
-		PlanOutput:       r.PlanOutput,
+		HasPlanOutput:    r.PlanOutputKey != "",
 		PlanSummary:      r.PlanSummary.ToProto(),
 		ErrorMessage:     r.ErrorMessage,
 		RetryCount:       r.RetryCount,
@@ -177,7 +181,6 @@ func DeriveRevisionUpdate(jobType, reportedStatus string, result *runnerv1.JobRe
 	switch jobType {
 	case JobTypePlan, JobTypeDestroyPlan:
 		fields["status"] = RevisionStatusAwaitingApproval
-		fields["plan_output"] = result.GetPlanOutput()
 		fields["error_message"] = ""
 		if ps := result.GetPlanSummary(); ps != nil {
 			fields["plan_summary"] = &TerraformPlanSummary{

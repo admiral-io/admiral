@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
+	"net/http"
 	"time"
 
 	"github.com/google/uuid"
@@ -20,6 +21,7 @@ import (
 	"go.admiral.io/admiral/internal/service"
 	"go.admiral.io/admiral/internal/service/authn"
 	"go.admiral.io/admiral/internal/service/database"
+	"go.admiral.io/admiral/internal/service/objectstorage"
 	"go.admiral.io/admiral/internal/store"
 	deploymentv1 "go.admiral.io/sdk/proto/admiral/deployment/v1"
 )
@@ -37,14 +39,17 @@ type api struct {
 	appStore        *store.ApplicationStore
 	envStore        *store.EnvironmentStore
 	componentStore  *store.ComponentStore
+	overrideStore   *store.ComponentOverrideStore
 	moduleStore     *store.ModuleStore
 	runnerStore     *store.RunnerStore
+	objStore        objectstorage.Service
+	objBucket       string
 	qb              querybuilder.QueryBuilder
 	logger          *zap.Logger
 	scope           tally.Scope
 }
 
-func New(_ *config.Config, log *zap.Logger, scope tally.Scope) (endpoint.Endpoint, error) {
+func New(cfg *config.Config, log *zap.Logger, scope tally.Scope) (endpoint.Endpoint, error) {
 	db, err := service.GetService[database.Service]("service.database")
 	if err != nil {
 		return nil, err
@@ -74,6 +79,10 @@ func New(_ *config.Config, log *zap.Logger, scope tally.Scope) (endpoint.Endpoin
 	if err != nil {
 		return nil, err
 	}
+	overrideStore, err := store.NewComponentOverrideStore(db.GormDB())
+	if err != nil {
+		return nil, err
+	}
 	moduleStore, err := store.NewModuleStore(db.GormDB())
 	if err != nil {
 		return nil, err
@@ -83,6 +92,12 @@ func New(_ *config.Config, log *zap.Logger, scope tally.Scope) (endpoint.Endpoin
 		return nil, err
 	}
 
+	objStore, err := service.GetService[objectstorage.Service](objectstorage.Name)
+	if err != nil {
+		return nil, fmt.Errorf("object storage is required: %w", err)
+	}
+	objBucket := cfg.Services.ObjectStorage.Bucket
+
 	return &api{
 		deploymentStore: deploymentStore,
 		revisionStore:   revisionStore,
@@ -90,16 +105,22 @@ func New(_ *config.Config, log *zap.Logger, scope tally.Scope) (endpoint.Endpoin
 		appStore:        appStore,
 		envStore:        envStore,
 		componentStore:  componentStore,
+		overrideStore:   overrideStore,
 		moduleStore:     moduleStore,
 		runnerStore:     runnerStore,
+		objStore:        objStore,
+		objBucket:       objBucket,
 		logger:          log.Named(Name),
 		scope:           scope.SubScope("deployment"),
 		qb:              querybuilder.New(filterColumns),
 	}, nil
 }
 
+const planOutputRoutePattern = "/api/v1/deployments/{deployment_id}/revisions/{revision_id}/plan"
+
 func (a *api) Register(r endpoint.Registrar) error {
 	deploymentv1.RegisterDeploymentAPIServer(r.GRPCServer(), a)
+	r.HTTPMux().HandleFunc("GET "+planOutputRoutePattern, a.servePlanOutput)
 	return r.RegisterJSONGateway(deploymentv1.RegisterDeploymentAPIHandler)
 }
 
@@ -145,14 +166,32 @@ func (a *api) CreateDeployment(ctx context.Context, req *deploymentv1.CreateDepl
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to list components: %v", err)
 	}
+
+	// Load all overrides for this (app, env) in one query.
+	overrides, err := a.overrideStore.ListByApplicationEnv(ctx, appID, envID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to list component overrides: %v", err)
+	}
+	overrideMap := make(map[uuid.UUID]*model.ComponentOverride, len(overrides))
+	for i := range overrides {
+		overrideMap[overrides[i].ComponentId] = &overrides[i]
+	}
+
+	// Apply overrides and filter to non-disabled infrastructure components.
 	var infraComponents []model.Component
 	for i := range components {
-		if components[i].Kind == model.ComponentKindInfrastructure {
-			infraComponents = append(infraComponents, components[i])
+		comp := components[i]
+		if o, ok := overrideMap[comp.Id]; ok {
+			if o.ApplyToModel(&comp) {
+				continue // disabled for this environment
+			}
+		}
+		if comp.Kind == model.ComponentKindInfrastructure {
+			infraComponents = append(infraComponents, comp)
 		}
 	}
 	if len(infraComponents) == 0 {
-		return nil, status.Error(codes.FailedPrecondition, "application has no infrastructure components to deploy")
+		return nil, status.Error(codes.FailedPrecondition, "application has no infrastructure components to deploy for this environment")
 	}
 
 	triggerType := model.DeploymentTriggerManual
@@ -182,15 +221,17 @@ func (a *api) CreateDeployment(ctx context.Context, req *deploymentv1.CreateDepl
 		sourceID := mod.SourceId
 
 		rev := &model.Revision{
-			DeploymentId:   dep.Id,
-			ComponentId:    comp.Id,
-			ComponentName:  comp.Name,
-			Kind:           comp.Kind,
-			Status:         model.RevisionStatusQueued,
-			SourceId:       &sourceID,
-			Version:        comp.Version,
-			ResolvedValues: comp.ValuesTemplate,
-			DependsOn:      pq.StringArray(comp.DependsOn),
+			DeploymentId:     dep.Id,
+			ComponentId:      comp.Id,
+			ComponentName:    comp.Name,
+			Kind:             comp.Kind,
+			Status:           model.RevisionStatusQueued,
+			ModuleId:         comp.ModuleId,
+			SourceId:         &sourceID,
+			Version:          comp.Version,
+			ResolvedValues:   comp.ValuesTemplate,
+			DependsOn:        pq.StringArray(comp.DependsOn),
+			WorkingDirectory: mod.Path,
 		}
 		rev, err = a.revisionStore.Create(ctx, rev)
 		if err != nil {
@@ -370,4 +411,43 @@ func (a *api) deploymentToProto(ctx context.Context, dep *model.Deployment) *dep
 	// until we persist revision-state changes back to the deployment row.
 	proto.Status = model.DeploymentStatusToProtoEnum(model.DeriveDeploymentStatus(revisions))
 	return proto
+}
+
+func (a *api) servePlanOutput(w http.ResponseWriter, r *http.Request) {
+	depID, err := uuid.Parse(r.PathValue("deployment_id"))
+	if err != nil {
+		http.Error(w, "invalid deployment_id", http.StatusBadRequest)
+		return
+	}
+	revID, err := uuid.Parse(r.PathValue("revision_id"))
+	if err != nil {
+		http.Error(w, "invalid revision_id", http.StatusBadRequest)
+		return
+	}
+
+	rev, err := a.revisionStore.Get(r.Context(), revID)
+	if err != nil {
+		http.Error(w, "revision not found", http.StatusNotFound)
+		return
+	}
+	if rev.DeploymentId != depID {
+		http.Error(w, "revision not found", http.StatusNotFound)
+		return
+	}
+	if rev.PlanOutputKey == "" {
+		http.Error(w, "no plan output available", http.StatusNotFound)
+		return
+	}
+	data, err := a.objStore.GetObject(r.Context(), a.objBucket, rev.PlanOutputKey)
+	if err != nil {
+		a.logger.Error("failed to read plan output from object storage",
+			zap.String("revision_id", revID.String()),
+			zap.String("key", rev.PlanOutputKey),
+			zap.Error(err))
+		http.Error(w, "failed to read plan output", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+	w.Write(data)
 }

@@ -13,6 +13,7 @@ import (
 	runnerep "go.admiral.io/admiral/internal/endpoint/runner"
 	sourceep "go.admiral.io/admiral/internal/endpoint/source"
 	userep "go.admiral.io/admiral/internal/endpoint/user"
+	variableep "go.admiral.io/admiral/internal/endpoint/variable"
 	"go.admiral.io/admiral/internal/middleware"
 	authnmw "go.admiral.io/admiral/internal/middleware/authn"
 	authzmw "go.admiral.io/admiral/internal/middleware/authz"
@@ -51,6 +52,7 @@ var Endpoints = endpoint.Factory{
 	runnerep.Name:       runnerep.New,
 	sourceep.Name:       sourceep.New,
 	userep.Name:         userep.New,
+	variableep.Name:     variableep.New,
 }
 
 var CoreComponentFactory = &ComponentFactory{

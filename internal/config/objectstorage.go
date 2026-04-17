@@ -77,9 +77,10 @@ func (g *GCSStorageConfig) Validate() error {
 }
 
 type ObjectStorage struct {
-	Type ObjectStorageType `yaml:"type"`
-	S3   *S3StorageConfig  `yaml:"s3,omitempty"`
-	GCS  *GCSStorageConfig `yaml:"gcs,omitempty"`
+	Type   ObjectStorageType `yaml:"type"`
+	Bucket string            `yaml:"bucket"`
+	S3     *S3StorageConfig  `yaml:"s3,omitempty"`
+	GCS    *GCSStorageConfig `yaml:"gcs,omitempty"`
 }
 
 func (s *ObjectStorage) SetDefaults() {
@@ -103,6 +104,9 @@ func (s *ObjectStorage) Validate() error {
 
 	if s.Type == "" {
 		return fmt.Errorf("type is required")
+	}
+	if s.Bucket == "" {
+		return fmt.Errorf("bucket is required")
 	}
 
 	switch s.Type {
