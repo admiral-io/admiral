@@ -218,8 +218,6 @@ func (a *api) CreateDeployment(ctx context.Context, req *deploymentv1.CreateDepl
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to resolve module for component %s: %v", comp.Id, err)
 		}
-		sourceID := mod.SourceId
-
 		rev := &model.Revision{
 			DeploymentId:     dep.Id,
 			ComponentId:      comp.Id,
@@ -227,7 +225,7 @@ func (a *api) CreateDeployment(ctx context.Context, req *deploymentv1.CreateDepl
 			Kind:             comp.Kind,
 			Status:           model.RevisionStatusQueued,
 			ModuleId:         comp.ModuleId,
-			SourceId:         &sourceID,
+			SourceId:         &mod.SourceId,
 			Version:          comp.Version,
 			ResolvedValues:   comp.ValuesTemplate,
 			DependsOn:        pq.StringArray(comp.DependsOn),
