@@ -19,6 +19,7 @@ CREATE TABLE IF NOT EXISTS revisions (
     artifact_checksum TEXT NOT NULL DEFAULT '',
     artifact_url TEXT NOT NULL DEFAULT '',
     plan_output_key TEXT NOT NULL DEFAULT '',
+    plan_file_key TEXT NOT NULL DEFAULT '',
     plan_summary JSONB,
     error_message TEXT NOT NULL DEFAULT '',
     retry_count INT NOT NULL DEFAULT 0,

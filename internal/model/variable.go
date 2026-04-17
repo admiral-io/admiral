@@ -4,12 +4,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	commonv1 "go.admiral.io/sdk/proto/admiral/common/v1"
+	runnerv1 "go.admiral.io/sdk/proto/admiral/runner/v1"
 	variablev1 "go.admiral.io/sdk/proto/admiral/variable/v1"
 )
 
@@ -46,12 +48,10 @@ var variableSourceToProto = map[string]variablev1.VariableSource{
 	VariableSourceInfrastructure: variablev1.VariableSource_VARIABLE_SOURCE_INFRASTRUCTURE,
 }
 
-// VariableTypeFromProto converts a proto VariableType to its database string.
 func VariableTypeFromProto(t variablev1.VariableType) string {
 	return variableTypeFromProto[t]
 }
 
-// Variable represents a scoped configuration key-value pair.
 type Variable struct {
 	Id            uuid.UUID  `gorm:"type:uuid;default:gen_random_uuid();primaryKey"`
 	Key           string     `gorm:"type:varchar(63);not null"`
@@ -67,7 +67,6 @@ type Variable struct {
 	UpdatedAt     time.Time
 }
 
-// Validate checks type-specific value constraints.
 func (v *Variable) Validate() error {
 	switch v.Type {
 	case VariableTypeString:
@@ -124,4 +123,40 @@ func (v *Variable) ToProto() *variablev1.Variable {
 	}
 
 	return out
+}
+
+func VariablesFromTerraformOutputs(
+	outputs map[string]*runnerv1.TerraformOutput,
+	componentName string,
+	appID, envID uuid.UUID,
+	createdBy string,
+) []Variable {
+	vars := make([]Variable, 0, len(outputs))
+	for name, out := range outputs {
+		vars = append(vars, Variable{
+			Key:           componentName + "." + name,
+			Value:         out.GetValue(),
+			Sensitive:     out.GetSensitive(),
+			Type:          tfTypeToVariableType(out.GetType()),
+			Source:        VariableSourceInfrastructure,
+			ApplicationId: &appID,
+			EnvironmentId: &envID,
+			CreatedBy:     createdBy,
+		})
+	}
+	return vars
+}
+
+func tfTypeToVariableType(tfType string) string {
+	t := strings.ToLower(strings.TrimSpace(tfType))
+	switch t {
+	case "string":
+		return VariableTypeString
+	case "number":
+		return VariableTypeNumber
+	case "bool":
+		return VariableTypeBoolean
+	default:
+		return VariableTypeComplex
+	}
 }

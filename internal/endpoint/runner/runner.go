@@ -48,6 +48,7 @@ type api struct {
 	moduleStore     *store.ModuleStore
 	sourceStore     *store.SourceStore
 	credentialStore *store.CredentialStore
+	variableStore   *store.VariableStore
 	tokenIssuer     authn.TokenIssuer
 	sessionProvider authn.SessionProvider
 	objStore        objectstorage.Service
@@ -100,6 +101,10 @@ func New(cfg *config.Config, log *zap.Logger, scope tally.Scope) (endpoint.Endpo
 	if err != nil {
 		return nil, err
 	}
+	variableStore, err := store.NewVariableStore(db.GormDB())
+	if err != nil {
+		return nil, err
+	}
 
 	authnService, err := service.GetService[authn.Service]("service.authn")
 	if err != nil {
@@ -122,6 +127,7 @@ func New(cfg *config.Config, log *zap.Logger, scope tally.Scope) (endpoint.Endpo
 		moduleStore:     moduleStore,
 		sourceStore:     sourceStore,
 		credentialStore: credentialStore,
+		variableStore:   variableStore,
 		tokenIssuer:     authnService,
 		sessionProvider: authnService,
 		objStore:        objStore,
@@ -139,6 +145,8 @@ func (a *api) Register(r endpoint.Registrar) error {
 		return err
 	}
 	r.HTTPMux().HandleFunc("GET "+artifactRoutePattern, a.serveArtifact)
+	r.HTTPMux().HandleFunc("POST "+planFileRoutePattern, a.uploadPlanFile)
+	r.HTTPMux().HandleFunc("GET "+planFileRoutePattern, a.downloadPlanFile)
 	return nil
 }
 

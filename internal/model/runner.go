@@ -38,15 +38,7 @@ func RunnerKindFromProto(k runnerv1.RunnerKind) string {
 	return runnerKindFromProto[k]
 }
 
-func DeriveHealthStatus(lastHeartbeatAt *time.Time, now time.Time) runnerv1.RunnerHealthStatus {
-	if lastHeartbeatAt == nil {
-		return runnerv1.RunnerHealthStatus_RUNNER_HEALTH_STATUS_PENDING
-	}
-	if now.Sub(*lastHeartbeatAt) >= HeartbeatTTL {
-		return runnerv1.RunnerHealthStatus_RUNNER_HEALTH_STATUS_UNREACHABLE
-	}
-	return runnerv1.RunnerHealthStatus_RUNNER_HEALTH_STATUS_HEALTHY
-}
+// --- Supporting types ---
 
 type ActiveJobInfo struct {
 	JobId     string    `json:"job_id"`
@@ -140,6 +132,8 @@ func RunnerStatusFromProto(p *runnerv1.RunnerStatus) *RunnerStatus {
 	return s
 }
 
+// --- Runner ---
+
 type Runner struct {
 	Id              uuid.UUID     `gorm:"type:uuid;default:gen_random_uuid();primaryKey"`
 	Name            string        `gorm:"uniqueIndex;not null"`
@@ -167,4 +161,14 @@ func (r *Runner) ToProto() *runnerv1.Runner {
 		CreatedAt:    timestamppb.New(r.CreatedAt),
 		UpdatedAt:    timestamppb.New(r.UpdatedAt),
 	}
+}
+
+func DeriveHealthStatus(lastHeartbeatAt *time.Time, now time.Time) runnerv1.RunnerHealthStatus {
+	if lastHeartbeatAt == nil {
+		return runnerv1.RunnerHealthStatus_RUNNER_HEALTH_STATUS_PENDING
+	}
+	if now.Sub(*lastHeartbeatAt) >= HeartbeatTTL {
+		return runnerv1.RunnerHealthStatus_RUNNER_HEALTH_STATUS_UNREACHABLE
+	}
+	return runnerv1.RunnerHealthStatus_RUNNER_HEALTH_STATUS_HEALTHY
 }

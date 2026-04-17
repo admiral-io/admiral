@@ -14,20 +14,17 @@ import (
 	environmentv1 "go.admiral.io/sdk/proto/admiral/environment/v1"
 )
 
-// WorkloadTarget is the DB-storable representation of a workload target binding.
 type WorkloadTarget struct {
 	Type      string  `json:"type"`
 	ClusterId string  `json:"cluster_id,omitempty"`
 	Namespace *string `json:"namespace,omitempty"`
 }
 
-// InfrastructureTarget is the DB-storable representation of an infrastructure target binding.
 type InfrastructureTarget struct {
 	Type     string `json:"type"`
 	RunnerId string `json:"runner_id,omitempty"`
 }
 
-// WorkloadTargets is a JSONB-backed slice.
 type WorkloadTargets []WorkloadTarget
 
 func (t WorkloadTargets) Value() (driver.Value, error) {
@@ -58,7 +55,6 @@ func (t *WorkloadTargets) Scan(value any) error {
 	return json.Unmarshal(bytes, t)
 }
 
-// InfrastructureTargets is a JSONB-backed slice.
 type InfrastructureTargets []InfrastructureTarget
 
 func (t InfrastructureTargets) Value() (driver.Value, error) {

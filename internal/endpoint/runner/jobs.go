@@ -27,7 +27,10 @@ import (
 )
 
 const (
-	artifactRoutePattern = "/api/v1/runner/jobs/{id}/artifact"
+	artifactRoutePattern  = "/api/v1/runner/jobs/{id}/artifact"
+	planFileRoutePattern  = "/api/v1/runner/jobs/{id}/plan"
+	planFileContentType   = "application/octet-stream"
+	maxPlanFileSize       = 256 << 20 // 256 MiB
 )
 
 func (a *api) ClaimJob(ctx context.Context, _ *runnerv1.ClaimJobRequest) (*runnerv1.ClaimJobResponse, error) {
@@ -82,17 +85,25 @@ func (a *api) GetJobBundle(ctx context.Context, req *runnerv1.GetJobBundleReques
 		return nil, status.Errorf(codes.Internal, "failed to parse resolved values: %v", err)
 	}
 
-	return &runnerv1.GetJobBundleResponse{
-		Bundle: &runnerv1.JobBundle{
-			ArtifactUrl:      artifactURLForJob(jobID),
-			Variables:        vars,
-			WorkingDirectory: rev.WorkingDirectory,
-			// backend_config is empty for 6.3: modules bring their own
-			// backend block. Admiral HTTP state backend is a later phase.
-			BackendConfig:    "",
-			TerraformVersion: "",
-		},
-	}, nil
+	bundle := &runnerv1.JobBundle{
+		ArtifactUrl:      artifactURLForJob(jobID),
+		Variables:        vars,
+		WorkingDirectory: rev.WorkingDirectory,
+		// backend_config is empty for 6.3: modules bring their own
+		// backend block. Admiral HTTP state backend is a later phase.
+		BackendConfig:    "",
+		TerraformVersion: "",
+	}
+
+	// For apply jobs, include the URL to download the binary plan file
+	// produced by the preceding plan job.
+	if job.JobType == model.JobTypeApply || job.JobType == model.JobTypeDestroyApply {
+		if rev.PlanFileKey != "" {
+			bundle.PlanFileUrl = planFileURLForJob(jobID)
+		}
+	}
+
+	return &runnerv1.GetJobBundleResponse{Bundle: bundle}, nil
 }
 
 func (a *api) ReportJobResult(ctx context.Context, req *runnerv1.ReportJobResultRequest) (*runnerv1.ReportJobResultResponse, error) {
@@ -154,14 +165,30 @@ func (a *api) ReportJobResult(ctx context.Context, req *runnerv1.ReportJobResult
 		return nil, status.Errorf(codes.Internal, "failed to update revision: %v", err)
 	}
 
+	// Capture Terraform outputs after a successful apply.
+	dep, err := a.deploymentStore.Get(ctx, rev.DeploymentId)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to load deployment: %v", err)
+	}
+
+	if jobStatus == model.JobStatusSucceeded {
+		if err := a.captureOutputs(ctx, job, rev, dep, result); err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to capture outputs: %v", err)
+		}
+
+		// Promote blocked jobs whose dependencies are now satisfied.
+		if err := a.promoteUnblockedJobs(ctx, rev); err != nil {
+			a.logger.Error("failed to promote unblocked jobs",
+				zap.String("deployment_id", rev.DeploymentId.String()),
+				zap.String("component", rev.ComponentName),
+				zap.Error(err))
+		}
+	}
+
 	// Recompute deployment composite status from the fresh revision set.
 	revisions, err := a.revisionStore.ListByDeployment(ctx, rev.DeploymentId)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to list revisions: %v", err)
-	}
-	dep, err := a.deploymentStore.Get(ctx, rev.DeploymentId)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to load deployment: %v", err)
 	}
 	depStatus := model.DeriveDeploymentStatus(revisions)
 	depFields := map[string]any{
@@ -176,6 +203,122 @@ func (a *api) ReportJobResult(ctx context.Context, req *runnerv1.ReportJobResult
 	}
 
 	return &runnerv1.ReportJobResultResponse{Ack: true}, nil
+}
+
+// captureOutputs persists Terraform outputs as infrastructure variables after
+// a successful apply, or deletes them after a successful destroy.
+func (a *api) captureOutputs(
+	ctx context.Context,
+	job *model.Job,
+	rev *model.Revision,
+	dep *model.Deployment,
+	result *runnerv1.JobResult,
+) error {
+	switch job.JobType {
+	case model.JobTypeApply:
+		outputs := result.GetOutputs()
+		if len(outputs) == 0 {
+			return nil
+		}
+		vars := model.VariablesFromTerraformOutputs(
+			outputs,
+			rev.ComponentName,
+			dep.ApplicationId,
+			dep.EnvironmentId,
+			"system:output-capture",
+		)
+		if err := a.variableStore.UpsertInfraOutputs(
+			ctx, dep.ApplicationId, dep.EnvironmentId,
+			rev.ComponentName, vars,
+		); err != nil {
+			a.logger.Error("output capture: upsert failed",
+				zap.String("component", rev.ComponentName),
+				zap.String("deployment_id", dep.Id.String()),
+				zap.Error(err))
+			return err
+		}
+		a.logger.Info("output capture: stored infrastructure outputs",
+			zap.String("component", rev.ComponentName),
+			zap.Int("count", len(vars)))
+
+	case model.JobTypeDestroyApply:
+		if err := a.variableStore.DeleteInfraOutputs(
+			ctx, dep.ApplicationId, dep.EnvironmentId,
+			rev.ComponentName,
+		); err != nil {
+			a.logger.Error("output capture: delete failed",
+				zap.String("component", rev.ComponentName),
+				zap.String("deployment_id", dep.Id.String()),
+				zap.Error(err))
+			return err
+		}
+		a.logger.Info("output capture: cleared infrastructure outputs after destroy",
+			zap.String("component", rev.ComponentName))
+	}
+	return nil
+}
+
+// promoteUnblockedJobs checks for PENDING jobs in the same deployment whose
+// BlockedBy dependencies are now all satisfied (their revisions have reached
+// a post-plan or post-apply terminal state). Satisfied jobs are promoted from
+// PENDING to ASSIGNED so the runner can claim them.
+func (a *api) promoteUnblockedJobs(ctx context.Context, completedRev *model.Revision) error {
+	pendingJobs, err := a.jobStore.ListByDeploymentAndStatus(ctx, completedRev.DeploymentId, model.JobStatusPending)
+	if err != nil {
+		return fmt.Errorf("list pending jobs: %w", err)
+	}
+	if len(pendingJobs) == 0 {
+		return nil
+	}
+
+	// Load all revisions to build a component-name → status lookup.
+	revisions, err := a.revisionStore.ListByDeployment(ctx, completedRev.DeploymentId)
+	if err != nil {
+		return fmt.Errorf("list revisions: %w", err)
+	}
+	revByComponent := make(map[string]*model.Revision, len(revisions))
+	revByID := make(map[uuid.UUID]*model.Revision, len(revisions))
+	for i := range revisions {
+		revByComponent[revisions[i].ComponentName] = &revisions[i]
+		revByID[revisions[i].Id] = &revisions[i]
+	}
+
+	for i := range pendingJobs {
+		pj := &pendingJobs[i]
+		rev, ok := revByID[pj.RevisionId]
+		if !ok {
+			continue
+		}
+		if len(rev.BlockedBy) == 0 {
+			continue
+		}
+
+		allSatisfied := true
+		for _, blockerName := range rev.BlockedBy {
+			blocker, ok := revByComponent[blockerName]
+			if !ok {
+				allSatisfied = false
+				break
+			}
+			if !model.IsRevisionSatisfiedFor(pj.JobType, blocker.Status) {
+				allSatisfied = false
+				break
+			}
+		}
+
+		if allSatisfied {
+			if err := a.jobStore.PromoteToAssigned(ctx, pj.Id); err != nil {
+				a.logger.Error("failed to promote job",
+					zap.String("job_id", pj.Id.String()),
+					zap.Error(err))
+				continue
+			}
+			a.logger.Info("promoted blocked job",
+				zap.String("job_id", pj.Id.String()),
+				zap.String("component", rev.ComponentName))
+		}
+	}
+	return nil
 }
 
 func (a *api) ListRunnerJobs(ctx context.Context, req *runnerv1.ListRunnerJobsRequest) (*runnerv1.ListRunnerJobsResponse, error) {
@@ -217,23 +360,9 @@ func (a *api) ListRunnerJobs(ctx context.Context, req *runnerv1.ListRunnerJobsRe
 func (a *api) serveArtifact(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	token, err := extractBearer(r.Header.Get("Authorization"))
+	runnerID, err := a.authenticateRunner(r)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusUnauthorized)
-		return
-	}
-	claims, err := a.sessionProvider.Verify(ctx, token)
-	if err != nil {
-		http.Error(w, "invalid token", http.StatusUnauthorized)
-		return
-	}
-	if claims.Kind != string(authn.TokenKindSAT) {
-		http.Error(w, "runner SAT required", http.StatusForbidden)
-		return
-	}
-	runnerID, err := uuid.Parse(claims.Subject)
-	if err != nil {
-		http.Error(w, "invalid subject in token", http.StatusInternalServerError)
 		return
 	}
 
@@ -336,6 +465,152 @@ func (a *api) serveArtifact(w http.ResponseWriter, r *http.Request) {
 
 func artifactURLForJob(jobID uuid.UUID) string {
 	return fmt.Sprintf("/api/v1/runner/jobs/%s/artifact", jobID)
+}
+
+func planFileURLForJob(jobID uuid.UUID) string {
+	return fmt.Sprintf("/api/v1/runner/jobs/%s/plan", jobID)
+}
+
+// uploadPlanFile handles POST /api/v1/runner/jobs/{id}/plan.
+// The runner uploads the binary .tfplan file after a successful plan job.
+func (a *api) uploadPlanFile(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	runnerID, err := a.authenticateRunner(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusUnauthorized)
+		return
+	}
+
+	jobID, err := uuid.Parse(r.PathValue("id"))
+	if err != nil {
+		http.Error(w, "invalid job id", http.StatusBadRequest)
+		return
+	}
+
+	job, err := a.jobStore.Get(ctx, jobID)
+	if err != nil {
+		http.Error(w, "job not found", http.StatusNotFound)
+		return
+	}
+	if job.RunnerId != runnerID {
+		http.Error(w, "job does not belong to this runner", http.StatusForbidden)
+		return
+	}
+
+	if job.JobType != model.JobTypePlan && job.JobType != model.JobTypeDestroyPlan {
+		http.Error(w, "plan file upload is only valid for plan jobs", http.StatusBadRequest)
+		return
+	}
+
+	body := http.MaxBytesReader(w, r.Body, maxPlanFileSize)
+	defer body.Close()
+
+	data, err := io.ReadAll(body)
+	if err != nil {
+		a.logger.Error("plan file: read body failed", zap.String("job_id", jobID.String()), zap.Error(err))
+		http.Error(w, "failed to read plan file", http.StatusBadRequest)
+		return
+	}
+	if len(data) == 0 {
+		http.Error(w, "empty plan file", http.StatusBadRequest)
+		return
+	}
+
+	rev, err := a.revisionStore.Get(ctx, job.RevisionId)
+	if err != nil {
+		a.logger.Error("plan file: load revision failed", zap.Error(err))
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
+
+	key := fmt.Sprintf("plans/%s/plan.tfplan", rev.Id)
+	if err := a.objStore.PutObject(ctx, a.objBucket, key, data); err != nil {
+		a.logger.Error("plan file: write to object storage failed",
+			zap.String("key", key), zap.Error(err))
+		http.Error(w, "failed to store plan file", http.StatusInternalServerError)
+		return
+	}
+
+	if _, err := a.revisionStore.Update(ctx, rev, map[string]any{
+		"plan_file_key": key,
+	}); err != nil {
+		a.logger.Error("plan file: update revision failed", zap.Error(err))
+		http.Error(w, "failed to update revision", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
+// downloadPlanFile handles GET /api/v1/runner/jobs/{id}/plan.
+// The runner downloads the binary .tfplan file before executing an apply job.
+func (a *api) downloadPlanFile(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	runnerID, err := a.authenticateRunner(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusUnauthorized)
+		return
+	}
+
+	jobID, err := uuid.Parse(r.PathValue("id"))
+	if err != nil {
+		http.Error(w, "invalid job id", http.StatusBadRequest)
+		return
+	}
+
+	job, err := a.jobStore.Get(ctx, jobID)
+	if err != nil {
+		http.Error(w, "job not found", http.StatusNotFound)
+		return
+	}
+	if job.RunnerId != runnerID {
+		http.Error(w, "job does not belong to this runner", http.StatusForbidden)
+		return
+	}
+
+	rev, err := a.revisionStore.Get(ctx, job.RevisionId)
+	if err != nil {
+		a.logger.Error("plan file download: load revision failed", zap.Error(err))
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
+
+	if rev.PlanFileKey == "" {
+		http.Error(w, "no plan file available for this revision", http.StatusNotFound)
+		return
+	}
+
+	data, err := a.objStore.GetObject(ctx, a.objBucket, rev.PlanFileKey)
+	if err != nil {
+		a.logger.Error("plan file download: read from object storage failed",
+			zap.String("key", rev.PlanFileKey), zap.Error(err))
+		http.Error(w, "failed to read plan file", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", planFileContentType)
+	w.Header().Set("Content-Disposition",
+		fmt.Sprintf(`attachment; filename="%s.tfplan"`, rev.Id))
+	w.Write(data)
+}
+
+// authenticateRunner extracts and verifies the runner SAT from the request,
+// returning the runner's UUID. Used by raw HTTP handlers that bypass gRPC.
+func (a *api) authenticateRunner(r *http.Request) (uuid.UUID, error) {
+	token, err := extractBearer(r.Header.Get("Authorization"))
+	if err != nil {
+		return uuid.Nil, err
+	}
+	claims, err := a.sessionProvider.Verify(r.Context(), token)
+	if err != nil {
+		return uuid.Nil, fmt.Errorf("invalid token")
+	}
+	if claims.Kind != string(authn.TokenKindSAT) {
+		return uuid.Nil, fmt.Errorf("runner SAT required")
+	}
+	return uuid.Parse(claims.Subject)
 }
 
 func extractBearer(header string) (string, error) {

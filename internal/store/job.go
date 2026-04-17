@@ -71,6 +71,18 @@ func (s *JobStore) ListByRevision(ctx context.Context, revisionID uuid.UUID) ([]
 	return jobs, nil
 }
 
+func (s *JobStore) ListByDeploymentAndStatus(ctx context.Context, deploymentID uuid.UUID, jobStatus string) ([]model.Job, error) {
+	var jobs []model.Job
+	err := s.db.WithContext(ctx).
+		Where("deployment_id = ? AND status = ?", deploymentID, jobStatus).
+		Order("created_at ASC").
+		Find(&jobs).Error
+	if err != nil {
+		return nil, fmt.Errorf("failed to list deployment jobs by status: %w", err)
+	}
+	return jobs, nil
+}
+
 func (s *JobStore) Update(ctx context.Context, j *model.Job, fields map[string]any) (*model.Job, error) {
 	result := s.db.WithContext(ctx).Model(j).Updates(fields)
 	if result.Error != nil {
@@ -80,6 +92,17 @@ func (s *JobStore) Update(ctx context.Context, j *model.Job, fields map[string]a
 		return nil, fmt.Errorf("job not found: %s", j.Id)
 	}
 	return s.Get(ctx, j.Id)
+}
+
+func (s *JobStore) PromoteToAssigned(ctx context.Context, id uuid.UUID) error {
+	result := s.db.WithContext(ctx).
+		Model(&model.Job{}).
+		Where("id = ? AND status = ?", id, model.JobStatusPending).
+		Update("status", model.JobStatusAssigned)
+	if result.Error != nil {
+		return fmt.Errorf("failed to promote job: %w", result.Error)
+	}
+	return nil
 }
 
 func (s *JobStore) ClaimNextJob(ctx context.Context, runnerID uuid.UUID, instanceID *uuid.UUID) (*model.Job, error) {

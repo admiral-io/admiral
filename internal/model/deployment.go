@@ -41,18 +41,48 @@ var deploymentTriggerToProto = map[string]deploymentv1.DeploymentTriggerType{
 	DeploymentTriggerDestroy: deploymentv1.DeploymentTriggerType_DEPLOYMENT_TRIGGER_TYPE_DESTROY,
 }
 
+func DeploymentStatusToProtoEnum(s string) deploymentv1.DeploymentStatus {
+	if e, ok := deploymentStatusToProto[s]; ok {
+		return e
+	}
+	return deploymentv1.DeploymentStatus_DEPLOYMENT_STATUS_UNSPECIFIED
+}
+
 type Deployment struct {
-	Id            uuid.UUID `gorm:"type:uuid;default:gen_random_uuid();primaryKey"`
-	ApplicationId uuid.UUID `gorm:"type:uuid;not null;index"`
-	EnvironmentId uuid.UUID `gorm:"type:uuid;not null;index"`
-	Status        string    `gorm:"not null"`
-	TriggerType   string    `gorm:"not null"`
-	TriggeredBy   string    `gorm:"not null"`
-	Message       string    `gorm:"type:text;not null;default:''"`
-	Destroy       bool      `gorm:"not null;default:false"`
-	CreatedAt     time.Time
-	UpdatedAt     time.Time
-	CompletedAt   *time.Time
+	Id                 uuid.UUID  `gorm:"type:uuid;default:gen_random_uuid();primaryKey"`
+	ApplicationId      uuid.UUID  `gorm:"type:uuid;not null;index"`
+	EnvironmentId      uuid.UUID  `gorm:"type:uuid;not null;index"`
+	Status             string     `gorm:"not null"`
+	TriggerType        string     `gorm:"not null"`
+	TriggeredBy        string     `gorm:"not null"`
+	Message            string     `gorm:"type:text;not null;default:''"`
+	Destroy            bool       `gorm:"not null;default:false"`
+	SourceDeploymentId *uuid.UUID `gorm:"type:uuid"`
+	CreatedAt          time.Time
+	UpdatedAt          time.Time
+	CompletedAt        *time.Time
+}
+
+func (d *Deployment) ToProto(summary *deploymentv1.RevisionSummary) *deploymentv1.Deployment {
+	proto := &deploymentv1.Deployment{
+		Id:              d.Id.String(),
+		ApplicationId:   d.ApplicationId.String(),
+		EnvironmentId:   d.EnvironmentId.String(),
+		Status:          deploymentStatusToProto[d.Status],
+		TriggerType:     deploymentTriggerToProto[d.TriggerType],
+		TriggeredBy:     d.TriggeredBy,
+		Message:         d.Message,
+		Destroy:         d.Destroy,
+		RevisionSummary: summary,
+		CreatedAt:       timestamppb.New(d.CreatedAt),
+	}
+	if d.SourceDeploymentId != nil {
+		proto.SourceDeploymentId = d.SourceDeploymentId.String()
+	}
+	if d.CompletedAt != nil {
+		proto.CompletedAt = timestamppb.New(*d.CompletedAt)
+	}
+	return proto
 }
 
 func DeriveRevisionSummary(revisions []Revision) *deploymentv1.RevisionSummary {
@@ -123,30 +153,4 @@ func IsTerminalDeploymentStatus(s string) bool {
 		return true
 	}
 	return false
-}
-
-func DeploymentStatusToProtoEnum(s string) deploymentv1.DeploymentStatus {
-	if e, ok := deploymentStatusToProto[s]; ok {
-		return e
-	}
-	return deploymentv1.DeploymentStatus_DEPLOYMENT_STATUS_UNSPECIFIED
-}
-
-func (d *Deployment) ToProto(summary *deploymentv1.RevisionSummary) *deploymentv1.Deployment {
-	proto := &deploymentv1.Deployment{
-		Id:              d.Id.String(),
-		ApplicationId:   d.ApplicationId.String(),
-		EnvironmentId:   d.EnvironmentId.String(),
-		Status:          deploymentStatusToProto[d.Status],
-		TriggerType:     deploymentTriggerToProto[d.TriggerType],
-		TriggeredBy:     d.TriggeredBy,
-		Message:         d.Message,
-		Destroy:         d.Destroy,
-		RevisionSummary: summary,
-		CreatedAt:       timestamppb.New(d.CreatedAt),
-	}
-	if d.CompletedAt != nil {
-		proto.CompletedAt = timestamppb.New(*d.CompletedAt)
-	}
-	return proto
 }

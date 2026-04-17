@@ -59,22 +59,7 @@ var moduleSourceCompat = map[string]map[string]bool{
 	},
 }
 
-func ValidateModuleSourceCompat(modType, srcType string) error {
-	if modType == "" {
-		return fmt.Errorf("module type is required")
-	}
-	if srcType == "" {
-		return fmt.Errorf("source type is required")
-	}
-	compat, ok := moduleSourceCompat[modType]
-	if !ok {
-		return fmt.Errorf("unsupported module type: %s", modType)
-	}
-	if !compat[srcType] {
-		return fmt.Errorf("module type %s is not compatible with source type %s", modType, srcType)
-	}
-	return nil
-}
+// --- Module ---
 
 type Module struct {
 	Id          uuid.UUID `gorm:"type:uuid;default:gen_random_uuid();primaryKey"`
@@ -107,4 +92,21 @@ func (m *Module) ToProto() *modulev1.Module {
 		CreatedAt:   timestamppb.New(m.CreatedAt),
 		UpdatedAt:   timestamppb.New(m.UpdatedAt),
 	}
+}
+
+func ValidateModuleSourceCompat(modType, srcType string) error {
+	if modType == "" {
+		return fmt.Errorf("module type is required")
+	}
+	if srcType == "" {
+		return fmt.Errorf("source type is required")
+	}
+	compat, ok := moduleSourceCompat[modType]
+	if !ok {
+		return fmt.Errorf("unsupported module type: %s", modType)
+	}
+	if !compat[srcType] {
+		return fmt.Errorf("module type %s is not compatible with source type %s", modType, srcType)
+	}
+	return nil
 }

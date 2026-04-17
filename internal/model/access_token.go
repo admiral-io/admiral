@@ -12,6 +12,8 @@ import (
 	"gorm.io/gorm"
 )
 
+// --- AccessTokenKind ---
+
 type AccessTokenKind string
 
 const (
@@ -56,12 +58,52 @@ func (k *AccessTokenKind) String() string {
 	}
 }
 
+// --- AccessTokenStatus ---
+
 type AccessTokenStatus string
 
 const (
 	AccessTokenStatusActive  AccessTokenStatus = "active"
 	AccessTokenStatusRevoked AccessTokenStatus = "revoked"
 )
+
+func (s *AccessTokenStatus) Value() (driver.Value, error) {
+	switch *s {
+	case AccessTokenStatusActive, AccessTokenStatusRevoked:
+		return string(*s), nil
+	default:
+		return nil, fmt.Errorf("invalid AccessTokenStatus value: %q", *s)
+	}
+}
+
+func (s *AccessTokenStatus) Scan(value any) error {
+	if value == nil {
+		*s = ""
+		return nil
+	}
+
+	switch v := value.(type) {
+	case string:
+		*s = AccessTokenStatus(v)
+	case []byte:
+		*s = AccessTokenStatus(v)
+	default:
+		return fmt.Errorf("cannot scan %T into AccessTokenStatus", value)
+	}
+
+	return nil
+}
+
+func (s *AccessTokenStatus) String() string {
+	switch *s {
+	case AccessTokenStatusActive, AccessTokenStatusRevoked:
+		return string(*s)
+	default:
+		return ""
+	}
+}
+
+// --- AccessTokenBindingType ---
 
 type AccessTokenBindingType string
 
@@ -107,41 +149,7 @@ func (b *AccessTokenBindingType) String() string {
 	}
 }
 
-func (s *AccessTokenStatus) Value() (driver.Value, error) {
-	switch *s {
-	case AccessTokenStatusActive, AccessTokenStatusRevoked:
-		return string(*s), nil
-	default:
-		return nil, fmt.Errorf("invalid AccessTokenStatus value: %q", *s)
-	}
-}
-
-func (s *AccessTokenStatus) Scan(value any) error {
-	if value == nil {
-		*s = ""
-		return nil
-	}
-
-	switch v := value.(type) {
-	case string:
-		*s = AccessTokenStatus(v)
-	case []byte:
-		*s = AccessTokenStatus(v)
-	default:
-		return fmt.Errorf("cannot scan %T into AccessTokenStatus", value)
-	}
-
-	return nil
-}
-
-func (s *AccessTokenStatus) String() string {
-	switch *s {
-	case AccessTokenStatusActive, AccessTokenStatusRevoked:
-		return string(*s)
-	default:
-		return ""
-	}
-}
+// --- AccessToken ---
 
 type AccessToken struct {
 	Id              string                 `gorm:"column:id;primaryKey"`

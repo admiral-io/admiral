@@ -135,6 +135,50 @@ func (s *VariableStore) Resolve(ctx context.Context, appID, envID uuid.UUID) ([]
 	return result, nil
 }
 
+func (s *VariableStore) UpsertInfraOutputs(
+	ctx context.Context,
+	appID, envID uuid.UUID,
+	componentName string,
+	outputs []model.Variable,
+) error {
+	prefix := componentName + "."
+
+	return s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		// Delete all existing INFRASTRUCTURE variables for this component+env.
+		if err := tx.
+			Where("application_id = ? AND environment_id = ? AND source = ? AND key LIKE ?",
+				appID, envID, model.VariableSourceInfrastructure, prefix+"%").
+			Unscoped().Delete(&model.Variable{}).Error; err != nil {
+			return fmt.Errorf("failed to delete stale infra outputs: %w", err)
+		}
+
+		// Insert the fresh set.
+		for i := range outputs {
+			if err := tx.Create(&outputs[i]).Error; err != nil {
+				return fmt.Errorf("failed to create infra output %q: %w", outputs[i].Key, err)
+			}
+		}
+		return nil
+	})
+}
+
+func (s *VariableStore) DeleteInfraOutputs(
+	ctx context.Context,
+	appID, envID uuid.UUID,
+	componentName string,
+) error {
+	prefix := componentName + "."
+	result := s.db.WithContext(ctx).
+		Unscoped().
+		Where("application_id = ? AND environment_id = ? AND source = ? AND key LIKE ?",
+			appID, envID, model.VariableSourceInfrastructure, prefix+"%").
+		Delete(&model.Variable{})
+	if result.Error != nil {
+		return fmt.Errorf("failed to delete infra outputs: %w", result.Error)
+	}
+	return nil
+}
+
 func scopePriority(v *model.Variable) int {
 	if v.EnvironmentId != nil {
 		return 2

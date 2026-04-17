@@ -69,6 +69,48 @@ func (s *RevisionStore) ListByDeploymentAndStatus(ctx context.Context, deploymen
 	return revisions, nil
 }
 
+func (s *RevisionStore) LastDeployed(ctx context.Context, componentID, environmentID uuid.UUID) (*model.Revision, error) {
+	var rev model.Revision
+	err := s.db.WithContext(ctx).
+		Joins("JOIN deployments ON deployments.id = revisions.deployment_id").
+		Where("revisions.component_id = ? AND deployments.environment_id = ? AND revisions.status = ?",
+			componentID, environmentID, model.RevisionStatusSucceeded).
+		Order("revisions.completed_at DESC").
+		First(&rev).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, fmt.Errorf("failed to query last deployed revision: %w", err)
+	}
+	return &rev, nil
+}
+
+func (s *RevisionStore) LastDeployedByAppEnv(ctx context.Context, applicationID, environmentID uuid.UUID) (map[uuid.UUID]*model.Revision, error) {
+	// Use a subquery to find the max completed_at per component, then fetch
+	// the full revision rows.
+	var revisions []model.Revision
+	err := s.db.WithContext(ctx).
+		Raw(`
+			SELECT DISTINCT ON (r.component_id) r.*
+			FROM revisions r
+			JOIN deployments d ON d.id = r.deployment_id
+			WHERE d.application_id = ?
+			  AND d.environment_id = ?
+			  AND r.status = ?
+			ORDER BY r.component_id, r.completed_at DESC
+		`, applicationID, environmentID, model.RevisionStatusSucceeded).
+		Scan(&revisions).Error
+	if err != nil {
+		return nil, fmt.Errorf("failed to query last deployed revisions: %w", err)
+	}
+	result := make(map[uuid.UUID]*model.Revision, len(revisions))
+	for i := range revisions {
+		result[revisions[i].ComponentId] = &revisions[i]
+	}
+	return result, nil
+}
+
 func (s *RevisionStore) Update(ctx context.Context, r *model.Revision, fields map[string]any) (*model.Revision, error) {
 	result := s.db.WithContext(ctx).Model(r).Updates(fields)
 	if result.Error != nil {

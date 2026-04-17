@@ -12,6 +12,7 @@ import (
 	moduleep "go.admiral.io/admiral/internal/endpoint/module"
 	runnerep "go.admiral.io/admiral/internal/endpoint/runner"
 	sourceep "go.admiral.io/admiral/internal/endpoint/source"
+	stateep "go.admiral.io/admiral/internal/endpoint/state"
 	userep "go.admiral.io/admiral/internal/endpoint/user"
 	variableep "go.admiral.io/admiral/internal/endpoint/variable"
 	"go.admiral.io/admiral/internal/middleware"
@@ -51,6 +52,7 @@ var Endpoints = endpoint.Factory{
 	moduleep.Name:       moduleep.New,
 	runnerep.Name:       runnerep.New,
 	sourceep.Name:       sourceep.New,
+	stateep.Name:        stateep.New,
 	userep.Name:         userep.New,
 	variableep.Name:     variableep.New,
 }

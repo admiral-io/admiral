@@ -27,7 +27,7 @@ func (app *Application) ToProto() *applicationv1.Application {
 		Id:          app.Id.String(),
 		Name:        app.Name,
 		Description: app.Description,
-		Labels:      map[string]string(app.Labels),
+		Labels:      app.Labels,
 		CreatedBy: &commonv1.ActorRef{
 			Id: app.CreatedBy,
 		},

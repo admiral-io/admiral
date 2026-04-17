@@ -15,6 +15,7 @@ import (
 	"google.golang.org/grpc/status"
 
 	"go.admiral.io/admiral/internal/config"
+	"go.admiral.io/admiral/internal/dag"
 	"go.admiral.io/admiral/internal/endpoint"
 	"go.admiral.io/admiral/internal/model"
 	"go.admiral.io/admiral/internal/querybuilder"
@@ -23,6 +24,7 @@ import (
 	"go.admiral.io/admiral/internal/service/database"
 	"go.admiral.io/admiral/internal/service/objectstorage"
 	"go.admiral.io/admiral/internal/store"
+	admtemplate "go.admiral.io/admiral/internal/template"
 	deploymentv1 "go.admiral.io/sdk/proto/admiral/deployment/v1"
 )
 
@@ -42,6 +44,7 @@ type api struct {
 	overrideStore   *store.ComponentOverrideStore
 	moduleStore     *store.ModuleStore
 	runnerStore     *store.RunnerStore
+	variableStore   *store.VariableStore
 	objStore        objectstorage.Service
 	objBucket       string
 	qb              querybuilder.QueryBuilder
@@ -91,6 +94,10 @@ func New(cfg *config.Config, log *zap.Logger, scope tally.Scope) (endpoint.Endpo
 	if err != nil {
 		return nil, err
 	}
+	variableStore, err := store.NewVariableStore(db.GormDB())
+	if err != nil {
+		return nil, err
+	}
 
 	objStore, err := service.GetService[objectstorage.Service](objectstorage.Name)
 	if err != nil {
@@ -108,6 +115,7 @@ func New(cfg *config.Config, log *zap.Logger, scope tally.Scope) (endpoint.Endpo
 		overrideStore:   overrideStore,
 		moduleStore:     moduleStore,
 		runnerStore:     runnerStore,
+		variableStore:   variableStore,
 		objStore:        objStore,
 		objBucket:       objBucket,
 		logger:          log.Named(Name),
@@ -134,11 +142,22 @@ func (a *api) CreateDeployment(ctx context.Context, req *deploymentv1.CreateDepl
 		return nil, status.Error(codes.Unimplemented, "destroy deployments are not yet supported")
 	}
 
+	// Parse optional rollback source.
+	var sourceDeploymentId *uuid.UUID
+	if raw := req.GetSourceDeploymentId(); raw != "" {
+		id, err := uuid.Parse(raw)
+		if err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "invalid source_deployment_id: %v", err)
+		}
+		sourceDeploymentId = &id
+	}
+
 	appID, err := uuid.Parse(req.GetApplicationId())
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "invalid application_id: %v", err)
 	}
-	if _, err := a.appStore.Get(ctx, appID); err != nil {
+	app, err := a.appStore.Get(ctx, appID)
+	if err != nil {
 		return nil, status.Errorf(codes.NotFound, "application not found: %s", appID)
 	}
 
@@ -160,6 +179,26 @@ func (a *api) CreateDeployment(ctx context.Context, req *deploymentv1.CreateDepl
 	}
 	if _, err := a.runnerStore.Get(ctx, runnerID); err != nil {
 		return nil, status.Errorf(codes.FailedPrecondition, "assigned runner not found: %s", runnerID)
+	}
+
+	// If rolling back, load and validate the source deployment's revisions.
+	var sourceRevByComponent map[string]*model.Revision
+	if sourceDeploymentId != nil {
+		srcDep, err := a.deploymentStore.Get(ctx, *sourceDeploymentId)
+		if err != nil {
+			return nil, status.Errorf(codes.NotFound, "source deployment not found: %s", sourceDeploymentId)
+		}
+		if srcDep.ApplicationId != appID {
+			return nil, status.Errorf(codes.InvalidArgument, "source deployment belongs to a different application")
+		}
+		srcRevisions, err := a.revisionStore.ListByDeployment(ctx, *sourceDeploymentId)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to load source deployment revisions: %v", err)
+		}
+		sourceRevByComponent = make(map[string]*model.Revision, len(srcRevisions))
+		for i := range srcRevisions {
+			sourceRevByComponent[srcRevisions[i].ComponentName] = &srcRevisions[i]
+		}
 	}
 
 	components, err := a.componentStore.ListByApplicationID(ctx, appID)
@@ -194,57 +233,170 @@ func (a *api) CreateDeployment(ctx context.Context, req *deploymentv1.CreateDepl
 		return nil, status.Error(codes.FailedPrecondition, "application has no infrastructure components to deploy for this environment")
 	}
 
+	// Resolve the effective variable set (global → app → env merge).
+	resolved, err := a.variableStore.Resolve(ctx, appID, envID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to resolve variables: %v", err)
+	}
+	varMap := make(map[string]any, len(resolved))
+	for _, v := range resolved {
+		varMap[v.Key] = v.Value
+	}
+
+	evalCtx := &admtemplate.EvalContext{
+		Var: varMap,
+		App: admtemplate.AppMeta{
+			Name: app.Name,
+			Id:   appID.String(),
+		},
+		Env: admtemplate.EnvMeta{
+			Name: env.Name,
+			Id:   envID.String(),
+		},
+		// Component outputs are not yet available (populated after apply).
+		// Deploy.Id and Self.Name are set per-revision below.
+	}
+
+	// Build dependency graph from explicit DependsOn (UUIDs) and implicit
+	// template references ({{ .component.NAME.OUTPUT }}).
+	idToName := make(map[string]string, len(infraComponents))
+	nameToComp := make(map[string]*model.Component, len(infraComponents))
+	for i := range infraComponents {
+		c := &infraComponents[i]
+		idToName[c.Id.String()] = c.Name
+		nameToComp[c.Name] = c
+	}
+
+	g := dag.New()
+	for _, comp := range infraComponents {
+		g.AddNode(comp.Name)
+
+		// Explicit dependencies (stored as component UUIDs).
+		for _, depID := range comp.DependsOn {
+			if depName, ok := idToName[depID]; ok {
+				g.AddEdge(comp.Name, depName)
+			}
+		}
+		// Implicit dependencies from template expressions.
+		for _, depName := range admtemplate.ExtractComponentNames(comp.ValuesTemplate) {
+			if _, ok := nameToComp[depName]; ok {
+				g.AddEdge(comp.Name, depName)
+			}
+		}
+	}
+
+	phases, err := g.TopoSort()
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "component dependency error: %v", err)
+	}
+
+	// Build a set of phase-0 component names for determining initial job status.
+	phase0 := make(map[string]struct{}, len(phases[0]))
+	for _, name := range phases[0] {
+		phase0[name] = struct{}{}
+	}
+
 	triggerType := model.DeploymentTriggerManual
 	if claims.Kind == string(authn.TokenKindPAT) {
 		triggerType = model.DeploymentTriggerCI
 	}
 
 	dep := &model.Deployment{
-		ApplicationId: appID,
-		EnvironmentId: envID,
-		Status:        model.DeploymentStatusPending,
-		TriggerType:   triggerType,
-		TriggeredBy:   claims.Subject,
-		Message:       req.GetMessage(),
+		ApplicationId:      appID,
+		EnvironmentId:      envID,
+		Status:             model.DeploymentStatusPending,
+		TriggerType:        triggerType,
+		TriggeredBy:        claims.Subject,
+		Message:            req.GetMessage(),
+		SourceDeploymentId: sourceDeploymentId,
 	}
 	dep, err = a.deploymentStore.Create(ctx, dep)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to create deployment: %v", err)
 	}
+	evalCtx.Deploy = admtemplate.DeployMeta{Id: dep.Id.String()}
 
-	for i := range infraComponents {
-		comp := infraComponents[i]
-		mod, err := a.moduleStore.Get(ctx, comp.ModuleId)
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to resolve module for component %s: %v", comp.Id, err)
-		}
-		rev := &model.Revision{
-			DeploymentId:     dep.Id,
-			ComponentId:      comp.Id,
-			ComponentName:    comp.Name,
-			Kind:             comp.Kind,
-			Status:           model.RevisionStatusQueued,
-			ModuleId:         comp.ModuleId,
-			SourceId:         &mod.SourceId,
-			Version:          comp.Version,
-			ResolvedValues:   comp.ValuesTemplate,
-			DependsOn:        pq.StringArray(comp.DependsOn),
-			WorkingDirectory: mod.Path,
-		}
-		rev, err = a.revisionStore.Create(ctx, rev)
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to create revision: %v", err)
-		}
+	// Create revisions and jobs in topological order.
+	for _, phase := range phases {
+		for _, compName := range phase {
+			comp := nameToComp[compName]
+			evalCtx.Self = admtemplate.SelfMeta{Name: comp.Name}
 
-		job := &model.Job{
-			RunnerId:     runnerID,
-			RevisionId:   rev.Id,
-			DeploymentId: dep.Id,
-			JobType:      model.JobTypePlan,
-			Status:       model.JobStatusAssigned,
-		}
-		if _, err := a.jobStore.Create(ctx, job); err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to create plan job: %v", err)
+			var (
+				moduleId         uuid.UUID
+				sourceId         *uuid.UUID
+				version          string
+				resolvedValues   string
+				workingDirectory string
+			)
+
+			if srcRev, ok := sourceRevByComponent[compName]; ok {
+				// Rollback: use the source revision's snapshot.
+				moduleId = srcRev.ModuleId
+				sourceId = srcRev.SourceId
+				version = srcRev.Version
+				resolvedValues = srcRev.ResolvedValues
+				workingDirectory = srcRev.WorkingDirectory
+			} else {
+				// Normal: read from Component HEAD.
+				mod, err := a.moduleStore.Get(ctx, comp.ModuleId)
+				if err != nil {
+					return nil, status.Errorf(codes.Internal, "failed to resolve module for component %s: %v", comp.Id, err)
+				}
+				moduleId = comp.ModuleId
+				sourceId = &mod.SourceId
+				version = comp.Version
+				workingDirectory = mod.Path
+
+				// Evaluate template expressions in values_template.
+				resolvedValues = comp.ValuesTemplate
+				if resolvedValues != "" {
+					resolvedValues, err = admtemplate.Evaluate(resolvedValues, evalCtx)
+					if err != nil {
+						return nil, status.Errorf(codes.InvalidArgument,
+							"failed to evaluate values_template for component %q: %v", comp.Name, err)
+					}
+				}
+			}
+
+			blockedBy := g.Dependencies(compName)
+
+			rev := &model.Revision{
+				DeploymentId:     dep.Id,
+				ComponentId:      comp.Id,
+				ComponentName:    comp.Name,
+				Kind:             comp.Kind,
+				Status:           model.RevisionStatusQueued,
+				ModuleId:         moduleId,
+				SourceId:         sourceId,
+				Version:          version,
+				ResolvedValues:   resolvedValues,
+				DependsOn:        pq.StringArray(comp.DependsOn),
+				BlockedBy:        pq.StringArray(blockedBy),
+				WorkingDirectory: workingDirectory,
+			}
+			rev, err = a.revisionStore.Create(ctx, rev)
+			if err != nil {
+				return nil, status.Errorf(codes.Internal, "failed to create revision: %v", err)
+			}
+
+			// Phase 0 jobs are immediately claimable; later phases wait for
+			// their dependencies to complete.
+			jobStatus := model.JobStatusPending
+			if _, ok := phase0[compName]; ok {
+				jobStatus = model.JobStatusAssigned
+			}
+
+			job := &model.Job{
+				RunnerId:     runnerID,
+				RevisionId:   rev.Id,
+				DeploymentId: dep.Id,
+				JobType:      model.JobTypePlan,
+				Status:       jobStatus,
+			}
+			if _, err := a.jobStore.Create(ctx, job); err != nil {
+				return nil, status.Errorf(codes.Internal, "failed to create plan job: %v", err)
+			}
 		}
 	}
 
@@ -367,12 +519,21 @@ func (a *api) ApplyDeployment(ctx context.Context, req *deploymentv1.ApplyDeploy
 		}); err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to update revision status: %v", err)
 		}
+
+		// Revisions with no blockers are immediately claimable; others
+		// wait for their dependencies to complete (promoted by
+		// ReportJobResult).
+		jobStatus := model.JobStatusPending
+		if len(rev.BlockedBy) == 0 {
+			jobStatus = model.JobStatusAssigned
+		}
+
 		job := &model.Job{
 			RunnerId:     runnerID,
 			RevisionId:   rev.Id,
 			DeploymentId: dep.Id,
 			JobType:      model.JobTypeApply,
-			Status:       model.JobStatusAssigned,
+			Status:       jobStatus,
 		}
 		if _, err := a.jobStore.Create(ctx, job); err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to create apply job: %v", err)

@@ -12,6 +12,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"gorm.io/gorm"
 
+	admtemplate "go.admiral.io/admiral/internal/template"
 	commonv1 "go.admiral.io/sdk/proto/admiral/common/v1"
 	componentv1 "go.admiral.io/sdk/proto/admiral/component/v1"
 )
@@ -26,16 +27,7 @@ var componentKindToProto = map[string]componentv1.ComponentKind{
 	ComponentKindWorkload:       componentv1.ComponentKind_COMPONENT_KIND_WORKLOAD,
 }
 
-func DeriveComponentKind(moduleType string) string {
-	switch moduleType {
-	case ModuleTypeTerraform:
-		return ComponentKindInfrastructure
-	case ModuleTypeHelm, ModuleTypeKustomize, ModuleTypeManifest:
-		return ComponentKindWorkload
-	default:
-		return ""
-	}
-}
+// --- Supporting types ---
 
 type ComponentOutput struct {
 	Name          string `json:"name"`
@@ -103,6 +95,8 @@ func ComponentOutputsFromProto(protos []*componentv1.ComponentOutput) ComponentO
 	return result
 }
 
+// --- Component ---
+
 type Component struct {
 	Id             uuid.UUID        `gorm:"type:uuid;default:gen_random_uuid();primaryKey"`
 	ApplicationId  uuid.UUID        `gorm:"type:uuid;not null;index"`
@@ -137,6 +131,41 @@ func (c *Component) ToProto() *componentv1.Component {
 		UpdatedAt:      timestamppb.New(c.UpdatedAt),
 	}
 }
+
+func DeriveComponentKind(moduleType string) string {
+	switch moduleType {
+	case ModuleTypeTerraform:
+		return ComponentKindInfrastructure
+	case ModuleTypeHelm, ModuleTypeKustomize, ModuleTypeManifest:
+		return ComponentKindWorkload
+	default:
+		return ""
+	}
+}
+
+func ValidateValuesTemplate(s string) error {
+	if strings.TrimSpace(s) == "" {
+		return nil
+	}
+	return admtemplate.Validate(s)
+}
+
+func ParseDependsOn(deps []string) ([]string, error) {
+	if len(deps) == 0 {
+		return nil, nil
+	}
+	out := make([]string, 0, len(deps))
+	for _, d := range deps {
+		id, err := uuid.Parse(d)
+		if err != nil {
+			return nil, fmt.Errorf("not a valid UUID: %s", d)
+		}
+		out = append(out, id.String())
+	}
+	return out, nil
+}
+
+// --- ComponentOverride ---
 
 type ComponentOverride struct {
 	ComponentId    uuid.UUID         `gorm:"type:uuid;primaryKey"`
@@ -228,30 +257,4 @@ func (o *ComponentOverride) ToProto() *componentv1.ComponentOverride {
 		out.Outputs = o.Outputs.ToProto()
 	}
 	return out
-}
-
-func ValidateValuesTemplate(s string) error {
-	if strings.TrimSpace(s) == "" {
-		return nil
-	}
-	var m map[string]any
-	if err := json.Unmarshal([]byte(s), &m); err != nil {
-		return fmt.Errorf("values_template is not a valid JSON object: %w", err)
-	}
-	return nil
-}
-
-func ParseDependsOn(deps []string) ([]string, error) {
-	if len(deps) == 0 {
-		return nil, nil
-	}
-	out := make([]string, 0, len(deps))
-	for _, d := range deps {
-		id, err := uuid.Parse(d)
-		if err != nil {
-			return nil, fmt.Errorf("not a valid UUID: %s", d)
-		}
-		out = append(out, id.String())
-	}
-	return out, nil
 }

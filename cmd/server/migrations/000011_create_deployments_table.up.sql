@@ -11,6 +11,7 @@ CREATE TABLE IF NOT EXISTS deployments (
     triggered_by TEXT NOT NULL,
     message TEXT NOT NULL DEFAULT '',
     destroy BOOLEAN NOT NULL DEFAULT FALSE,
+    source_deployment_id UUID REFERENCES deployments(id),
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
     completed_at TIMESTAMP WITH TIME ZONE

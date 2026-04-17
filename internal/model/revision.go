@@ -102,6 +102,7 @@ type Revision struct {
 	ArtifactChecksum string                `gorm:"type:text;not null;default:''"`
 	ArtifactUrl      string                `gorm:"type:text;not null;default:''"`
 	PlanOutputKey    string                `gorm:"type:text;not null;default:''"`
+	PlanFileKey      string                `gorm:"type:text;not null;default:''"`
 	PlanSummary      *TerraformPlanSummary `gorm:"type:jsonb"`
 	ErrorMessage     string                `gorm:"type:text;not null;default:''"`
 	RetryCount       int32                 `gorm:"not null;default:0"`
@@ -194,4 +195,20 @@ func DeriveRevisionUpdate(jobType, reportedStatus string, result *runnerv1.JobRe
 		fields["error_message"] = ""
 	}
 	return fields
+}
+
+// IsRevisionSatisfiedFor returns true if a blocker revision's status is
+// sufficient to unblock the given job type. Plan jobs are unblocked when
+// blockers reach AWAITING_APPROVAL (plan complete). Apply jobs are unblocked
+// when blockers reach SUCCEEDED (apply complete).
+func IsRevisionSatisfiedFor(jobType, blockerStatus string) bool {
+	switch jobType {
+	case JobTypePlan, JobTypeDestroyPlan:
+		return blockerStatus == RevisionStatusAwaitingApproval ||
+			blockerStatus == RevisionStatusApplying ||
+			blockerStatus == RevisionStatusSucceeded
+	case JobTypeApply, JobTypeDestroyApply:
+		return blockerStatus == RevisionStatusSucceeded
+	}
+	return false
 }
