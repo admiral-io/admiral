@@ -24,7 +24,7 @@ const (
 	RevisionStatusSucceeded        = "SUCCEEDED"
 	RevisionStatusFailed           = "FAILED"
 	RevisionStatusBlocked          = "BLOCKED"
-	RevisionStatusCancelled        = "CANCELLED"
+	RevisionStatusCanceled         = "CANCELED"
 )
 
 var revisionStatusToProto = map[string]deploymentv1.RevisionStatus{
@@ -36,7 +36,7 @@ var revisionStatusToProto = map[string]deploymentv1.RevisionStatus{
 	RevisionStatusSucceeded:        deploymentv1.RevisionStatus_REVISION_STATUS_SUCCEEDED,
 	RevisionStatusFailed:           deploymentv1.RevisionStatus_REVISION_STATUS_FAILED,
 	RevisionStatusBlocked:          deploymentv1.RevisionStatus_REVISION_STATUS_BLOCKED,
-	RevisionStatusCancelled:        deploymentv1.RevisionStatus_REVISION_STATUS_CANCELLED,
+	RevisionStatusCanceled:         deploymentv1.RevisionStatus_REVISION_STATUS_CANCELED,
 }
 
 var revisionKindToProto = map[string]deploymentv1.RevisionKind{

@@ -6,6 +6,7 @@ import (
 	"github.com/google/uuid"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
+	commonv1 "go.admiral.io/sdk/proto/admiral/common/v1"
 	deploymentv1 "go.admiral.io/sdk/proto/admiral/deployment/v1"
 )
 
@@ -16,7 +17,7 @@ const (
 	DeploymentStatusSucceeded       = "SUCCEEDED"
 	DeploymentStatusPartiallyFailed = "PARTIALLY_FAILED"
 	DeploymentStatusFailed          = "FAILED"
-	DeploymentStatusCancelled       = "CANCELLED"
+	DeploymentStatusCanceled       = "CANCELED"
 )
 
 const (
@@ -32,7 +33,7 @@ var deploymentStatusToProto = map[string]deploymentv1.DeploymentStatus{
 	DeploymentStatusSucceeded:       deploymentv1.DeploymentStatus_DEPLOYMENT_STATUS_SUCCEEDED,
 	DeploymentStatusPartiallyFailed: deploymentv1.DeploymentStatus_DEPLOYMENT_STATUS_PARTIALLY_FAILED,
 	DeploymentStatusFailed:          deploymentv1.DeploymentStatus_DEPLOYMENT_STATUS_FAILED,
-	DeploymentStatusCancelled:       deploymentv1.DeploymentStatus_DEPLOYMENT_STATUS_CANCELLED,
+	DeploymentStatusCanceled:       deploymentv1.DeploymentStatus_DEPLOYMENT_STATUS_CANCELED,
 }
 
 var deploymentTriggerToProto = map[string]deploymentv1.DeploymentTriggerType{
@@ -70,7 +71,7 @@ func (d *Deployment) ToProto(summary *deploymentv1.RevisionSummary) *deploymentv
 		EnvironmentId:   d.EnvironmentId.String(),
 		Status:          deploymentStatusToProto[d.Status],
 		TriggerType:     deploymentTriggerToProto[d.TriggerType],
-		TriggeredBy:     d.TriggeredBy,
+		TriggeredBy:     &commonv1.ActorRef{Id: d.TriggeredBy},
 		Message:         d.Message,
 		Destroy:         d.Destroy,
 		RevisionSummary: summary,
@@ -97,8 +98,8 @@ func DeriveRevisionSummary(revisions []Revision) *deploymentv1.RevisionSummary {
 			s.Blocked++
 		case RevisionStatusPlanning, RevisionStatusApplying:
 			s.Running++
-		case RevisionStatusCancelled:
-			s.Cancelled++
+		case RevisionStatusCanceled:
+			s.Canceled++
 		case RevisionStatusPending, RevisionStatusQueued, RevisionStatusAwaitingApproval:
 			s.Pending++
 		}
@@ -110,7 +111,7 @@ func DeriveDeploymentStatus(revisions []Revision) string {
 	if len(revisions) == 0 {
 		return DeploymentStatusPending
 	}
-	var succeeded, failed, blocked, cancelled int
+	var succeeded, failed, blocked, canceled int
 	var inProgress bool
 	for i := range revisions {
 		switch revisions[i].Status {
@@ -124,8 +125,8 @@ func DeriveDeploymentStatus(revisions []Revision) string {
 			failed++
 		case RevisionStatusBlocked:
 			blocked++
-		case RevisionStatusCancelled:
-			cancelled++
+		case RevisionStatusCanceled:
+			canceled++
 		}
 	}
 	if inProgress {
@@ -135,8 +136,8 @@ func DeriveDeploymentStatus(revisions []Revision) string {
 	if succeeded == total {
 		return DeploymentStatusSucceeded
 	}
-	if cancelled == total {
-		return DeploymentStatusCancelled
+	if canceled == total {
+		return DeploymentStatusCanceled
 	}
 	if failed+blocked == total {
 		return DeploymentStatusFailed
@@ -149,7 +150,7 @@ func IsTerminalDeploymentStatus(s string) bool {
 	case DeploymentStatusSucceeded,
 		DeploymentStatusFailed,
 		DeploymentStatusPartiallyFailed,
-		DeploymentStatusCancelled:
+		DeploymentStatusCanceled:
 		return true
 	}
 	return false

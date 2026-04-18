@@ -94,6 +94,19 @@ func (s *JobStore) Update(ctx context.Context, j *model.Job, fields map[string]a
 	return s.Get(ctx, j.Id)
 }
 
+func (s *JobStore) CancelNonTerminal(ctx context.Context, deploymentID uuid.UUID) error {
+	return s.db.WithContext(ctx).
+		Model(&model.Job{}).
+		Where("deployment_id = ? AND status NOT IN ?",
+			deploymentID,
+			[]string{model.JobStatusSucceeded, model.JobStatusFailed, model.JobStatusCanceled},
+		).
+		Updates(map[string]any{
+			"status":       model.JobStatusCanceled,
+			"completed_at": time.Now(),
+		}).Error
+}
+
 func (s *JobStore) PromoteToAssigned(ctx context.Context, id uuid.UUID) error {
 	result := s.db.WithContext(ctx).
 		Model(&model.Job{}).

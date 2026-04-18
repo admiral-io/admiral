@@ -7,7 +7,7 @@ CREATE TABLE IF NOT EXISTS revisions (
     status TEXT NOT NULL CHECK (status IN (
         'PENDING', 'QUEUED',
         'PLANNING', 'AWAITING_APPROVAL', 'APPLYING',
-        'SUCCEEDED', 'FAILED', 'BLOCKED', 'CANCELLED'
+        'SUCCEEDED', 'FAILED', 'BLOCKED', 'CANCELED'
     )),
     module_id UUID NOT NULL REFERENCES modules(id) ON DELETE RESTRICT,
     source_id UUID,

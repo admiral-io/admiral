@@ -498,108 +498,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/connections": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * List connections
-         * @description Scope: `connection:read`
-         */
-        get: operations["ConnectionAPI_ListConnections"];
-        put?: never;
-        /**
-         * Create a connection
-         * @description The connection type and auth config must match -- for example, a GIT_TOKEN
-         *      connection requires a GitTokenAuth config. The server validates connectivity
-         *      on creation when possible and sets the initial status accordingly.
-         *
-         *      Scope: `connection:write`
-         */
-        post: operations["ConnectionAPI_CreateConnection"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/connections/{connection.id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        /**
-         * Update a connection
-         * @description When updating auth_config, the entire auth config is replaced -- partial
-         *      updates within the auth config oneof are not supported. Omitting auth_config
-         *      from the update_mask leaves credentials unchanged.
-         *
-         *      Scope: `connection:write`
-         */
-        patch: operations["ConnectionAPI_UpdateConnection"];
-        trace?: never;
-    };
-    "/api/v1/connections/{connection_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Retrieve a connection
-         * @description Returns connection metadata and status. Sensitive credential fields are
-         *      never included in the response.
-         *
-         *      Scope: `connection:read`
-         */
-        get: operations["ConnectionAPI_GetConnection"];
-        put?: never;
-        post?: never;
-        /**
-         * Delete a connection
-         * @description Scope: `connection:write`
-         */
-        delete: operations["ConnectionAPI_DeleteConnection"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/connections/{connection_id}/test": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Test a connection
-         * @description This operation makes a network call to the external system and may take
-         *      several seconds depending on the remote endpoint.
-         *
-         *      Scope: `connection:write`
-         */
-        post: operations["ConnectionAPI_TestConnection"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/v1/credentials": {
         parameters: {
             query?: never;
@@ -707,7 +605,7 @@ export interface paths {
          *      Concurrency: only one deployment can be active per application+environment
          *      at a time. If a deployment is already in progress (PENDING or RUNNING),
          *      the new deployment is queued and will start automatically when the
-         *      current deployment completes or is cancelled.
+         *      current deployment completes or is canceled.
          *
          *      Scope: `deploy:write`
          */
@@ -1131,7 +1029,7 @@ export interface paths {
          * Retrieve state for a job
          * @description The server validates that the SAT's runner binding matches the runner
          *      assigned to this job. Returns PERMISSION_DENIED if they do not match.
-         *      Returns NOT_FOUND if the job does not exist or has been cancelled.
+         *      Returns NOT_FOUND if the job does not exist or has been canceled.
          *
          *      Maps to Terraform HTTP backend GET on the state address.
          *
@@ -3889,7 +3787,7 @@ export interface components {
              * @description When set alongside `application_id`, returns the resolved view with
              *      environment overrides applied (UUID). Optional.
              */
-            environment_id?: string;
+            environment_id?: string | null;
             /**
              * filter
              * @description Filter expression using the PEG filter DSL. Filterable fields:
@@ -4018,682 +3916,6 @@ export interface components {
              * @description The updated component.
              */
             component?: components["schemas"]["admiral.component.v1.Component"];
-        };
-        /**
-         * AWSFederationConfig
-         * @description AWSFederationConfig holds the IAM role configuration for OIDC-based
-         *      authentication to AWS services (ECR, S3, Terraform provider).
-         *
-         *      Setup: Create an IAM Role with a trust policy that accepts Admiral's OIDC
-         *      issuer (https://oidc.admiral.io) and conditions on the `tenant_id` claim
-         *      matching your Admiral tenant.
-         */
-        "admiral.connection.v1.AWSFederationConfig": {
-            /**
-             * role_arn
-             * @description The ARN of the IAM Role to assume (e.g., "arn:aws:iam::123456789012:role/admiral-ecr").
-             */
-            role_arn?: string;
-            /**
-             * external_id
-             * @description Optional external ID for additional assume-role protection.
-             */
-            external_id?: string;
-            /**
-             * region
-             * @description AWS region for regional service endpoints (e.g., "us-east-1").
-             */
-            region?: string;
-        };
-        /**
-         * AWSStaticAuth
-         * @description AWSStaticAuth holds static AWS credentials. Prefer AWSFederationConfig
-         *      (OIDC) instead. Static credentials require manual rotation and present a
-         *      security risk if compromised.
-         */
-        "admiral.connection.v1.AWSStaticAuth": {
-            /**
-             * access_key_id
-             * @description AWS access key ID.
-             */
-            access_key_id?: string;
-            /**
-             * secret_access_key
-             * @description AWS secret access key.
-             *      Write-only: masked in responses.
-             */
-            secret_access_key?: string;
-            /**
-             * region
-             * @description AWS region for regional service endpoints.
-             */
-            region?: string;
-        };
-        /**
-         * AzureFederationConfig
-         * @description AzureFederationConfig holds the federated credential configuration for
-         *      OIDC-based authentication to Azure services (ACR, Terraform).
-         *
-         *      Setup: Create a Federated Identity Credential on your Azure AD app
-         *      registration that trusts Admiral's OIDC issuer with your tenant_id claim.
-         */
-        "admiral.connection.v1.AzureFederationConfig": {
-            /**
-             * azure_tenant_id
-             * @description Azure AD tenant ID (directory ID).
-             */
-            azure_tenant_id?: string;
-            /**
-             * client_id
-             * @description Application (client) ID of the Azure AD app registration.
-             */
-            client_id?: string;
-        };
-        /**
-         * AzureStaticAuth
-         * @description AzureStaticAuth holds static Azure service principal credentials. Prefer
-         *      AzureFederationConfig (Federated Credential) instead.
-         */
-        "admiral.connection.v1.AzureStaticAuth": {
-            /**
-             * azure_tenant_id
-             * @description Azure AD tenant ID (directory ID).
-             */
-            azure_tenant_id?: string;
-            /**
-             * client_id
-             * @description Application (client) ID.
-             */
-            client_id?: string;
-            /**
-             * client_secret
-             * @description Client secret.
-             *      Write-only: masked in responses.
-             */
-            client_secret?: string;
-        };
-        /**
-         * BasicAuth
-         * @description BasicAuth holds username/password credentials for OCI registries and other
-         *      systems that use basic authentication.
-         */
-        "admiral.connection.v1.BasicAuth": {
-            /**
-             * username
-             * @description Username for authentication.
-             */
-            username?: string;
-            /**
-             * password
-             * @description Password or token for authentication.
-             *      Write-only: masked in responses.
-             */
-            password?: string;
-        };
-        /**
-         * BearerTokenAuth
-         * @description BearerTokenAuth holds a bearer token for systems that use token-based
-         *      authentication (e.g., private Terraform registries).
-         */
-        "admiral.connection.v1.BearerTokenAuth": {
-            /**
-             * token
-             * @description Bearer token value.
-             *      Write-only: masked in responses.
-             */
-            token?: string;
-        };
-        /**
-         * Connection
-         * @description Connection represents stored credentials for accessing an external system.
-         *      Connections are tenant-scoped and referenced by sources when fetching artifacts.
-         *
-         *      Sensitive fields within auth_config are write-only -- they are accepted on
-         *      create and update but never returned in API responses.
-         * @example {
-         *       "id": "b8c9d0e1-2345-6fab-cdef-0123456789ab",
-         *       "name": "ecr-prod",
-         *       "description": "Read-only access to production ECR registry for container image pulls.",
-         *       "type": "CONNECTION_TYPE_DOCKER_REGISTRY",
-         *       "status": "CONNECTION_STATUS_ACTIVE",
-         *       "labels": {
-         *         "cloud": "aws",
-         *         "team": "platform"
-         *       },
-         *       "created_by": "d290f1ee-6c54-4b01-90e6-d701748f0851",
-         *       "created_at": "2025-07-20T14:00:00Z",
-         *       "updated_at": "2025-10-15T10:30:00Z",
-         *       "last_tested_at": "2025-11-01T08:00:00Z"
-         *     }
-         */
-        "admiral.connection.v1.Connection": {
-            /**
-             * id
-             * Format: uuid
-             * @description Unique identifier for the connection (UUID).
-             */
-            id?: string;
-            /**
-             * name
-             * @description URL-safe, human-readable identifier (e.g., "github-org", "ecr-prod").
-             *      Unique within the tenant. Lowercase alphanumeric and hyphens only, must
-             *      start with a letter and end with an alphanumeric character (1-63 chars).
-             */
-            name?: string;
-            /**
-             * description
-             * @description Optional longer-form description of what this connection is for
-             *      (e.g., "Read-only access to the platform team's GitHub org").
-             */
-            description?: string;
-            /**
-             * type
-             * @description The type of external system and authentication mechanism.
-             */
-            type?: components["schemas"]["admiral.connection.v1.ConnectionType"];
-            /**
-             * status
-             * @description Current health status of the connection's credentials.
-             */
-            status?: components["schemas"]["admiral.connection.v1.ConnectionStatus"];
-            /**
-             * status_message
-             * @description Human-readable message when status is ERROR (e.g., "401 Unauthorized:
-             *      token expired"). Empty when status is ACTIVE or UNTESTED.
-             */
-            status_message?: string;
-            /**
-             * labels
-             * @description Arbitrary key-value labels for organizing and filtering connections
-             *      (e.g., `{"team": "platform", "environment": "prod"}`).
-             */
-            labels?: {
-                [key: string]: string;
-            };
-            /**
-             * created_by
-             * @description The user or agent who created this connection (server-populated from token).
-             */
-            created_by?: components["schemas"]["admiral.common.v1.ActorRef"];
-            /**
-             * updated_by
-             * @description The user or agent who last updated this connection (server-populated from token).
-             */
-            updated_by?: components["schemas"]["admiral.common.v1.ActorRef"];
-            /**
-             * created_at
-             * @description When the connection was created.
-             */
-            created_at?: components["schemas"]["google.protobuf.Timestamp"];
-            /**
-             * updated_at
-             * @description When the connection was last updated.
-             */
-            updated_at?: components["schemas"]["google.protobuf.Timestamp"];
-            /**
-             * last_tested_at
-             * @description When the connection was last tested (via TestConnection or auto-validation).
-             *      Absent if never tested.
-             */
-            last_tested_at?: components["schemas"]["google.protobuf.Timestamp"];
-        } & ({
-            /**
-             * aws_federation
-             * @description AWS OIDC federation (for CONNECTION_TYPE_CLOUD_AWS).
-             */
-            aws_federation: components["schemas"]["admiral.connection.v1.AWSFederationConfig"];
-        } | {
-            /**
-             * aws_static
-             * @deprecated
-             * @description AWS static credentials (for CONNECTION_TYPE_CLOUD_AWS_STATIC, deprecated).
-             */
-            aws_static: components["schemas"]["admiral.connection.v1.AWSStaticAuth"];
-        } | {
-            /**
-             * azure_federation
-             * @description Azure Federated Credential (for CONNECTION_TYPE_CLOUD_AZURE).
-             */
-            azure_federation: components["schemas"]["admiral.connection.v1.AzureFederationConfig"];
-        } | {
-            /**
-             * azure_static
-             * @deprecated
-             * @description Azure static credentials (for CONNECTION_TYPE_CLOUD_AZURE_STATIC, deprecated).
-             */
-            azure_static: components["schemas"]["admiral.connection.v1.AzureStaticAuth"];
-        } | {
-            /**
-             * bearer_token
-             * @description Bearer token (for CONNECTION_TYPE_TERRAFORM_REGISTRY).
-             */
-            bearer_token: components["schemas"]["admiral.connection.v1.BearerTokenAuth"];
-        } | {
-            /**
-             * gcp_federation
-             * @description GCP Workload Identity (for CONNECTION_TYPE_CLOUD_GCP).
-             */
-            gcp_federation: components["schemas"]["admiral.connection.v1.GCPFederationConfig"];
-        } | {
-            /**
-             * gcp_static
-             * @deprecated
-             * @description GCP static credentials (for CONNECTION_TYPE_CLOUD_GCP_STATIC, deprecated).
-             */
-            gcp_static: components["schemas"]["admiral.connection.v1.GCPStaticAuth"];
-        } | {
-            /**
-             * git_github_app
-             * @description GitHub App credentials (for CONNECTION_TYPE_GIT_GITHUB_APP).
-             */
-            git_github_app: components["schemas"]["admiral.connection.v1.GitHubAppAuth"];
-        } | {
-            /**
-             * git_ssh
-             * @description Git SSH key (for CONNECTION_TYPE_GIT_SSH).
-             */
-            git_ssh: components["schemas"]["admiral.connection.v1.GitSSHAuth"];
-        } | {
-            /**
-             * git_token
-             * @description Git HTTPS token (for CONNECTION_TYPE_GIT_TOKEN).
-             */
-            git_token: components["schemas"]["admiral.connection.v1.GitTokenAuth"];
-        } | {
-            /**
-             * helm_http
-             * @description Helm HTTP basic auth (for CONNECTION_TYPE_HELM_HTTP).
-             */
-            helm_http: components["schemas"]["admiral.connection.v1.HelmHTTPAuth"];
-        } | {
-            /**
-             * oci_basic
-             * @description OCI registry basic auth (for CONNECTION_TYPE_OCI_BASIC).
-             */
-            oci_basic: components["schemas"]["admiral.connection.v1.BasicAuth"];
-        });
-        /** LabelsEntry */
-        "admiral.connection.v1.Connection.LabelsEntry": {
-            /** key */
-            key?: string;
-            /** value */
-            value?: string;
-        };
-        /**
-         * ConnectionStatus
-         * @description ConnectionStatus represents the health state of a connection's credentials.
-         * @enum {string}
-         */
-        "admiral.connection.v1.ConnectionStatus": "CONNECTION_STATUS_UNSPECIFIED" | "CONNECTION_STATUS_ACTIVE" | "CONNECTION_STATUS_ERROR" | "CONNECTION_STATUS_UNTESTED";
-        /**
-         * ConnectionType
-         * @description ConnectionType identifies the kind of external system and authentication
-         *      mechanism a connection uses.
-         * @enum {string}
-         */
-        "admiral.connection.v1.ConnectionType": "CONNECTION_TYPE_UNSPECIFIED" | "CONNECTION_TYPE_GIT_TOKEN" | "CONNECTION_TYPE_GIT_SSH" | "CONNECTION_TYPE_GIT_GITHUB_APP" | "CONNECTION_TYPE_HELM_HTTP" | "CONNECTION_TYPE_OCI_BASIC" | "CONNECTION_TYPE_CLOUD_AWS" | "CONNECTION_TYPE_CLOUD_GCP" | "CONNECTION_TYPE_CLOUD_AZURE" | "CONNECTION_TYPE_CLOUD_AWS_STATIC" | "CONNECTION_TYPE_CLOUD_GCP_STATIC" | "CONNECTION_TYPE_CLOUD_AZURE_STATIC" | "CONNECTION_TYPE_TERRAFORM_REGISTRY" | "CONNECTION_TYPE_S3" | "CONNECTION_TYPE_GCS";
-        /**
-         * CreateConnectionRequest
-         * @description CreateConnectionRequest contains the parameters for creating a new connection.
-         */
-        "admiral.connection.v1.CreateConnectionRequest": {
-            /**
-             * name
-             * @description URL-safe, human-readable identifier (e.g., "github-org", "ecr-prod").
-             *      Must be unique within the tenant.
-             */
-            name?: string;
-            /**
-             * description
-             * @description Optional description of the connection's purpose.
-             */
-            description?: string;
-            /**
-             * type
-             * @description The type of external system and authentication mechanism.
-             */
-            type?: components["schemas"]["admiral.connection.v1.ConnectionType"];
-            /**
-             * labels
-             * @description Arbitrary key-value labels for organizing and filtering connections.
-             */
-            labels?: {
-                [key: string]: string;
-            };
-        } & ({
-            /** aws_federation */
-            aws_federation: components["schemas"]["admiral.connection.v1.AWSFederationConfig"];
-        } | {
-            /**
-             * aws_static
-             * @deprecated
-             */
-            aws_static: components["schemas"]["admiral.connection.v1.AWSStaticAuth"];
-        } | {
-            /** azure_federation */
-            azure_federation: components["schemas"]["admiral.connection.v1.AzureFederationConfig"];
-        } | {
-            /**
-             * azure_static
-             * @deprecated
-             */
-            azure_static: components["schemas"]["admiral.connection.v1.AzureStaticAuth"];
-        } | {
-            /** bearer_token */
-            bearer_token: components["schemas"]["admiral.connection.v1.BearerTokenAuth"];
-        } | {
-            /** gcp_federation */
-            gcp_federation: components["schemas"]["admiral.connection.v1.GCPFederationConfig"];
-        } | {
-            /**
-             * gcp_static
-             * @deprecated
-             */
-            gcp_static: components["schemas"]["admiral.connection.v1.GCPStaticAuth"];
-        } | {
-            /** git_github_app */
-            git_github_app: components["schemas"]["admiral.connection.v1.GitHubAppAuth"];
-        } | {
-            /** git_ssh */
-            git_ssh: components["schemas"]["admiral.connection.v1.GitSSHAuth"];
-        } | {
-            /** git_token */
-            git_token: components["schemas"]["admiral.connection.v1.GitTokenAuth"];
-        } | {
-            /** helm_http */
-            helm_http: components["schemas"]["admiral.connection.v1.HelmHTTPAuth"];
-        } | {
-            /** oci_basic */
-            oci_basic: components["schemas"]["admiral.connection.v1.BasicAuth"];
-        });
-        /** LabelsEntry */
-        "admiral.connection.v1.CreateConnectionRequest.LabelsEntry": {
-            /** key */
-            key?: string;
-            /** value */
-            value?: string;
-        };
-        /**
-         * CreateConnectionResponse
-         * @description CreateConnectionResponse contains the newly created connection.
-         */
-        "admiral.connection.v1.CreateConnectionResponse": {
-            /**
-             * connection
-             * @description The created connection. Auth config sensitive fields are masked.
-             */
-            connection?: components["schemas"]["admiral.connection.v1.Connection"];
-        };
-        /**
-         * DeleteConnectionRequest
-         * @description DeleteConnectionRequest identifies a connection to delete.
-         */
-        "admiral.connection.v1.DeleteConnectionRequest": {
-            /**
-             * connection_id
-             * Format: uuid
-             * @description The unique identifier of the connection to delete (UUID).
-             *      Fails if any sources still reference this connection.
-             */
-            connection_id?: string;
-        };
-        /**
-         * DeleteConnectionResponse
-         * @description DeleteConnectionResponse is empty on success.
-         */
-        "admiral.connection.v1.DeleteConnectionResponse": Record<string, never>;
-        /**
-         * GCPFederationConfig
-         * @description GCPFederationConfig holds the Workload Identity Federation configuration for
-         *      OIDC-based authentication to GCP services (Artifact Registry, GCS, Terraform).
-         *
-         *      Setup: Create a Workload Identity Pool and Provider that trusts Admiral's
-         *      OIDC issuer, then grant the service account access to the required resources.
-         */
-        "admiral.connection.v1.GCPFederationConfig": {
-            /**
-             * project_number
-             * @description GCP project number (numeric, not project ID).
-             */
-            project_number?: string;
-            /**
-             * pool_id
-             * @description Workload Identity Pool ID.
-             */
-            pool_id?: string;
-            /**
-             * provider_id
-             * @description Workload Identity Provider ID within the pool.
-             */
-            provider_id?: string;
-            /**
-             * service_account_email
-             * @description Email of the GCP service account to impersonate.
-             */
-            service_account_email?: string;
-        };
-        /**
-         * GCPStaticAuth
-         * @description GCPStaticAuth holds a static GCP service account key. Prefer
-         *      GCPFederationConfig (Workload Identity) instead.
-         */
-        "admiral.connection.v1.GCPStaticAuth": {
-            /**
-             * service_account_json
-             * @description JSON-encoded service account key.
-             *      Write-only: masked in responses.
-             */
-            service_account_json?: string;
-        };
-        /**
-         * GetConnectionRequest
-         * @description GetConnectionRequest identifies a connection to retrieve.
-         */
-        "admiral.connection.v1.GetConnectionRequest": {
-            /**
-             * connection_id
-             * Format: uuid
-             * @description The unique identifier of the connection (UUID).
-             */
-            connection_id?: string;
-        };
-        /**
-         * GetConnectionResponse
-         * @description GetConnectionResponse contains the connection record.
-         */
-        "admiral.connection.v1.GetConnectionResponse": {
-            /**
-             * connection
-             * @description The connection record. Sensitive credential fields are masked.
-             */
-            connection?: components["schemas"]["admiral.connection.v1.Connection"];
-        };
-        /**
-         * GitHubAppAuth
-         * @description GitHubAppAuth holds GitHub App credentials for Git operations.
-         *      Preferred over personal tokens for organizations -- provides granular
-         *      repository permissions and a better audit trail.
-         */
-        "admiral.connection.v1.GitHubAppAuth": {
-            /**
-             * app_id
-             * @description The GitHub App's numeric ID.
-             */
-            app_id?: string;
-            /**
-             * installation_id
-             * @description The installation ID for the target organization or repository.
-             */
-            installation_id?: string;
-            /**
-             * private_key
-             * @description PEM-encoded private key for the GitHub App.
-             *      Write-only: masked in responses.
-             */
-            private_key?: string;
-        };
-        /**
-         * GitSSHAuth
-         * @description GitSSHAuth holds SSH key credentials for Git operations.
-         */
-        "admiral.connection.v1.GitSSHAuth": {
-            /**
-             * private_key
-             * @description PEM-encoded SSH private key.
-             *      Write-only: masked in responses.
-             */
-            private_key?: string;
-            /**
-             * passphrase
-             * @description Optional passphrase for the private key.
-             *      Write-only: masked in responses.
-             */
-            passphrase?: string;
-        };
-        /**
-         * GitTokenAuth
-         * @description GitTokenAuth holds HTTPS token credentials for Git operations.
-         */
-        "admiral.connection.v1.GitTokenAuth": {
-            /**
-             * token
-             * @description Personal access token, OAuth token, or bot token.
-             *      Write-only: masked in responses.
-             */
-            token?: string;
-        };
-        /**
-         * HelmHTTPAuth
-         * @description HelmHTTPAuth holds basic auth credentials for classic Helm HTTP repositories.
-         */
-        "admiral.connection.v1.HelmHTTPAuth": {
-            /**
-             * username
-             * @description Username for basic authentication.
-             */
-            username?: string;
-            /**
-             * password
-             * @description Password for basic authentication.
-             *      Write-only: masked in responses.
-             */
-            password?: string;
-        };
-        /**
-         * ListConnectionsRequest
-         * @description ListConnectionsRequest contains pagination and filter parameters.
-         */
-        "admiral.connection.v1.ListConnectionsRequest": {
-            /**
-             * filter
-             * @description Filter expression to narrow results. Uses the Admiral filter DSL.
-             *
-             *      Syntax: `field['name'] = 'value'` with AND/OR/NOT, comparison operators
-             *      (=, !=, <, >, <=, >=, ~=), and predicates (IN, BETWEEN, CONTAINS,
-             *      STARTS_WITH, ENDS_WITH, IS NULL, EXISTS).
-             *
-             *      Filterable fields:
-             *        - `name` -- filter by connection name.
-             *        - `type` -- filter by connection type (GIT_TOKEN, HELM_HTTP, etc.).
-             *        - `status` -- filter by connection status (ACTIVE, ERROR, UNTESTED).
-             *        - `labels.key` -- filter by label key.
-             *
-             *      Example: `field['type'] = 'GIT_TOKEN' AND field['status'] = 'ACTIVE'`
-             */
-            filter?: string;
-            /**
-             * page_size
-             * Format: int32
-             * @description Maximum number of connections to return per page.
-             */
-            page_size?: number;
-            /**
-             * page_token
-             * @description Opaque pagination token from a previous response.
-             */
-            page_token?: string;
-        };
-        /**
-         * ListConnectionsResponse
-         * @description ListConnectionsResponse contains a page of connections.
-         */
-        "admiral.connection.v1.ListConnectionsResponse": {
-            /**
-             * connections
-             * @description The list of connections. Sensitive credential fields are masked.
-             */
-            connections?: components["schemas"]["admiral.connection.v1.Connection"][];
-            /**
-             * next_page_token
-             * @description Pagination token for the next page. Empty when there are no more results.
-             */
-            next_page_token?: string;
-        };
-        /**
-         * TestConnectionRequest
-         * @description TestConnectionRequest identifies a connection to validate.
-         */
-        "admiral.connection.v1.TestConnectionRequest": {
-            /**
-             * connection_id
-             * Format: uuid
-             * @description The unique identifier of the connection to test (UUID).
-             */
-            connection_id?: string;
-        };
-        /**
-         * TestConnectionResponse
-         * @description TestConnectionResponse contains the result of the connectivity test.
-         */
-        "admiral.connection.v1.TestConnectionResponse": {
-            /**
-             * connection
-             * @description The updated connection with refreshed status and last_tested_at.
-             */
-            connection?: components["schemas"]["admiral.connection.v1.Connection"];
-            /**
-             * success
-             * @description Whether the test succeeded.
-             */
-            success?: boolean;
-            /**
-             * message
-             * @description Human-readable message describing the test result. On failure, includes
-             *      the error details (e.g., "401 Unauthorized: token expired").
-             */
-            message?: string;
-        };
-        /**
-         * UpdateConnectionRequest
-         * @description UpdateConnectionRequest contains the connection fields to update.
-         */
-        "admiral.connection.v1.UpdateConnectionRequest": {
-            /**
-             * connection
-             * @description The connection with updated fields.
-             *      Only fields specified in `update_mask` are updated.
-             *
-             *      When updating auth_config, the entire auth config is replaced.
-             *      Omitting auth_config from the update_mask leaves credentials unchanged.
-             */
-            connection: components["schemas"]["admiral.connection.v1.Connection"];
-            /**
-             * update_mask
-             * @description The set of fields to update. If unset, all mutable fields are updated.
-             *      Supported fields: `name`, `description`, `auth_config`, `labels`.
-             */
-            update_mask?: components["schemas"]["google.protobuf.FieldMask"];
-        };
-        /**
-         * UpdateConnectionResponse
-         * @description UpdateConnectionResponse contains the updated connection.
-         */
-        "admiral.connection.v1.UpdateConnectionResponse": {
-            /**
-             * connection
-             * @description The updated connection. Sensitive credential fields are masked.
-             */
-            connection?: components["schemas"]["admiral.connection.v1.Connection"];
         };
         /**
          * AuthConfig
@@ -5070,7 +4292,7 @@ export interface components {
         "admiral.deployment.v1.CancelDeploymentResponse": {
             /**
              * deployment
-             * @description The cancelled deployment.
+             * @description The canceled deployment.
              */
             deployment?: components["schemas"]["admiral.deployment.v1.Deployment"];
         };
@@ -5176,10 +4398,9 @@ export interface components {
             trigger_type?: components["schemas"]["admiral.deployment.v1.DeploymentTriggerType"];
             /**
              * triggered_by
-             * Format: uuid
-             * @description UUID of the user that triggered the deployment.
+             * @description The user or agent that triggered the deployment (server-populated from token).
              */
-            triggered_by?: string;
+            triggered_by?: components["schemas"]["admiral.common.v1.ActorRef"];
             /**
              * message
              * @description Optional message describing the deployment (e.g., "Deploying v2.1.0
@@ -5214,7 +4435,7 @@ export interface components {
             /**
              * completed_at
              * @description When the deployment finished (all revisions completed, failed, or
-             *      cancelled). Absent while the deployment is in progress.
+             *      canceled). Absent while the deployment is in progress.
              */
             completed_at?: components["schemas"]["google.protobuf.Timestamp"];
         };
@@ -5224,7 +4445,7 @@ export interface components {
          *      from the statuses of all its component revisions.
          * @enum {string}
          */
-        "admiral.deployment.v1.DeploymentStatus": "DEPLOYMENT_STATUS_UNSPECIFIED" | "DEPLOYMENT_STATUS_PENDING" | "DEPLOYMENT_STATUS_QUEUED" | "DEPLOYMENT_STATUS_RUNNING" | "DEPLOYMENT_STATUS_SUCCEEDED" | "DEPLOYMENT_STATUS_PARTIALLY_FAILED" | "DEPLOYMENT_STATUS_FAILED" | "DEPLOYMENT_STATUS_CANCELLED";
+        "admiral.deployment.v1.DeploymentStatus": "DEPLOYMENT_STATUS_UNSPECIFIED" | "DEPLOYMENT_STATUS_PENDING" | "DEPLOYMENT_STATUS_QUEUED" | "DEPLOYMENT_STATUS_RUNNING" | "DEPLOYMENT_STATUS_SUCCEEDED" | "DEPLOYMENT_STATUS_PARTIALLY_FAILED" | "DEPLOYMENT_STATUS_FAILED" | "DEPLOYMENT_STATUS_CANCELED";
         /**
          * DeploymentTriggerType
          * @description DeploymentTriggerType indicates what initiated the deployment.
@@ -5526,7 +4747,7 @@ export interface components {
             started_at?: components["schemas"]["google.protobuf.Timestamp"];
             /**
              * completed_at
-             * @description When the revision finished (succeeded, failed, or cancelled).
+             * @description When the revision finished (succeeded, failed, or canceled).
              */
             completed_at?: components["schemas"]["google.protobuf.Timestamp"];
             /**
@@ -5558,7 +4779,7 @@ export interface components {
          *      revision within a deployment.
          * @enum {string}
          */
-        "admiral.deployment.v1.RevisionStatus": "REVISION_STATUS_UNSPECIFIED" | "REVISION_STATUS_PENDING" | "REVISION_STATUS_QUEUED" | "REVISION_STATUS_PLANNING" | "REVISION_STATUS_AWAITING_APPROVAL" | "REVISION_STATUS_APPLYING" | "REVISION_STATUS_SUCCEEDED" | "REVISION_STATUS_FAILED" | "REVISION_STATUS_BLOCKED" | "REVISION_STATUS_CANCELLED";
+        "admiral.deployment.v1.RevisionStatus": "REVISION_STATUS_UNSPECIFIED" | "REVISION_STATUS_PENDING" | "REVISION_STATUS_QUEUED" | "REVISION_STATUS_PLANNING" | "REVISION_STATUS_AWAITING_APPROVAL" | "REVISION_STATUS_APPLYING" | "REVISION_STATUS_SUCCEEDED" | "REVISION_STATUS_FAILED" | "REVISION_STATUS_BLOCKED" | "REVISION_STATUS_CANCELED";
         /**
          * RevisionSummary
          * @description RevisionSummary provides aggregate counts of revision statuses within a
@@ -5596,11 +4817,11 @@ export interface components {
              */
             running?: number;
             /**
-             * cancelled
+             * canceled
              * Format: int32
-             * @description Number of revisions that were cancelled.
+             * @description Number of revisions that were canceled.
              */
-            cancelled?: number;
+            canceled?: number;
             /**
              * pending
              * Format: int32
@@ -6728,7 +5949,7 @@ export interface components {
             started_at?: components["schemas"]["google.protobuf.Timestamp"];
             /**
              * completed_at
-             * @description When the job finished (succeeded, failed, or cancelled).
+             * @description When the job finished (succeeded, failed, or canceled).
              */
             completed_at?: components["schemas"]["google.protobuf.Timestamp"];
         };
@@ -6995,11 +6216,11 @@ export interface components {
              *
              *      Filterable fields:
              *        - `name` -- filter by runner name.
-             *        - `kind` -- filter by runner kind (TERRAFORM, WORKFLOW).
+             *        - `kind` -- filter by runner kind (INFRASTRUCTURE, WORKFLOW).
              *        - `health_status` -- filter by health status.
              *        - `labels.key` -- filter by label key.
              *
-             *      Example: `field['kind'] = 'TERRAFORM' AND field['health_status'] = 'HEALTHY'`
+             *      Example: `field['kind'] = 'INFRASTRUCTURE' AND field['health_status'] = 'HEALTHY'`
              */
             filter?: string;
             /**
@@ -7376,7 +6597,7 @@ export interface components {
              * source_id
              * Format: uuid
              * @description Unique identifier of the source to delete (UUID).
-             *      Fails if any application components still reference this source.
+             *      Fails if any modules still reference this source.
              */
             source_id?: string;
         };
@@ -8820,10 +8041,10 @@ export interface components {
             id?: string;
             /**
              * key
-             * @description The variable name. Must be a valid environment variable identifier
-             *      (e.g., "DATABASE_URL", "API_KEY"). Alphanumeric and underscores
-             *      (uppercase conventional but lowercase accepted), must start with a letter
-             *      or underscore (max 255 chars).
+             * @description The variable name. For user-created variables, must be a valid
+             *      environment variable identifier (e.g., "DATABASE_URL", "API_KEY").
+             *      Infrastructure output variables use dot-namespaced keys
+             *      (e.g., "vpc.vpc_id", "database.endpoint") and are system-managed.
              */
             key?: string;
             /**
@@ -10231,197 +9452,6 @@ export interface operations {
             };
         };
     };
-    ConnectionAPI_ListConnections: {
-        parameters: {
-            query?: {
-                /**
-                 * @description Filter expression to narrow results. Uses the Admiral filter DSL.
-                 *
-                 *      Syntax: `field['name'] = 'value'` with AND/OR/NOT, comparison operators
-                 *      (=, !=, <, >, <=, >=, ~=), and predicates (IN, BETWEEN, CONTAINS,
-                 *      STARTS_WITH, ENDS_WITH, IS NULL, EXISTS).
-                 *
-                 *      Filterable fields:
-                 *        - `name` -- filter by connection name.
-                 *        - `type` -- filter by connection type (GIT_TOKEN, HELM_HTTP, etc.).
-                 *        - `status` -- filter by connection status (ACTIVE, ERROR, UNTESTED).
-                 *        - `labels.key` -- filter by label key.
-                 *
-                 *      Example: `field['type'] = 'GIT_TOKEN' AND field['status'] = 'ACTIVE'`
-                 */
-                filter?: string;
-                /** @description Maximum number of connections to return per page. */
-                page_size?: number;
-                /** @description Opaque pagination token from a previous response. */
-                page_token?: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Success */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["admiral.connection.v1.ListConnectionsResponse"];
-                };
-            };
-        };
-    };
-    ConnectionAPI_CreateConnection: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["admiral.connection.v1.CreateConnectionRequest"];
-            };
-        };
-        responses: {
-            /** @description Success */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["admiral.connection.v1.CreateConnectionResponse"];
-                };
-            };
-        };
-    };
-    ConnectionAPI_UpdateConnection: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Unique identifier for the connection (UUID). */
-                "connection.id": string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    /**
-                     * connection
-                     * @description The connection with updated fields.
-                     *      Only fields specified in `update_mask` are updated.
-                     *
-                     *      When updating auth_config, the entire auth config is replaced.
-                     *      Omitting auth_config from the update_mask leaves credentials unchanged.
-                     */
-                    connection: components["schemas"]["admiral.connection.v1.Connection"];
-                    /**
-                     * update_mask
-                     * @description The set of fields to update. If unset, all mutable fields are updated.
-                     *      Supported fields: `name`, `description`, `auth_config`, `labels`.
-                     */
-                    update_mask?: components["schemas"]["google.protobuf.FieldMask"];
-                };
-            };
-        };
-        responses: {
-            /** @description Success */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["admiral.connection.v1.UpdateConnectionResponse"];
-                };
-            };
-        };
-    };
-    ConnectionAPI_GetConnection: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description The unique identifier of the connection (UUID). */
-                connection_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Success */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["admiral.connection.v1.GetConnectionResponse"];
-                };
-            };
-        };
-    };
-    ConnectionAPI_DeleteConnection: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /**
-                 * @description The unique identifier of the connection to delete (UUID).
-                 *      Fails if any sources still reference this connection.
-                 */
-                connection_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Success */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["admiral.connection.v1.DeleteConnectionResponse"];
-                };
-            };
-        };
-    };
-    ConnectionAPI_TestConnection: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description The unique identifier of the connection to test (UUID). */
-                connection_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    /**
-                     * connection_id
-                     * Format: uuid
-                     * @description The unique identifier of the connection to test (UUID).
-                     */
-                    connection_id?: string;
-                };
-            };
-        };
-        responses: {
-            /** @description Success */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["admiral.connection.v1.TestConnectionResponse"];
-                };
-            };
-        };
-    };
     CredentialAPI_ListCredentials: {
         parameters: {
             query?: {
@@ -11498,11 +10528,11 @@ export interface operations {
                  *
                  *      Filterable fields:
                  *        - `name` -- filter by runner name.
-                 *        - `kind` -- filter by runner kind (TERRAFORM, WORKFLOW).
+                 *        - `kind` -- filter by runner kind (INFRASTRUCTURE, WORKFLOW).
                  *        - `health_status` -- filter by health status.
                  *        - `labels.key` -- filter by label key.
                  *
-                 *      Example: `field['kind'] = 'TERRAFORM' AND field['health_status'] = 'HEALTHY'`
+                 *      Example: `field['kind'] = 'INFRASTRUCTURE' AND field['health_status'] = 'HEALTHY'`
                  */
                 filter?: string;
                 /** @description Maximum number of runners to return per page. */
@@ -11989,7 +11019,7 @@ export interface operations {
             path: {
                 /**
                  * @description Unique identifier of the source to delete (UUID).
-                 *      Fails if any application components still reference this source.
+                 *      Fails if any modules still reference this source.
                  */
                 source_id: string;
             };

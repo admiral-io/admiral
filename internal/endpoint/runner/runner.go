@@ -44,6 +44,7 @@ type api struct {
 	jobStore        *store.JobStore
 	revisionStore   *store.RevisionStore
 	deploymentStore *store.DeploymentStore
+	envStore        *store.EnvironmentStore
 	componentStore  *store.ComponentStore
 	moduleStore     *store.ModuleStore
 	sourceStore     *store.SourceStore
@@ -85,6 +86,10 @@ func New(cfg *config.Config, log *zap.Logger, scope tally.Scope) (endpoint.Endpo
 	if err != nil {
 		return nil, err
 	}
+	envStore, err := store.NewEnvironmentStore(db.GormDB())
+	if err != nil {
+		return nil, err
+	}
 	componentStore, err := store.NewComponentStore(db.GormDB())
 	if err != nil {
 		return nil, err
@@ -123,6 +128,7 @@ func New(cfg *config.Config, log *zap.Logger, scope tally.Scope) (endpoint.Endpo
 		jobStore:        jobStore,
 		revisionStore:   revisionStore,
 		deploymentStore: deploymentStore,
+		envStore:        envStore,
 		componentStore:  componentStore,
 		moduleStore:     moduleStore,
 		sourceStore:     sourceStore,

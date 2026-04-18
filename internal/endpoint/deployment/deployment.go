@@ -301,10 +301,22 @@ func (a *api) CreateDeployment(ctx context.Context, req *deploymentv1.CreateDepl
 		triggerType = model.DeploymentTriggerCI
 	}
 
+	// Check for serial execution: only one active deployment per (app, env).
+	active, err := a.deploymentStore.FindActive(ctx, appID, envID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to check active deployments: %v", err)
+	}
+	queued := active != nil
+
+	initialStatus := model.DeploymentStatusPending
+	if queued {
+		initialStatus = model.DeploymentStatusQueued
+	}
+
 	dep := &model.Deployment{
 		ApplicationId:      appID,
 		EnvironmentId:      envID,
-		Status:             model.DeploymentStatusPending,
+		Status:             initialStatus,
 		TriggerType:        triggerType,
 		TriggeredBy:        claims.Subject,
 		Message:            req.GetMessage(),
@@ -316,7 +328,9 @@ func (a *api) CreateDeployment(ctx context.Context, req *deploymentv1.CreateDepl
 	}
 	evalCtx.Deploy = admtemplate.DeployMeta{Id: dep.Id.String()}
 
-	// Create revisions and jobs in topological order.
+	// Create revisions in topological order. Revisions are always created
+	// at deployment time to snapshot the current config, even for queued
+	// deployments. Jobs are only created for active (non-queued) deployments.
 	for _, phase := range phases {
 		for _, compName := range phase {
 			comp := nameToComp[compName]
@@ -375,28 +389,17 @@ func (a *api) CreateDeployment(ctx context.Context, req *deploymentv1.CreateDepl
 				BlockedBy:        pq.StringArray(blockedBy),
 				WorkingDirectory: workingDirectory,
 			}
-			rev, err = a.revisionStore.Create(ctx, rev)
-			if err != nil {
+			if _, err = a.revisionStore.Create(ctx, rev); err != nil {
 				return nil, status.Errorf(codes.Internal, "failed to create revision: %v", err)
 			}
+		}
+	}
 
-			// Phase 0 jobs are immediately claimable; later phases wait for
-			// their dependencies to complete.
-			jobStatus := model.JobStatusPending
-			if _, ok := phase0[compName]; ok {
-				jobStatus = model.JobStatusAssigned
-			}
-
-			job := &model.Job{
-				RunnerId:     runnerID,
-				RevisionId:   rev.Id,
-				DeploymentId: dep.Id,
-				JobType:      model.JobTypePlan,
-				Status:       jobStatus,
-			}
-			if _, err := a.jobStore.Create(ctx, job); err != nil {
-				return nil, status.Errorf(codes.Internal, "failed to create plan job: %v", err)
-			}
+	// Create plan jobs only for active deployments. Queued deployments
+	// get their jobs created when promoted (see promoteQueuedDeployment).
+	if !queued {
+		if err := a.createPlanJobs(ctx, dep); err != nil {
+			return nil, err
 		}
 	}
 
@@ -555,6 +558,121 @@ func (a *api) ApplyDeployment(ctx context.Context, req *deploymentv1.ApplyDeploy
 	return &deploymentv1.ApplyDeploymentResponse{
 		Deployment: a.deploymentToProto(ctx, dep),
 	}, nil
+}
+
+func (a *api) CancelDeployment(ctx context.Context, req *deploymentv1.CancelDeploymentRequest) (*deploymentv1.CancelDeploymentResponse, error) {
+	if _, err := authn.ClaimsFromContext(ctx); err != nil {
+		return nil, status.Error(codes.Unauthenticated, "authentication required")
+	}
+
+	depID, err := uuid.Parse(req.GetDeploymentId())
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "invalid deployment_id: %v", err)
+	}
+	dep, err := a.deploymentStore.Get(ctx, depID)
+	if err != nil {
+		return nil, status.Errorf(codes.NotFound, "deployment not found: %s", depID)
+	}
+
+	if model.IsTerminalDeploymentStatus(dep.Status) {
+		return nil, status.Errorf(codes.FailedPrecondition, "deployment is already in terminal status: %s", dep.Status)
+	}
+
+	// Cancel all non-terminal revisions and jobs.
+	if err := a.revisionStore.CancelNonTerminal(ctx, depID); err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to cancel revisions: %v", err)
+	}
+	if err := a.jobStore.CancelNonTerminal(ctx, depID); err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to cancel jobs: %v", err)
+	}
+
+	now := time.Now()
+	dep, err = a.deploymentStore.Update(ctx, dep, map[string]any{
+		"status":       model.DeploymentStatusCanceled,
+		"updated_at":   now,
+		"completed_at": now,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to update deployment: %v", err)
+	}
+
+	// Promote the next queued deployment, if any.
+	a.promoteQueuedDeployment(ctx, dep.ApplicationId, dep.EnvironmentId)
+
+	return &deploymentv1.CancelDeploymentResponse{
+		Deployment: a.deploymentToProto(ctx, dep),
+	}, nil
+}
+
+// createPlanJobs creates PLAN jobs for all revisions in a deployment. Phase-0
+// revisions (no blockers) get ASSIGNED status; later phases get PENDING.
+func (a *api) createPlanJobs(ctx context.Context, dep *model.Deployment) error {
+	revisions, err := a.revisionStore.ListByDeployment(ctx, dep.Id)
+	if err != nil {
+		return status.Errorf(codes.Internal, "failed to list revisions: %v", err)
+	}
+
+	env, err := a.envStore.Get(ctx, dep.EnvironmentId)
+	if err != nil {
+		return status.Errorf(codes.Internal, "failed to load environment: %v", err)
+	}
+	runnerID, err := env.TerraformRunnerID()
+	if err != nil {
+		return status.Errorf(codes.FailedPrecondition, "%v", err)
+	}
+
+	for i := range revisions {
+		rev := &revisions[i]
+		jobStatus := model.JobStatusPending
+		if len(rev.BlockedBy) == 0 {
+			jobStatus = model.JobStatusAssigned
+		}
+		job := &model.Job{
+			RunnerId:     runnerID,
+			RevisionId:   rev.Id,
+			DeploymentId: dep.Id,
+			JobType:      model.JobTypePlan,
+			Status:       jobStatus,
+		}
+		if _, err := a.jobStore.Create(ctx, job); err != nil {
+			return status.Errorf(codes.Internal, "failed to create plan job: %v", err)
+		}
+	}
+	return nil
+}
+
+// promoteQueuedDeployment checks for the next queued deployment for the given
+// (app, env) and activates it by creating plan jobs. Should be called whenever
+// a deployment reaches a terminal state.
+func (a *api) promoteQueuedDeployment(ctx context.Context, appID, envID uuid.UUID) {
+	next, err := a.deploymentStore.FindOldestQueued(ctx, appID, envID)
+	if err != nil {
+		a.logger.Error("queue promotion: failed to find queued deployment", zap.Error(err))
+		return
+	}
+	if next == nil {
+		return
+	}
+
+	if err := a.createPlanJobs(ctx, next); err != nil {
+		a.logger.Error("queue promotion: failed to create jobs",
+			zap.String("deployment_id", next.Id.String()),
+			zap.Error(err))
+		return
+	}
+
+	if _, err := a.deploymentStore.Update(ctx, next, map[string]any{
+		"status":     model.DeploymentStatusRunning,
+		"updated_at": time.Now(),
+	}); err != nil {
+		a.logger.Error("queue promotion: failed to update deployment status",
+			zap.String("deployment_id", next.Id.String()),
+			zap.Error(err))
+		return
+	}
+
+	a.logger.Info("queue promotion: activated queued deployment",
+		zap.String("deployment_id", next.Id.String()))
 }
 
 func (a *api) deploymentToProto(ctx context.Context, dep *model.Deployment) *deploymentv1.Deployment {

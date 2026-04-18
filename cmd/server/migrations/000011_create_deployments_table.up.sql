@@ -5,7 +5,7 @@ CREATE TABLE IF NOT EXISTS deployments (
     status TEXT NOT NULL CHECK (status IN (
         'PENDING', 'QUEUED', 'RUNNING',
         'SUCCEEDED', 'PARTIALLY_FAILED', 'FAILED',
-        'CANCELLED'
+        'CANCELED'
     )),
     trigger_type TEXT NOT NULL CHECK (trigger_type IN ('MANUAL', 'CI', 'DESTROY')),
     triggered_by TEXT NOT NULL,

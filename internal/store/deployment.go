@@ -54,6 +54,41 @@ func (s *DeploymentStore) List(ctx context.Context, scopes ...func(*gorm.DB) *go
 	return deployments, nil
 }
 
+func (s *DeploymentStore) FindActive(ctx context.Context, appID, envID uuid.UUID) (*model.Deployment, error) {
+	var d model.Deployment
+	err := s.db.WithContext(ctx).
+		Where("application_id = ? AND environment_id = ? AND status IN ?",
+			appID, envID,
+			[]string{model.DeploymentStatusPending, model.DeploymentStatusRunning},
+		).
+		Order("created_at ASC").
+		First(&d).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, fmt.Errorf("failed to find active deployment: %w", err)
+	}
+	return &d, nil
+}
+
+func (s *DeploymentStore) FindOldestQueued(ctx context.Context, appID, envID uuid.UUID) (*model.Deployment, error) {
+	var d model.Deployment
+	err := s.db.WithContext(ctx).
+		Where("application_id = ? AND environment_id = ? AND status = ?",
+			appID, envID, model.DeploymentStatusQueued,
+		).
+		Order("created_at ASC").
+		First(&d).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, fmt.Errorf("failed to find queued deployment: %w", err)
+	}
+	return &d, nil
+}
+
 func (s *DeploymentStore) Update(ctx context.Context, d *model.Deployment, fields map[string]any) (*model.Deployment, error) {
 	result := s.db.WithContext(ctx).Model(d).Updates(fields)
 	if result.Error != nil {

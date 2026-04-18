@@ -27,10 +27,10 @@ import (
 )
 
 const (
-	artifactRoutePattern  = "/api/v1/runner/jobs/{id}/artifact"
-	planFileRoutePattern  = "/api/v1/runner/jobs/{id}/plan"
-	planFileContentType   = "application/octet-stream"
-	maxPlanFileSize       = 256 << 20 // 256 MiB
+	artifactRoutePattern = "/api/v1/runner/jobs/{id}/artifact"
+	planFileRoutePattern = "/api/v1/runner/jobs/{id}/plan"
+	planFileContentType  = "application/octet-stream"
+	maxPlanFileSize      = 256 << 20 // 256 MiB
 )
 
 func (a *api) ClaimJob(ctx context.Context, _ *runnerv1.ClaimJobRequest) (*runnerv1.ClaimJobResponse, error) {
@@ -202,6 +202,12 @@ func (a *api) ReportJobResult(ctx context.Context, req *runnerv1.ReportJobResult
 		return nil, status.Errorf(codes.Internal, "failed to update deployment: %v", err)
 	}
 
+	// When a deployment reaches a terminal state, promote the next queued
+	// deployment for the same (app, env).
+	if model.IsTerminalDeploymentStatus(depStatus) {
+		a.promoteQueuedDeployment(ctx, dep.ApplicationId, dep.EnvironmentId)
+	}
+
 	return &runnerv1.ReportJobResultResponse{Ack: true}, nil
 }
 
@@ -319,6 +325,71 @@ func (a *api) promoteUnblockedJobs(ctx context.Context, completedRev *model.Revi
 		}
 	}
 	return nil
+}
+
+// promoteQueuedDeployment checks for the next queued deployment for the given
+// (app, env) and activates it by creating plan jobs.
+func (a *api) promoteQueuedDeployment(ctx context.Context, appID, envID uuid.UUID) {
+	next, err := a.deploymentStore.FindOldestQueued(ctx, appID, envID)
+	if err != nil {
+		a.logger.Error("queue promotion: failed to find queued deployment", zap.Error(err))
+		return
+	}
+	if next == nil {
+		return
+	}
+
+	revisions, err := a.revisionStore.ListByDeployment(ctx, next.Id)
+	if err != nil {
+		a.logger.Error("queue promotion: failed to list revisions",
+			zap.String("deployment_id", next.Id.String()), zap.Error(err))
+		return
+	}
+
+	env, err := a.envStore.Get(ctx, next.EnvironmentId)
+	if err != nil {
+		a.logger.Error("queue promotion: failed to load environment",
+			zap.String("deployment_id", next.Id.String()), zap.Error(err))
+		return
+	}
+	runnerID, err := env.TerraformRunnerID()
+	if err != nil {
+		a.logger.Error("queue promotion: environment has no runner",
+			zap.String("deployment_id", next.Id.String()), zap.Error(err))
+		return
+	}
+
+	for i := range revisions {
+		rev := &revisions[i]
+		jobStatus := model.JobStatusPending
+		if len(rev.BlockedBy) == 0 {
+			jobStatus = model.JobStatusAssigned
+		}
+		job := &model.Job{
+			RunnerId:     runnerID,
+			RevisionId:   rev.Id,
+			DeploymentId: next.Id,
+			JobType:      model.JobTypePlan,
+			Status:       jobStatus,
+		}
+		if _, err := a.jobStore.Create(ctx, job); err != nil {
+			a.logger.Error("queue promotion: failed to create job",
+				zap.String("deployment_id", next.Id.String()), zap.Error(err))
+			return
+		}
+	}
+
+	if _, err := a.deploymentStore.Update(ctx, next, map[string]any{
+		"status":     model.DeploymentStatusRunning,
+		"updated_at": time.Now(),
+	}); err != nil {
+		a.logger.Error("queue promotion: failed to update deployment status",
+			zap.String("deployment_id", next.Id.String()), zap.Error(err))
+		return
+	}
+
+	a.logger.Info("queue promotion: activated queued deployment",
+		zap.String("deployment_id", next.Id.String()))
 }
 
 func (a *api) ListRunnerJobs(ctx context.Context, req *runnerv1.ListRunnerJobsRequest) (*runnerv1.ListRunnerJobsResponse, error) {
@@ -471,8 +542,6 @@ func planFileURLForJob(jobID uuid.UUID) string {
 	return fmt.Sprintf("/api/v1/runner/jobs/%s/plan", jobID)
 }
 
-// uploadPlanFile handles POST /api/v1/runner/jobs/{id}/plan.
-// The runner uploads the binary .tfplan file after a successful plan job.
 func (a *api) uploadPlanFile(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -543,8 +612,6 @@ func (a *api) uploadPlanFile(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-// downloadPlanFile handles GET /api/v1/runner/jobs/{id}/plan.
-// The runner downloads the binary .tfplan file before executing an apply job.
 func (a *api) downloadPlanFile(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -596,8 +663,6 @@ func (a *api) downloadPlanFile(w http.ResponseWriter, r *http.Request) {
 	w.Write(data)
 }
 
-// authenticateRunner extracts and verifies the runner SAT from the request,
-// returning the runner's UUID. Used by raw HTTP handlers that bypass gRPC.
 func (a *api) authenticateRunner(r *http.Request) (uuid.UUID, error) {
 	token, err := extractBearer(r.Header.Get("Authorization"))
 	if err != nil {

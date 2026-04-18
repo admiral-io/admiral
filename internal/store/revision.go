@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -109,6 +110,19 @@ func (s *RevisionStore) LastDeployedByAppEnv(ctx context.Context, applicationID,
 		result[revisions[i].ComponentId] = &revisions[i]
 	}
 	return result, nil
+}
+
+func (s *RevisionStore) CancelNonTerminal(ctx context.Context, deploymentID uuid.UUID) error {
+	return s.db.WithContext(ctx).
+		Model(&model.Revision{}).
+		Where("deployment_id = ? AND status NOT IN ?",
+			deploymentID,
+			[]string{model.RevisionStatusSucceeded, model.RevisionStatusFailed, model.RevisionStatusCanceled},
+		).
+		Updates(map[string]any{
+			"status":       model.RevisionStatusCanceled,
+			"completed_at": time.Now(),
+		}).Error
 }
 
 func (s *RevisionStore) Update(ctx context.Context, r *model.Revision, fields map[string]any) (*model.Revision, error) {
