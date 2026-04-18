@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
-import { useTheme } from '@mui/material/styles';
-import { List, Typography } from '@mui/material';
+import { Box, List, Typography } from '@mui/material';
 
 import NavCollapse from '../components/NavCollapse';
 import NavItem from '../components/NavItem';
@@ -9,25 +8,15 @@ import { useDispatch, useSelector } from '@/store';
 import type { NavItemType } from '../types';
 import { activeID } from '@/store/slices/menu';
 
-type VirtualElement = {
-  getBoundingClientRect: () => DOMRect;
-  contextElement?: Element;
-};
-
 interface NavGroupProps {
   item: NavItemType;
 }
 
 const NavGroup = ({ item }: NavGroupProps) => {
-  const theme = useTheme();
   const dispatch = useDispatch();
   const { pathname } = useLocation();
   const { drawerOpen } = useSelector((state) => state.menu);
-  const [anchorEl, setAnchorEl] = useState<
-    VirtualElement | (() => VirtualElement) | null | undefined
-  >(null);
   const [currentItem] = useState(item);
-  const openMini = Boolean(anchorEl);
 
   const checkOpenForParent = (child: NavItemType[], id: string) => {
     child.forEach((ele: NavItemType) => {
@@ -52,14 +41,11 @@ const NavGroup = ({ item }: NavGroupProps) => {
     });
   };
 
-  // keep selected-menu on page load and use for horizontal menu close on change routes
   useEffect(() => {
     checkSelectedOnload(currentItem);
-    if (openMini) setAnchorEl(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pathname, currentItem]);
 
-  // menu list collapse & items
   const items = currentItem.children?.map((menu) => {
     switch (menu?.type) {
       case 'collapse':
@@ -75,43 +61,54 @@ const NavGroup = ({ item }: NavGroupProps) => {
     }
   });
 
+  const hasTitle = Boolean(currentItem.title);
+
   return (
-    <>
-      <List
-        disablePadding
-        subheader={
-          currentItem.title && drawerOpen ? (
+    <Box component="nav" sx={{ mt: hasTitle ? 0.5 : 0 }}>
+      {hasTitle && (
+        <Box
+          sx={{
+            mx: 1.5,
+            pt: 1.5,
+            mb: 0.5,
+            position: 'relative',
+            '&::before': {
+              content: '""',
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              height: '1px',
+              background: (theme) =>
+                theme.palette.mode === 'dark'
+                  ? `linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.06) 50%, transparent 100%)`
+                  : `linear-gradient(90deg, transparent 0%, rgba(0,0,0,0.06) 50%, transparent 100%)`,
+            },
+          }}
+        >
+          {drawerOpen && (
             <Typography
-              variant="caption"
               sx={{
-                fontSize: '0.875rem',
-                fontWeight: 500,
-                color: theme.palette.mode === 'dark' ? 'grey.600' : 'grey.900',
-                p: '6px',
-                textTransform: 'capitalize',
-                mt: '10px',
+                display: 'block',
+                pt: 0.75,
+                px: 0.75,
+                pb: 0.5,
+                fontSize: '0.6875rem',
+                fontWeight: 600,
+                letterSpacing: '0.06em',
+                textTransform: 'uppercase',
+                color: 'text.secondary',
+                lineHeight: 1,
+                userSelect: 'none',
               }}
-              display="block"
-              gutterBottom
             >
               {currentItem.title}
-              {currentItem.caption && (
-                <Typography
-                  variant="caption"
-                  sx={{ fontSize: '0.6875rem', fontWeight: 500, textTransform: 'capitalize' }}
-                  display="block"
-                  gutterBottom
-                >
-                  {currentItem.caption}
-                </Typography>
-              )}
             </Typography>
-          ) : undefined
-        }
-      >
-        {items}
-      </List>
-    </>
+          )}
+        </Box>
+      )}
+      <List disablePadding>{items}</List>
+    </Box>
   );
 };
 

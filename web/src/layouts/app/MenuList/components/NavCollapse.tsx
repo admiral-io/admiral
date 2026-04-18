@@ -22,7 +22,7 @@ import FiberManualRecordIcon from '@mui/icons-material/FiberManualRecord';
 import NavItem from '../components/NavItem';
 import { useSelector } from '@/store';
 import type { NavItemType } from '../types';
-import { getNavButtonSx, getNavIconSx } from '../styles';
+import { getNavButtonSx, getNavIconSx } from '../navSx';
 
 const PopperStyledMini = styled(Popper)(({ theme }) => ({
   overflow: 'visible',

@@ -1,163 +1,86 @@
-import React, { useEffect, useState } from 'react';
+import type { JSX } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Box, Stack, Typography, Button, Alert } from '@mui/material';
 import { Home as HomeIcon, Refresh as RefreshIcon } from '@mui/icons-material';
 
-/**
- * Predefined list of allowed SSO error types for security.
- * This prevents arbitrary messages from being displayed.
- */
-const ALLOWED_SSO_ERRORS = {
-  // Token-related errors
-  invalid_token: 'Your session token is invalid. Please try logging in again.',
-  expired_token: 'Your session has expired. Please log in again.',
-  invalid_state: 'Invalid authentication state. This may be due to an expired or tampered session.',
-  missing_token: 'Authentication token is missing. Please try logging in again.',
+import {
+  ALLOWED_SSO_ERRORS,
+  AUTO_RETRY_ERRORS,
+  extractErrorType,
+} from '@/pages/errors/authErrorMessages';
 
-  // OAuth/OIDC specific errors
-  invalid_grant: 'The authorization grant is invalid or expired. Please try logging in again.',
-  unauthorized_client: 'The client is not authorized to perform this action.',
-  access_denied: 'Access was denied during the authentication process.',
-  invalid_request: 'The authentication request was invalid or malformed.',
-  invalid_scope: 'The requested scope is invalid or malformed.',
-  server_error: 'An authentication server error occurred. Please try again later.',
-  temporarily_unavailable:
-    'The authentication service is temporarily unavailable. Please try again later.',
+const RETRY_COOLDOWN_MS = 8_000;
+const STORAGE_KEY = 'admiral_auth_retry_ts';
 
-  // Session-related errors
-  session_expired: 'Your session has expired. Please log in again.',
-  session_invalid: 'Your session is invalid. Please log in again.',
-  logout_required: 'You have been logged out. Please log in again to continue.',
-
-  // Network/connectivity errors
-  network_error:
-    'A network error occurred during authentication. Please check your connection and try again.',
-  timeout: 'The authentication request timed out. Please try again.',
-
-  // Configuration errors (for admins)
-  misconfigured_client:
-    'The authentication system is misconfigured. Please contact your administrator.',
-  invalid_redirect_uri: 'Invalid redirect URL configuration. Please contact your administrator.',
-} as const;
-
-type AllowedErrorType = keyof typeof ALLOWED_SSO_ERRORS;
-
-/**
- * Extracts and validates error type from URL search parameters.
- * Uses a whitelist approach to prevent malicious content injection.
- */
-function extractErrorType(searchParams: URLSearchParams): {
-  errorType: AllowedErrorType | null;
-  rawMessage: string | null;
-  isSuspicious: boolean;
-} {
-  const message = searchParams.get('message');
-  const error = searchParams.get('error');
-  const errorDescription = searchParams.get('error_description');
-
-  // Try multiple parameter names commonly used in OAuth/OIDC
-  const rawMessage = message || error || errorDescription;
-
-  if (!rawMessage) {
-    return { errorType: null, rawMessage: null, isSuspicious: false };
+function canAutoRetry(): boolean {
+  try {
+    const lastAttempt = sessionStorage.getItem(STORAGE_KEY);
+    if (!lastAttempt) return true;
+    return Date.now() - Number(lastAttempt) > RETRY_COOLDOWN_MS;
+  } catch {
+    return false;
   }
-
-  // Normalize the message for comparison
-  const normalizedMessage = rawMessage.toLowerCase().trim();
-
-  // Check for exact matches first
-  const exactMatch = Object.keys(ALLOWED_SSO_ERRORS).find((key) => normalizedMessage === key) as
-    | AllowedErrorType
-    | undefined;
-
-  if (exactMatch) {
-    return { errorType: exactMatch, rawMessage, isSuspicious: false };
-  }
-
-  // Check for partial matches with common error patterns
-  const partialMatch = Object.keys(ALLOWED_SSO_ERRORS).find((key) => {
-    return (
-      normalizedMessage.includes(key.replace('_', ' ')) ||
-      normalizedMessage.includes(key) ||
-      (key === 'expired_token' &&
-        (normalizedMessage.includes('expired') || normalizedMessage.includes('token'))) ||
-      (key === 'invalid_token' &&
-        normalizedMessage.includes('invalid') &&
-        normalizedMessage.includes('token')) ||
-      (key === 'invalid_state' && normalizedMessage.includes('state')) ||
-      (key === 'access_denied' && normalizedMessage.includes('denied')) ||
-      (key === 'session_expired' && normalizedMessage.includes('session'))
-    );
-  }) as AllowedErrorType | undefined;
-
-  if (partialMatch) {
-    return { errorType: partialMatch, rawMessage, isSuspicious: false };
-  }
-
-  // If no match found, consider it suspicious
-  return { errorType: null, rawMessage, isSuspicious: true };
 }
 
-/**
- * Logs suspicious authentication attempts for security monitoring.
- */
-function logSuspiciousActivity(rawMessage: string, userAgent: string) {
-  // TODO: replace with Sentry.captureException when @sentry/react is added
-  console.warn('Suspicious auth error message detected:', {
-    rawMessage,
-    userAgent,
-    url: window.location.href,
-    referrer: document.referrer || 'none',
-  });
+function markRetryAttempt() {
+  try {
+    sessionStorage.setItem(STORAGE_KEY, String(Date.now()));
+  } catch {
+    // sessionStorage unavailable — skip
+  }
 }
 
-const AuthErrorPage: React.FC = () => {
+function buildLoginUrl(searchParams: URLSearchParams): string {
+  const raw = searchParams.get('redirect_url');
+  const postLogin =
+    raw && raw.startsWith('/') && !raw.startsWith('//') ? raw : '/';
+  return `/auth/login?redirect_url=${encodeURIComponent(postLogin)}`;
+}
+
+export default function AuthErrorPage(): JSX.Element {
   const [searchParams] = useSearchParams();
-  const [errorInfo, setErrorInfo] = useState<{
-    errorType: AllowedErrorType | null;
-    message: string;
-    isSuspicious: boolean;
-  }>({
-    errorType: null,
-    message: 'An unexpected authentication error occurred.',
-    isSuspicious: false,
-  });
+  const searchKey = searchParams.toString();
+  const autoRedirectIssuedForKeyRef = useRef<string | null>(null);
+
+  const { errorType, rawMessage, isUnknown, message } = useMemo(() => {
+    const params = new URLSearchParams(searchKey);
+    const extracted = extractErrorType(params);
+    const resolvedMessage = extracted.errorType
+      ? ALLOWED_SSO_ERRORS[extracted.errorType]
+      : 'An authentication error occurred. Please try logging in again.';
+    return {
+      errorType: extracted.errorType,
+      rawMessage: extracted.rawMessage,
+      isUnknown: extracted.isUnknown,
+      message: resolvedMessage,
+    };
+  }, [searchKey]);
 
   useEffect(() => {
-    const { errorType, rawMessage, isSuspicious } = extractErrorType(searchParams);
-
-    if (isSuspicious && rawMessage) {
-      logSuspiciousActivity(rawMessage, navigator.userAgent);
-
-      setErrorInfo({
-        errorType: null,
-        message: 'An authentication error occurred. Please try logging in again.',
-        isSuspicious: true,
-      });
-    } else if (errorType) {
-      setErrorInfo({
-        errorType,
-        message: ALLOWED_SSO_ERRORS[errorType],
-        isSuspicious: false,
-      });
-    } else {
-      setErrorInfo({
-        errorType: null,
-        message: 'An authentication error occurred. Please try logging in again.',
-        isSuspicious: false,
-      });
-    }
-
-    // TODO: replace with Sentry.captureException when @sentry/react is added
     console.warn('Authentication error:', {
       errorType: errorType || 'unknown',
-      suspicious: isSuspicious,
+      unknownQuery: isUnknown,
       rawMessage,
     });
-  }, [searchParams]);
+
+    const loginUrl = buildLoginUrl(new URLSearchParams(searchKey));
+
+    if (errorType && AUTO_RETRY_ERRORS.has(errorType) && canAutoRetry()) {
+      if (autoRedirectIssuedForKeyRef.current === searchKey) {
+        return;
+      }
+      autoRedirectIssuedForKeyRef.current = searchKey;
+      markRetryAttempt();
+      window.location.replace(loginUrl);
+    }
+  }, [searchKey, errorType, rawMessage, isUnknown]);
+
+  const loginUrl = buildLoginUrl(new URLSearchParams(searchKey));
 
   const handleRetryLogin = () => {
-    window.location.href = '/auth/login?redirect_url=%2F';
+    markRetryAttempt();
+    window.location.href = loginUrl;
   };
 
   const handleGoHome = () => {
@@ -198,12 +121,22 @@ const AuthErrorPage: React.FC = () => {
           maxWidth: 400,
         }}
       >
-        {errorInfo.message}
+        {message}
       </Typography>
 
-      {errorInfo.isSuspicious && (
+      {isUnknown && (
         <Alert severity="warning" sx={{ mt: 2 }}>
-          For security reasons, the specific error details have been logged for review.
+          This error text didn&apos;t match a known sign-in error, so details aren&apos;t shown here.
+          Context is written to the browser console for developers—nothing is sent to Admiral servers
+          from this page.
+        </Alert>
+      )}
+
+      {(errorType === 'invalid_token' || errorType === 'invalid_grant') && (
+        <Alert severity="info" sx={{ mt: 2 }}>
+          Another login attempt does not always fix this: the token or grant may be unusable for other
+          reasons (expiry, redirect mismatch, revoked refresh, or client configuration). Try clearing this
+          site&apos;s data or contact your administrator if it keeps happening.
         </Alert>
       )}
 
@@ -214,7 +147,9 @@ const AuthErrorPage: React.FC = () => {
           onClick={handleRetryLogin}
           startIcon={<RefreshIcon />}
         >
-          Try Login Again
+          {errorType === 'invalid_token' || errorType === 'invalid_grant'
+            ? 'Open login page'
+            : 'Try Login Again'}
         </Button>
 
         <Button variant="outlined" onClick={handleGoHome} startIcon={<HomeIcon />}>
@@ -223,6 +158,4 @@ const AuthErrorPage: React.FC = () => {
       </Stack>
     </Box>
   );
-};
-
-export default AuthErrorPage;
+}

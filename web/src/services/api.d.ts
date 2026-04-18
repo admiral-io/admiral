@@ -384,7 +384,7 @@ export interface paths {
         put?: never;
         /**
          * Create a component
-         * @description The component name must be unique within the application. The source must
+         * @description The component name must be unique within the application. The module must
          *      exist and be accessible to the caller's tenant.
          *
          *      Scope: `app:write`
@@ -478,7 +478,7 @@ export interface paths {
         get: operations["ComponentAPI_GetComponentOverride"];
         /**
          * Set a component override
-         * @description For example, a "redis" component might use a Helm chart source in dev but
+         * @description For example, a "redis" component might use a Helm chart module in dev but
          *      a Terraform ElastiCache module in prod.
          *
          *      This is an upsert -- if an override already exists for this component +
@@ -738,6 +738,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/deployments/{deployment_id}/apply": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Apply a planned deployment
+         * @description Scope: `deploy:write`
+         */
+        post: operations["DeploymentAPI_ApplyDeployment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/deployments/{deployment_id}/cancel": {
         parameters: {
             query?: never;
@@ -902,6 +922,101 @@ export interface paths {
         get: operations["HealthcheckAPI_Healthcheck"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/modules": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List modules
+         * @description Scope: `module:read`
+         */
+        get: operations["ModuleAPI_ListModules"];
+        put?: never;
+        /**
+         * Create a module
+         * @description The referenced source must exist. The module's ref, root, and path are
+         *      optional and default to empty (meaning: the source's default ref, the
+         *      repository root, and the root itself as working directory).
+         *
+         *      Scope: `module:write`
+         */
+        post: operations["ModuleAPI_CreateModule"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/modules/{module.id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Update a module
+         * @description Scope: `module:write`
+         */
+        patch: operations["ModuleAPI_UpdateModule"];
+        trace?: never;
+    };
+    "/api/v1/modules/{module_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Retrieve a module
+         * @description Scope: `module:read`
+         */
+        get: operations["ModuleAPI_GetModule"];
+        put?: never;
+        post?: never;
+        /**
+         * Delete a module
+         * @description Scope: `module:write`
+         */
+        delete: operations["ModuleAPI_DeleteModule"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/modules/{module_id}/resolve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Resolve a module
+         * @description This operation fetches from the external system in real time and may take
+         *      several seconds depending on the source type and size.
+         *
+         *      Scope: `module:read`
+         */
+        post: operations["ModuleAPI_ResolveModule"];
         delete?: never;
         options?: never;
         head?: never;
@@ -3249,9 +3364,9 @@ export interface components {
         /**
          * Component
          * @description Component represents a named, deployable unit within an application. It
-         *      binds a source artifact to an application with configuration (values
-         *      template) that maps variables and other component outputs into the source's
-         *      expected inputs.
+         *      binds a module to an application with configuration (values template) that
+         *      maps variables and other component outputs into the module's expected
+         *      inputs.
          *
          *      Components are the nodes in Admiral's dependency graph. Infrastructure
          *      components produce auto-discovered outputs (Terraform outputs). Workload
@@ -3263,7 +3378,7 @@ export interface components {
          *       "application_id": "a1b2c3d4-5678-9abc-def0-1234567890ab",
          *       "name": "api-server",
          *       "description": "Main API server deployed via Helm chart.",
-         *       "category": "COMPONENT_CATEGORY_WORKLOAD",
+         *       "kind": "COMPONENT_KIND_WORKLOAD",
          *       "source_id": "f6a7b8c9-0123-4def-5678-901234567890",
          *       "version": "2.4.1",
          *       "values_template": "{\"replicaCount\": \"{{ .var.REPLICA_COUNT }}\", \"image.tag\": \"{{ .var.IMAGE_TAG }}\"}",
@@ -3307,31 +3422,30 @@ export interface components {
              */
             description?: string;
             /**
-             * category
+             * kind
              * @description Whether this is an infrastructure or workload component. Derived from
-             *      the source type when the component is created, but stored explicitly
-             *      for filtering and to determine execution behavior.
+             *      the referenced module's type when the component is created, but stored
+             *      explicitly for filtering and to determine execution behavior.
              */
-            category?: components["schemas"]["admiral.component.v1.ComponentCategory"];
+            kind?: components["schemas"]["admiral.component.v1.ComponentKind"];
             /**
-             * source_id
+             * module_id
              * Format: uuid
-             * @description The source artifact this component deploys (UUID). References a Source
-             *      defined via the SourceAPI.
+             * @description The module this component deploys (UUID). References a Module defined
+             *      via the ModuleAPI. The module's source, ref, root, and path are inherited.
              */
-            source_id?: string;
+            module_id?: string;
             /**
              * version
-             * @description Pinned version of the source artifact. For registry sources, a semver
-             *      string (e.g., "1.2.3"). For Git sources, a tag, branch, or commit SHA.
-             *      Required -- components always pin a version. Use UpdateComponent to
-             *      change the version (rolling update).
+             * @description Optional ref override for the module's default ref. When empty, the
+             *      module's ref is used. When set, overrides the module's ref at deploy time
+             *      (e.g., pin a specific tag, branch, or commit SHA for this component).
              */
             version?: string;
             /**
              * values_template
-             * @description Values template that maps configuration into the source's expected inputs.
-             *      This is a JSON-encoded object where keys are the source input names and
+             * @description Values template that maps configuration into the module's expected inputs.
+             *      This is a JSON-encoded object where keys are the module input names and
              *      values are either literal values or template expressions.
              *
              *      Template expressions can reference:
@@ -3412,13 +3526,14 @@ export interface components {
             updated_at?: components["schemas"]["google.protobuf.Timestamp"];
         };
         /**
-         * ComponentCategory
-         * @description ComponentCategory indicates whether the component provisions infrastructure
-         *      or deploys workloads. This is derived from the source type but stored
-         *      explicitly for filtering and to determine rendering and execution behavior.
+         * ComponentKind
+         * @description ComponentKind indicates whether the component provisions infrastructure
+         *      or deploys workloads. This is derived from the referenced module's type but
+         *      stored explicitly for filtering and to determine rendering and execution
+         *      behavior.
          * @enum {string}
          */
-        "admiral.component.v1.ComponentCategory": "COMPONENT_CATEGORY_UNSPECIFIED" | "COMPONENT_CATEGORY_INFRASTRUCTURE" | "COMPONENT_CATEGORY_WORKLOAD";
+        "admiral.component.v1.ComponentKind": "COMPONENT_KIND_UNSPECIFIED" | "COMPONENT_KIND_INFRASTRUCTURE" | "COMPONENT_KIND_WORKLOAD";
         /**
          * ComponentOutput
          * @description ComponentOutput declares a named output value produced by a component.
@@ -3469,7 +3584,7 @@ export interface components {
          *      defaults during deployment.
          *
          *      This enables patterns like:
-         *        - Different sources per environment (Helm Redis in dev, Terraform
+         *        - Different modules per environment (Helm Redis in dev, Terraform
          *          ElastiCache in prod)
          *        - Different versions per environment (canary version in staging)
          *        - Different values per environment (smaller instance in dev)
@@ -3495,15 +3610,15 @@ export interface components {
              */
             disabled?: boolean;
             /**
-             * source_id
+             * module_id
              * Format: uuid
-             * @description Override source for this environment (UUID). When set, this source is
-             *      used instead of the component's default source. This may also change the
-             *      component's effective category (e.g., switching from a Helm source to a
-             *      Terraform source changes the component from workload to infrastructure
+             * @description Override module for this environment (UUID). When set, this module is
+             *      used instead of the component's default module. This may also change the
+             *      component's effective category (e.g., switching from a Helm module to a
+             *      Terraform module changes the component from workload to infrastructure
              *      in this environment).
              */
-            source_id?: string | null;
+            module_id?: string | null;
             /**
              * version
              * @description Override version for this environment. When set, this version is used
@@ -3526,7 +3641,7 @@ export interface components {
             /**
              * outputs
              * @description Override outputs for this environment. When set, replaces the component's
-             *      declared outputs. Useful when an override changes the source type
+             *      declared outputs. Useful when an override changes the module type
              *      (e.g., Helm → Terraform) and the output templates need to change.
              */
             outputs?: components["schemas"]["admiral.component.v1.ComponentOutput"][];
@@ -3570,19 +3685,20 @@ export interface components {
              */
             description?: string;
             /**
-             * source_id
+             * module_id
              * Format: uuid
-             * @description The source artifact for this component (UUID).
+             * @description The module this component deploys (UUID).
              */
-            source_id?: string;
+            module_id?: string;
             /**
              * version
-             * @description Pinned version of the source artifact.
+             * @description Optional ref override for the module's default ref. When empty, the
+             *      module's default ref is used.
              */
             version?: string;
             /**
              * values_template
-             * @description Values template mapping configuration into the source's inputs.
+             * @description Values template mapping configuration into the module's inputs.
              *      See Component.values_template for template expression syntax.
              */
             values_template?: string;
@@ -3746,29 +3862,40 @@ export interface components {
         };
         /**
          * ListComponentsRequest
-         * @description ListComponentsRequest contains pagination and filter parameters.
+         * @description ListComponentsRequest contains pagination, scoping, and filter parameters.
          *
-         *      The filter controls both scoping and response behavior:
-         *        - `application_id` in filter: returns application-level component
-         *          definitions (defaults).
-         *        - `application_id` + `environment_id` in filter: returns the resolved
-         *          view with environment overrides applied. Each component reflects its
-         *          effective source, version, values_template, depends_on, and outputs.
-         *          Disabled components are included with `disabled=true`. Components with
-         *          any overridden field have `has_override=true`.
+         *      Scoping uses dedicated fields, not the filter DSL:
+         *        - `application_id` alone: application-level component defaults.
+         *        - `application_id` + `environment_id`: resolved view with environment
+         *          overrides applied. Each component reflects its effective module,
+         *          version, values_template, depends_on, and outputs. Disabled
+         *          components are included with `disabled=true`. Components with any
+         *          overridden field have `has_override=true`.
+         *
+         *      `filter` is reserved for predicates on component columns (`kind`,
+         *      `name`, `module_id`).
          */
         "admiral.component.v1.ListComponentsRequest": {
             /**
+             * application_id
+             * Format: uuid
+             * @description Scope listing to a specific application (UUID). Required for meaningful
+             *      results since components always belong to an application.
+             */
+            application_id?: string;
+            /**
+             * environment_id
+             * Format: uuid
+             * @description When set alongside `application_id`, returns the resolved view with
+             *      environment overrides applied (UUID). Optional.
+             */
+            environment_id?: string;
+            /**
              * filter
-             * @description Filter expression using the PEG filter DSL.
-             *
-             *      Common filter fields:
-             *        - `application_id` -- scope to an application (required for meaningful
-             *          results since components always belong to an application).
-             *        - `environment_id` -- when present, triggers the resolved view with
-             *          environment overrides applied to each component.
-             *        - `category` -- filter by component category (INFRASTRUCTURE, WORKLOAD).
+             * @description Filter expression using the PEG filter DSL. Filterable fields:
+             *        - `kind` -- filter by component kind (INFRASTRUCTURE, WORKLOAD).
              *        - `name` -- filter by component name.
+             *        - `module_id` -- filter by module reference.
              */
             filter?: string;
             /**
@@ -3823,11 +3950,11 @@ export interface components {
              */
             disabled?: boolean;
             /**
-             * source_id
+             * module_id
              * Format: uuid
-             * @description Override source (UUID). When set, replaces the component's default source.
+             * @description Override module (UUID). When set, replaces the component's default module.
              */
-            source_id?: string | null;
+            module_id?: string | null;
             /**
              * version
              * @description Override version. When set, replaces the component's default version.
@@ -3876,7 +4003,7 @@ export interface components {
             /**
              * update_mask
              * @description The set of fields to update. If unset, all mutable fields are updated.
-             *      Supported fields: `name`, `description`, `source_id`, `version`,
+             *      Supported fields: `name`, `description`, `module_id`, `version`,
              *      `values_template`, `depends_on`, `outputs`.
              */
             update_mask?: components["schemas"]["google.protobuf.FieldMask"];
@@ -4890,6 +5017,36 @@ export interface components {
             credential?: components["schemas"]["admiral.credential.v1.Credential"];
         };
         /**
+         * ApplyDeploymentRequest
+         * @description ApplyDeploymentRequest transitions a planned deployment to apply phase.
+         */
+        "admiral.deployment.v1.ApplyDeploymentRequest": {
+            /**
+             * deployment_id
+             * Format: uuid
+             * @description Unique identifier of the deployment to apply (UUID).
+             */
+            deployment_id?: string;
+            /**
+             * message
+             * @description Optional message describing the apply (e.g., "Approved by @martin").
+             */
+            message?: string;
+        };
+        /**
+         * ApplyDeploymentResponse
+         * @description ApplyDeploymentResponse contains the deployment after apply jobs are
+         *      dispatched.
+         */
+        "admiral.deployment.v1.ApplyDeploymentResponse": {
+            /**
+             * deployment
+             * @description The deployment with status advanced to RUNNING. Revisions that were
+             *      AWAITING_APPROVAL are now APPLYING.
+             */
+            deployment?: components["schemas"]["admiral.deployment.v1.Deployment"];
+        };
+        /**
          * CancelDeploymentRequest
          * @description CancelDeploymentRequest cancels an in-progress deployment.
          */
@@ -4947,6 +5104,16 @@ export interface components {
              *      has active resources.
              */
             destroy?: boolean;
+            /**
+             * source_deployment_id
+             * @description Optional: deploy from a prior deployment's configuration snapshots
+             *      instead of from the current component HEAD. When set, each revision is
+             *      seeded from the source deployment's revision for the same component
+             *      (module_id, version, resolved_values, source_id, working_directory).
+             *      This is the rollback mechanism: re-plan and re-apply a known-good
+             *      configuration against the current infrastructure state.
+             */
+            source_deployment_id?: string;
         };
         /**
          * CreateDeploymentResponse
@@ -5027,6 +5194,13 @@ export interface components {
              *      order. Required before an environment with active resources can be deleted.
              */
             destroy?: boolean;
+            /**
+             * source_deployment_id
+             * @description If this deployment was created as a rollback from a prior deployment,
+             *      this field contains the source deployment's UUID. Empty for normal
+             *      deployments.
+             */
+            source_deployment_id?: string;
             /**
              * revision_summary
              * @description Summary counts for quick status display.
@@ -5267,10 +5441,10 @@ export interface components {
              */
             component_name?: string;
             /**
-             * category
-             * @description Component category at the time of deployment (after override resolution).
+             * kind
+             * @description Component kind at the time of deployment (after override resolution).
              */
-            category?: components["schemas"]["admiral.deployment.v1.RevisionCategory"];
+            kind?: components["schemas"]["admiral.deployment.v1.RevisionKind"];
             /**
              * status
              * @description Lifecycle status of this revision.
@@ -5318,17 +5492,17 @@ export interface components {
              */
             artifact_url?: string;
             /**
-             * plan_output
-             * @description (Infrastructure only) The Terraform plan output in human-readable format.
-             *      Populated after planning completes. Used for visibility and audit.
-             */
-            plan_output?: string;
-            /**
              * plan_summary
              * @description (Infrastructure only) The number of resources Terraform plans to add,
              *      change, and destroy. Populated after planning completes.
              */
             plan_summary?: components["schemas"]["admiral.deployment.v1.TerraformPlanSummary"];
+            /**
+             * has_plan_output
+             * @description True when plan output is available in object storage.
+             *      Fetch via GET /api/v1/deployments/{id}/revisions/{id}/plan.
+             */
+            has_plan_output?: boolean;
             /**
              * error_message
              * @description Error message if the revision failed. Empty on success.
@@ -5355,22 +5529,36 @@ export interface components {
              * @description When the revision finished (succeeded, failed, or cancelled).
              */
             completed_at?: components["schemas"]["google.protobuf.Timestamp"];
+            /**
+             * module_id
+             * @description The module used for this revision (UUID, after override resolution).
+             *      Captures which module produced the source_id and version, needed for
+             *      rollback (re-deploying from a prior revision's snapshot).
+             */
+            module_id?: string;
+            /**
+             * working_directory
+             * @description Subdirectory within the delivered archive where the executor runs.
+             *      Empty means the archive root. Populated from the module's path field
+             *      at snapshot time so that relative module references resolve correctly.
+             */
+            working_directory?: string;
         };
         /**
-         * RevisionCategory
-         * @description RevisionCategory mirrors ComponentCategory but is stored on the revision
-         *      to capture the effective category at deployment time (may differ from
-         *      the component default if an environment override changed the source type).
+         * RevisionKind
+         * @description RevisionKind mirrors ComponentKind but is stored on the revision to capture
+         *      the effective kind at deployment time (may differ from the component default
+         *      if an environment override changed the source type).
          * @enum {string}
          */
-        "admiral.deployment.v1.RevisionCategory": "REVISION_CATEGORY_UNSPECIFIED" | "REVISION_CATEGORY_INFRASTRUCTURE" | "REVISION_CATEGORY_WORKLOAD";
+        "admiral.deployment.v1.RevisionKind": "REVISION_KIND_UNSPECIFIED" | "REVISION_KIND_INFRASTRUCTURE" | "REVISION_KIND_WORKLOAD";
         /**
          * RevisionStatus
          * @description RevisionStatus represents the lifecycle status of a single component
          *      revision within a deployment.
          * @enum {string}
          */
-        "admiral.deployment.v1.RevisionStatus": "REVISION_STATUS_UNSPECIFIED" | "REVISION_STATUS_PENDING" | "REVISION_STATUS_QUEUED" | "REVISION_STATUS_PLANNING" | "REVISION_STATUS_APPLYING" | "REVISION_STATUS_SUCCEEDED" | "REVISION_STATUS_FAILED" | "REVISION_STATUS_BLOCKED" | "REVISION_STATUS_CANCELLED";
+        "admiral.deployment.v1.RevisionStatus": "REVISION_STATUS_UNSPECIFIED" | "REVISION_STATUS_PENDING" | "REVISION_STATUS_QUEUED" | "REVISION_STATUS_PLANNING" | "REVISION_STATUS_AWAITING_APPROVAL" | "REVISION_STATUS_APPLYING" | "REVISION_STATUS_SUCCEEDED" | "REVISION_STATUS_FAILED" | "REVISION_STATUS_BLOCKED" | "REVISION_STATUS_CANCELLED";
         /**
          * RevisionSummary
          * @description RevisionSummary provides aggregate counts of revision statuses within a
@@ -5847,6 +6035,337 @@ export interface components {
          */
         "admiral.healthcheck.v1.HealthcheckResponse": Record<string, never>;
         /**
+         * CreateModuleRequest
+         * @description CreateModuleRequest contains the parameters for creating a new module.
+         */
+        "admiral.module.v1.CreateModuleRequest": {
+            /**
+             * name
+             * @description URL-safe, human-readable identifier. Must be unique within the tenant.
+             */
+            name?: string;
+            /**
+             * description
+             * @description Optional description of the module's purpose.
+             */
+            description?: string;
+            /**
+             * type
+             * @description The content type -- what this module contains and how it should be executed.
+             */
+            type?: components["schemas"]["admiral.module.v1.ModuleType"];
+            /**
+             * source_id
+             * Format: uuid
+             * @description Reference to the Source this module fetches from (UUID).
+             */
+            source_id?: string;
+            /**
+             * ref
+             * @description Git ref, registry version, chart version, or OCI tag.
+             */
+            ref?: string;
+            /**
+             * root
+             * @description Subdirectory within the fetched tree to treat as the module root.
+             */
+            root?: string;
+            /**
+             * path
+             * @description Working directory within root for execution.
+             */
+            path?: string;
+            /**
+             * labels
+             * @description Arbitrary key-value labels.
+             */
+            labels?: {
+                [key: string]: string;
+            };
+        };
+        /** LabelsEntry */
+        "admiral.module.v1.CreateModuleRequest.LabelsEntry": {
+            /** key */
+            key?: string;
+            /** value */
+            value?: string;
+        };
+        /**
+         * CreateModuleResponse
+         * @description CreateModuleResponse contains the newly created module.
+         */
+        "admiral.module.v1.CreateModuleResponse": {
+            /**
+             * module
+             * @description The created module.
+             */
+            module?: components["schemas"]["admiral.module.v1.Module"];
+        };
+        /**
+         * DeleteModuleRequest
+         * @description DeleteModuleRequest identifies a module to delete.
+         */
+        "admiral.module.v1.DeleteModuleRequest": {
+            /**
+             * module_id
+             * Format: uuid
+             * @description Unique identifier of the module to delete (UUID).
+             *      Fails if any components still reference this module.
+             */
+            module_id?: string;
+        };
+        /**
+         * DeleteModuleResponse
+         * @description DeleteModuleResponse is empty on success.
+         */
+        "admiral.module.v1.DeleteModuleResponse": Record<string, never>;
+        /**
+         * GetModuleRequest
+         * @description GetModuleRequest identifies a module to retrieve.
+         */
+        "admiral.module.v1.GetModuleRequest": {
+            /**
+             * module_id
+             * Format: uuid
+             * @description Unique identifier of the module (UUID).
+             */
+            module_id?: string;
+        };
+        /**
+         * GetModuleResponse
+         * @description GetModuleResponse contains the module record.
+         */
+        "admiral.module.v1.GetModuleResponse": {
+            /**
+             * module
+             * @description The module record.
+             */
+            module?: components["schemas"]["admiral.module.v1.Module"];
+        };
+        /**
+         * ListModulesRequest
+         * @description ListModulesRequest contains pagination and filter parameters.
+         */
+        "admiral.module.v1.ListModulesRequest": {
+            /**
+             * filter
+             * @description Filter expression to narrow results. Uses the Admiral filter DSL.
+             *
+             *      Filterable fields:
+             *        - `name` -- filter by module name.
+             *        - `type` -- filter by module type (TERRAFORM, HELM, KUSTOMIZE, MANIFEST).
+             *        - `source_id` -- filter by source reference.
+             *
+             *      Example: `field['type'] = 'TERRAFORM'`
+             */
+            filter?: string;
+            /**
+             * page_size
+             * Format: int32
+             * @description Maximum number of modules to return per page.
+             */
+            page_size?: number;
+            /**
+             * page_token
+             * @description Opaque pagination token from a previous response.
+             */
+            page_token?: string;
+        };
+        /**
+         * ListModulesResponse
+         * @description ListModulesResponse contains a page of modules.
+         */
+        "admiral.module.v1.ListModulesResponse": {
+            /**
+             * modules
+             * @description The list of modules.
+             */
+            modules?: components["schemas"]["admiral.module.v1.Module"][];
+            /**
+             * next_page_token
+             * @description Pagination token for the next page. Empty when there are no more results.
+             */
+            next_page_token?: string;
+        };
+        /**
+         * Module
+         * @description Module represents a named reference to a slice of content within a Source at
+         *      a specific ref. One Source can back many Modules (different refs, different
+         *      subtrees, different working directories).
+         *
+         *      The module type identifies what the content is (Terraform, Helm, Kustomize,
+         *      raw manifests) independently of how it is fetched (the Source type). This
+         *      separation allows a single Git source to back Terraform, Helm, and manifest
+         *      modules in different subdirectories.
+         */
+        "admiral.module.v1.Module": {
+            /**
+             * id
+             * Format: uuid
+             * @description Unique identifier for the module (UUID).
+             */
+            id?: string;
+            /**
+             * name
+             * @description URL-safe, human-readable identifier (e.g., "billing-vpc", "rds-standard").
+             *      Unique within the tenant. Lowercase alphanumeric and hyphens only, must
+             *      start with a letter and end with an alphanumeric character (1-63 chars).
+             */
+            name?: string;
+            /**
+             * description
+             * @description Optional longer-form description of the module's purpose
+             *      (e.g., "Standard VPC module for billing workloads").
+             */
+            description?: string;
+            /**
+             * type
+             * @description The content type -- what this module contains and how it should be executed.
+             */
+            type?: components["schemas"]["admiral.module.v1.ModuleType"];
+            /**
+             * source_id
+             * Format: uuid
+             * @description Reference to the Source this module fetches from (UUID).
+             */
+            source_id?: string;
+            /**
+             * ref
+             * @description Git ref, registry version, chart version, or OCI tag to fetch.
+             *      Optional -- when empty, the backend uses its default (e.g., HEAD for Git,
+             *      latest for registries). This is an overridable default: Components can
+             *      override the ref at deploy time.
+             */
+            ref?: string;
+            /**
+             * root
+             * @description Subdirectory within the fetched tree to treat as the module root.
+             *      Optional -- when empty, the entire fetched tree is the module root.
+             *      Example: "modules/vpc" within a monorepo.
+             */
+            root?: string;
+            /**
+             * path
+             * @description Working directory within root for execution (e.g., "environments/prod").
+             *      Optional -- when empty, defaults to root itself.
+             */
+            path?: string;
+            /**
+             * labels
+             * @description Arbitrary key-value labels for organizing and filtering modules
+             *      (e.g., `{"team": "platform", "stack": "networking"}`).
+             */
+            labels?: {
+                [key: string]: string;
+            };
+            /**
+             * created_by
+             * @description The user or agent who created this module (server-populated from token).
+             */
+            created_by?: components["schemas"]["admiral.common.v1.ActorRef"];
+            /**
+             * created_at
+             * @description When the module was created.
+             */
+            created_at?: components["schemas"]["google.protobuf.Timestamp"];
+            /**
+             * updated_at
+             * @description When the module was last updated.
+             */
+            updated_at?: components["schemas"]["google.protobuf.Timestamp"];
+        };
+        /** LabelsEntry */
+        "admiral.module.v1.Module.LabelsEntry": {
+            /** key */
+            key?: string;
+            /** value */
+            value?: string;
+        };
+        /**
+         * ModuleType
+         * @description ModuleType identifies the content semantics -- what the fetched content is and
+         *      how it should be executed. This is orthogonal to SourceType, which identifies
+         *      the fetch protocol. A single GIT source can back TERRAFORM, HELM, KUSTOMIZE,
+         *      and MANIFEST modules in different subdirectories.
+         * @enum {string}
+         */
+        "admiral.module.v1.ModuleType": "MODULE_TYPE_UNSPECIFIED" | "MODULE_TYPE_TERRAFORM" | "MODULE_TYPE_HELM" | "MODULE_TYPE_KUSTOMIZE" | "MODULE_TYPE_MANIFEST";
+        /**
+         * ResolveModuleRequest
+         * @description ResolveModuleRequest identifies a module to resolve.
+         */
+        "admiral.module.v1.ResolveModuleRequest": {
+            /**
+             * module_id
+             * Format: uuid
+             * @description Unique identifier of the module to resolve (UUID).
+             */
+            module_id?: string;
+            /**
+             * ref_override
+             * @description Optional ref override. When set, this ref is used instead of the module's
+             *      default ref. Useful for previewing a different version without modifying
+             *      the module definition.
+             */
+            ref_override?: string;
+        };
+        /**
+         * ResolveModuleResponse
+         * @description ResolveModuleResponse contains the resolved metadata from fetching the
+         *      module's content via its Source.
+         */
+        "admiral.module.v1.ResolveModuleResponse": {
+            /**
+             * revision
+             * @description The resolved revision identifier. For Git sources, this is the commit SHA.
+             *      For registry sources, the canonical version string. For HTTP, a content hash.
+             */
+            revision?: string;
+            /**
+             * digest
+             * @description Content-addressing digest of the fetched content (e.g., "sha1:<commit>",
+             *      "sha256:<hash>").
+             */
+            digest?: string;
+            /**
+             * module
+             * @description The module that was resolved, with current field values.
+             */
+            module?: components["schemas"]["admiral.module.v1.Module"];
+        };
+        /**
+         * UpdateModuleRequest
+         * @description UpdateModuleRequest contains the module fields to update.
+         */
+        "admiral.module.v1.UpdateModuleRequest": {
+            /**
+             * module
+             * @description The module with updated fields. Only fields specified in `update_mask`
+             *      are updated.
+             */
+            module: components["schemas"]["admiral.module.v1.Module"];
+            /**
+             * update_mask
+             * @description The set of fields to update. Required -- the server rejects updates
+             *      without a mask to prevent accidental full-replace.
+             *      Supported fields: `name`, `description`, `source_id`, `ref`, `root`,
+             *      `path`, `labels`.
+             *      Immutable: `type` (returns InvalidArgument if included).
+             */
+            update_mask?: components["schemas"]["google.protobuf.FieldMask"];
+        };
+        /**
+         * UpdateModuleResponse
+         * @description UpdateModuleResponse contains the updated module.
+         */
+        "admiral.module.v1.UpdateModuleResponse": {
+            /**
+             * module
+             * @description The updated module.
+             */
+            module?: components["schemas"]["admiral.module.v1.Module"];
+        };
+        /**
          * ActiveJobInfo
          * @description ActiveJobInfo summarizes a job currently being executed by a runner instance.
          *      Included in RunnerStatus to provide real-time job progress via heartbeat.
@@ -6257,6 +6776,21 @@ export interface components {
              * @description The Terraform version to use for this operation (e.g., "1.7.5").
              */
             terraform_version?: string;
+            /**
+             * working_directory
+             * @description Subdirectory within the extracted archive where the executor should run
+             *      (e.g., "modules/cloudsql"). Empty means the archive root. Preserves
+             *      the broader directory tree so that relative module references resolve.
+             */
+            working_directory?: string;
+            /**
+             * plan_file_url
+             * @description (Apply/destroy-apply jobs only) URL to download the binary plan file
+             *      produced by the preceding plan job. The runner downloads this file and
+             *      passes it to `terraform apply <plan_file>` to ensure the exact reviewed
+             *      plan is applied. Empty for plan jobs.
+             */
+            plan_file_url?: string;
         };
         /** ProviderConfigsEntry */
         "admiral.runner.v1.JobBundle.ProviderConfigsEntry": {
@@ -6315,6 +6849,22 @@ export interface components {
              * @description How long the Terraform operation took to execute.
              */
             duration?: components["schemas"]["google.protobuf.Duration"];
+            /**
+             * outputs
+             * @description (Apply/destroy-apply jobs only) Terraform outputs captured via
+             *      `terraform output -json`. Keys are output names, values contain the
+             *      output value, type, and sensitivity flag.
+             */
+            outputs?: {
+                [key: string]: components["schemas"]["admiral.runner.v1.TerraformOutput"];
+            };
+        };
+        /** OutputsEntry */
+        "admiral.runner.v1.JobResult.OutputsEntry": {
+            /** key */
+            key?: string;
+            /** value */
+            value?: components["schemas"]["admiral.runner.v1.TerraformOutput"];
         };
         /**
          * JobStatus
@@ -6627,10 +7177,13 @@ export interface components {
         "admiral.runner.v1.RunnerHealthStatus": "RUNNER_HEALTH_STATUS_UNSPECIFIED" | "RUNNER_HEALTH_STATUS_PENDING" | "RUNNER_HEALTH_STATUS_HEALTHY" | "RUNNER_HEALTH_STATUS_DEGRADED" | "RUNNER_HEALTH_STATUS_UNREACHABLE";
         /**
          * RunnerKind
-         * @description RunnerKind identifies the type of operations a runner executes.
+         * @description RunnerKind identifies the category of operations a runner executes. The
+         *      specific tool (Terraform, OpenTofu, Pulumi, ...) is reported per-runner via
+         *      RunnerStatus.tool_versions and is used for job-to-runner matching; the kind
+         *      itself is product-agnostic.
          * @enum {string}
          */
-        "admiral.runner.v1.RunnerKind": "RUNNER_KIND_UNSPECIFIED" | "RUNNER_KIND_TERRAFORM" | "RUNNER_KIND_WORKFLOW";
+        "admiral.runner.v1.RunnerKind": "RUNNER_KIND_UNSPECIFIED" | "RUNNER_KIND_INFRASTRUCTURE" | "RUNNER_KIND_WORKFLOW";
         /**
          * RunnerStatus
          * @description RunnerStatus contains capacity and telemetry metrics for a runner, as
@@ -6692,6 +7245,29 @@ export interface components {
             key?: string;
             /** value */
             value?: string;
+        };
+        /**
+         * TerraformOutput
+         * @description TerraformOutput represents a single output value from `terraform output -json`.
+         */
+        "admiral.runner.v1.TerraformOutput": {
+            /**
+             * value
+             * @description The output value, serialized as a string. Complex values (lists, maps)
+             *      are JSON-encoded.
+             */
+            value?: string;
+            /**
+             * type
+             * @description Terraform type descriptor (e.g., "string", "number", "bool",
+             *      "list(string)", "map(string)", "object({...})").
+             */
+            type?: string;
+            /**
+             * sensitive
+             * @description Whether Terraform marked this output as sensitive.
+             */
+            sensitive?: boolean;
         };
         /**
          * UpdateRunnerRequest
@@ -8309,7 +8885,20 @@ export interface components {
              * @description When the variable was last updated.
              */
             updated_at?: components["schemas"]["google.protobuf.Timestamp"];
+            /**
+             * source
+             * @description How the variable was created. USER for variables created via the API/CLI,
+             *      INFRASTRUCTURE for variables produced by terraform output capture.
+             *      Server-populated; not settable via CreateVariable.
+             */
+            source?: components["schemas"]["admiral.variable.v1.VariableSource"];
         };
+        /**
+         * VariableSource
+         * @description VariableSource indicates how the variable was created.
+         * @enum {string}
+         */
+        "admiral.variable.v1.VariableSource": "VARIABLE_SOURCE_UNSPECIFIED" | "VARIABLE_SOURCE_USER" | "VARIABLE_SOURCE_INFRASTRUCTURE";
         /**
          * VariableType
          * @description VariableType indicates how the variable value should be interpreted by the
@@ -9336,15 +9925,20 @@ export interface operations {
         parameters: {
             query?: {
                 /**
-                 * @description Filter expression using the PEG filter DSL.
-                 *
-                 *      Common filter fields:
-                 *        - `application_id` -- scope to an application (required for meaningful
-                 *          results since components always belong to an application).
-                 *        - `environment_id` -- when present, triggers the resolved view with
-                 *          environment overrides applied to each component.
-                 *        - `category` -- filter by component category (INFRASTRUCTURE, WORKLOAD).
+                 * @description Scope listing to a specific application (UUID). Required for meaningful
+                 *      results since components always belong to an application.
+                 */
+                application_id?: string;
+                /**
+                 * @description When set alongside `application_id`, returns the resolved view with
+                 *      environment overrides applied (UUID). Optional.
+                 */
+                environment_id?: string;
+                /**
+                 * @description Filter expression using the PEG filter DSL. Filterable fields:
+                 *        - `kind` -- filter by component kind (INFRASTRUCTURE, WORKLOAD).
                  *        - `name` -- filter by component name.
+                 *        - `module_id` -- filter by module reference.
                  */
                 filter?: string;
                 /** @description Maximum number of components to return per page. */
@@ -9415,7 +10009,7 @@ export interface operations {
                     /**
                      * update_mask
                      * @description The set of fields to update. If unset, all mutable fields are updated.
-                     *      Supported fields: `name`, `description`, `source_id`, `version`,
+                     *      Supported fields: `name`, `description`, `module_id`, `version`,
                      *      `values_template`, `depends_on`, `outputs`.
                      */
                     update_mask?: components["schemas"]["google.protobuf.FieldMask"];
@@ -9570,11 +10164,11 @@ export interface operations {
                      */
                     disabled?: boolean;
                     /**
-                     * source_id
+                     * module_id
                      * Format: uuid
-                     * @description Override source (UUID). When set, replaces the component's default source.
+                     * @description Override module (UUID). When set, replaces the component's default module.
                      */
-                    source_id?: string | null;
+                    module_id?: string | null;
                     /**
                      * version
                      * @description Override version. When set, replaces the component's default version.
@@ -10062,6 +10656,45 @@ export interface operations {
             };
         };
     };
+    DeploymentAPI_ApplyDeployment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Unique identifier of the deployment to apply (UUID). */
+                deployment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /**
+                     * deployment_id
+                     * Format: uuid
+                     * @description Unique identifier of the deployment to apply (UUID).
+                     */
+                    deployment_id?: string;
+                    /**
+                     * message
+                     * @description Optional message describing the apply (e.g., "Approved by @martin").
+                     */
+                    message?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["admiral.deployment.v1.ApplyDeploymentResponse"];
+                };
+            };
+        };
+    };
     DeploymentAPI_CancelDeployment: {
         parameters: {
             query?: never;
@@ -10368,6 +11001,199 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["admiral.healthcheck.v1.HealthcheckResponse"];
+                };
+            };
+        };
+    };
+    ModuleAPI_ListModules: {
+        parameters: {
+            query?: {
+                /**
+                 * @description Filter expression to narrow results. Uses the Admiral filter DSL.
+                 *
+                 *      Filterable fields:
+                 *        - `name` -- filter by module name.
+                 *        - `type` -- filter by module type (TERRAFORM, HELM, KUSTOMIZE, MANIFEST).
+                 *        - `source_id` -- filter by source reference.
+                 *
+                 *      Example: `field['type'] = 'TERRAFORM'`
+                 */
+                filter?: string;
+                /** @description Maximum number of modules to return per page. */
+                page_size?: number;
+                /** @description Opaque pagination token from a previous response. */
+                page_token?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["admiral.module.v1.ListModulesResponse"];
+                };
+            };
+        };
+    };
+    ModuleAPI_CreateModule: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["admiral.module.v1.CreateModuleRequest"];
+            };
+        };
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["admiral.module.v1.CreateModuleResponse"];
+                };
+            };
+        };
+    };
+    ModuleAPI_UpdateModule: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Unique identifier for the module (UUID). */
+                "module.id": string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /**
+                     * module
+                     * @description The module with updated fields. Only fields specified in `update_mask`
+                     *      are updated.
+                     */
+                    module: components["schemas"]["admiral.module.v1.Module"];
+                    /**
+                     * update_mask
+                     * @description The set of fields to update. Required -- the server rejects updates
+                     *      without a mask to prevent accidental full-replace.
+                     *      Supported fields: `name`, `description`, `source_id`, `ref`, `root`,
+                     *      `path`, `labels`.
+                     *      Immutable: `type` (returns InvalidArgument if included).
+                     */
+                    update_mask?: components["schemas"]["google.protobuf.FieldMask"];
+                };
+            };
+        };
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["admiral.module.v1.UpdateModuleResponse"];
+                };
+            };
+        };
+    };
+    ModuleAPI_GetModule: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Unique identifier of the module (UUID). */
+                module_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["admiral.module.v1.GetModuleResponse"];
+                };
+            };
+        };
+    };
+    ModuleAPI_DeleteModule: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /**
+                 * @description Unique identifier of the module to delete (UUID).
+                 *      Fails if any components still reference this module.
+                 */
+                module_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["admiral.module.v1.DeleteModuleResponse"];
+                };
+            };
+        };
+    };
+    ModuleAPI_ResolveModule: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Unique identifier of the module to resolve (UUID). */
+                module_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /**
+                     * module_id
+                     * Format: uuid
+                     * @description Unique identifier of the module to resolve (UUID).
+                     */
+                    module_id?: string;
+                    /**
+                     * ref_override
+                     * @description Optional ref override. When set, this ref is used instead of the module's
+                     *      default ref. Useful for previewing a different version without modifying
+                     *      the module definition.
+                     */
+                    ref_override?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["admiral.module.v1.ResolveModuleResponse"];
                 };
             };
         };

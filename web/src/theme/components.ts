@@ -3,9 +3,6 @@ import { borderRadius, transitions } from '@/theme/constants';
 
 const ComponentStyleOverrides = (theme: Theme) => {
   const isDark = theme.palette.mode === 'dark';
-  const menuSelectedBack =
-    isDark ? alpha(theme.palette.secondary.main, 0.08) : theme.palette.secondary.light;
-  const menuSelected = theme.palette.secondary.main;
 
   return {
     MuiCssBaseline: {
@@ -110,25 +107,6 @@ const ComponentStyleOverrides = (theme: Theme) => {
       styleOverrides: {
         root: {
           color: theme.palette.text.primary,
-          paddingTop: '10px',
-          paddingBottom: '10px',
-          '&.Mui-selected': {
-            color: menuSelected,
-            backgroundColor: menuSelectedBack,
-            '&:hover': {
-              backgroundColor: menuSelectedBack,
-            },
-            '& .MuiListItemIcon-root': {
-              color: menuSelected,
-            },
-          },
-          '&:hover': {
-            backgroundColor: menuSelectedBack,
-            color: menuSelected,
-            '& .MuiListItemIcon-root': {
-              color: menuSelected,
-            },
-          },
         },
       },
     },

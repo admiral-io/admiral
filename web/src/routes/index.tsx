@@ -8,11 +8,6 @@ import Loadable from '@/components/Loadable';
 
 const LandingPage = Loadable(lazy(() => import('@/pages/landing')));
 
-// In-progress pages — kept reachable by URL for development, but not linked
-// from the sidebar while the UI is under construction.
-const ApplicationsPage = Loadable(lazy(() => import('@/pages/applications/pages/ApplicationsPage')));
-const ApplicationDetailPage = Loadable(lazy(() => import('@/pages/applications/pages/ApplicationDetailPage')));
-
 const UserLayout = Loadable(lazy(() => import('@/pages/user')));
 const ProfilePage = Loadable(lazy(() => import('@/pages/user/profile/ProfilePage')));
 const TokensPage = Loadable(lazy(() => import('@/pages/user/tokens/pages/TokensPage')));
@@ -35,14 +30,54 @@ const router = createBrowserRouter([
         handle: { title: 'Admiral' },
       },
       {
+        path: '/catalog',
+        element: <LandingPage />,
+        handle: { title: 'Catalog' },
+      },
+      {
+        path: '/catalog/:moduleId',
+        element: <LandingPage />,
+        handle: { title: 'Catalog module' },
+      },
+      {
         path: '/applications',
-        element: <ApplicationsPage />,
+        element: <LandingPage />,
         handle: { title: 'Applications' },
       },
       {
         path: '/applications/:applicationId',
-        element: <ApplicationDetailPage />,
+        element: <LandingPage />,
         handle: { title: 'Application' },
+      },
+      {
+        path: '/applications/:applicationId/environments/:environmentId',
+        element: <LandingPage />,
+        handle: { title: 'Environment' },
+      },
+      {
+        path: '/settings/clusters',
+        element: <LandingPage />,
+        handle: { title: 'Clusters' },
+      },
+      {
+        path: '/settings/runners',
+        element: <LandingPage />,
+        handle: { title: 'Runners' },
+      },
+      {
+        path: '/settings/variables',
+        element: <LandingPage />,
+        handle: { title: 'Variables' },
+      },
+      {
+        path: '/settings/credentials',
+        element: <LandingPage />,
+        handle: { title: 'Credentials' },
+      },
+      {
+        path: '/settings/sources',
+        element: <LandingPage />,
+        handle: { title: 'Repositories' },
       },
       {
         path: '/user',

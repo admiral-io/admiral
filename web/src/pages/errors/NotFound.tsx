@@ -1,9 +1,10 @@
-import React, { useEffect } from 'react';
+import type { JSX } from 'react';
+import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Box, Stack, Typography, Button } from '@mui/material';
 import { Home as HomeIcon, ArrowBack as ArrowBackIcon } from '@mui/icons-material';
 
-const NotFoundPage: React.FC = () => {
+export default function NotFoundPage(): JSX.Element {
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -80,6 +81,4 @@ const NotFoundPage: React.FC = () => {
       </Stack>
     </Box>
   );
-};
-
-export default NotFoundPage;
+}

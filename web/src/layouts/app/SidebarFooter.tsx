@@ -8,7 +8,6 @@ import {
   ListItemText,
   type SxProps,
   Tooltip as MuiTooltip,
-  ButtonBase,
   Typography,
 } from '@mui/material';
 import { alpha, type Theme, useTheme } from '@mui/material/styles';
@@ -16,77 +15,51 @@ import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 
 import { openDrawer, selectMenu } from '@/store/slices/menu';
+import { NAV_ITEM_SIZE, NAV_FONT_SIZE } from '@/layouts/app/MenuList/navSx';
 
 const SidebarFooter = (): JSX.Element => {
   const theme = useTheme();
   const dispatch = useDispatch();
+  const isDark = theme.palette.mode === 'dark';
 
   const { drawerOpen } = useSelector(selectMenu);
-  const isDrawerOpen = drawerOpen;
 
   const handleClick = useCallback((): void => {
     dispatch(openDrawer(!drawerOpen));
   }, [drawerOpen, dispatch]);
 
+  const hoverBg = isDark
+    ? alpha(theme.palette.secondary.main, 0.08)
+    : theme.palette.secondary.light;
+
   const listItemButtonSx: SxProps<Theme> = {
     borderRadius: '8px',
-    height: 46,
+    height: NAV_ITEM_SIZE,
     alignItems: 'center',
     justifyContent: drawerOpen ? 'initial' : 'center',
     mb: 0.5,
     pl: drawerOpen ? 1.5 : 1.25,
-    ...(drawerOpen && theme.palette.mode !== 'dark'
-      ? {
-          '&:hover': {
-            backgroundColor: theme.palette.secondary.light,
-          },
-        }
-      : {
-          '&:hover': {
-            backgroundColor: 'transparent',
-          },
-          '&.Mui-selected': {
-            backgroundColor: 'transparent',
-            '&:hover': {
-              backgroundColor: 'transparent',
-            },
-          },
-        }),
+    transition: 'background-color 150ms ease',
+    '&:hover': {
+      backgroundColor: drawerOpen ? hoverBg : 'transparent',
+    },
   };
 
   const listItemIconSx: SxProps<Theme> = {
+    minWidth: 32,
     borderRadius: '8px',
     alignItems: 'center',
     justifyContent: 'center',
-    color: 'inherit',
+    color: theme.palette.text.secondary,
+    transition: 'background-color 150ms ease, color 150ms ease',
     ...(drawerOpen
-      ? {
-          mr: 1,
-          '&:hover': {
-            backgroundColor: 'transparent',
-          },
-          '&.Mui-selected': {
-            '&:hover': {
-              backgroundColor: 'transparent',
-            },
-            backgroundColor: 'transparent',
-          },
-        }
+      ? {}
       : {
-          width: 46,
-          height: 46,
+          width: NAV_ITEM_SIZE,
+          height: NAV_ITEM_SIZE,
           mr: 'auto',
           '&:hover': {
-            backgroundColor:
-              theme.palette.mode === 'dark'
-                ? alpha(theme.palette.secondary.main, 0.25)
-                : theme.palette.secondary.light,
-          },
-          '&.Mui-selected': {
-            backgroundColor: theme.palette.secondary.light,
-            '&:hover': {
-              backgroundColor: theme.palette.secondary.light,
-            },
+            backgroundColor: hoverBg,
           },
         }),
   };
@@ -97,19 +70,28 @@ const SidebarFooter = (): JSX.Element => {
       role="button"
       sx={listItemButtonSx}
       aria-expanded={drawerOpen ? 'true' : 'false'}
-      aria-label={drawerOpen ? 'Collapse drawer' : 'Expand drawer'}
+      aria-label={drawerOpen ? 'Collapse sidebar' : 'Expand sidebar'}
       onClick={handleClick}
     >
-      <ButtonBase aria-label="theme-icon" sx={{ borderRadius: '8px' }}>
-        <ListItemIcon sx={listItemIconSx}>
-          {drawerOpen ? <ChevronLeftIcon /> : <ChevronRightIcon />}
-        </ListItemIcon>
-      </ButtonBase>
+      <ListItemIcon sx={listItemIconSx}>
+        {drawerOpen ? (
+          <ChevronLeftIcon sx={{ fontSize: '18px' }} />
+        ) : (
+          <ChevronRightIcon sx={{ fontSize: '18px' }} />
+        )}
+      </ListItemIcon>
 
-      {isDrawerOpen && (
+      {drawerOpen && (
         <ListItemText
           primary={
-            <Typography variant="body1" color="inherit">
+            <Typography
+              sx={{
+                fontSize: NAV_FONT_SIZE,
+                fontWeight: 500,
+                color: 'text.secondary',
+                lineHeight: 1.4,
+              }}
+            >
               Collapse
             </Typography>
           }
@@ -119,12 +101,12 @@ const SidebarFooter = (): JSX.Element => {
   );
 
   return (
-    <List>
+    <List disablePadding sx={{ px: 0.5, pb: 0.5 }}>
       <ListItem
         disablePadding
         sx={{
           display: 'block',
-          pt: '12px',
+          pt: 1,
           position: 'relative',
           '&::before': {
             content: '""',
@@ -133,7 +115,9 @@ const SidebarFooter = (): JSX.Element => {
             left: '10%',
             right: '10%',
             height: '1px',
-            background: `linear-gradient(90deg, transparent 0%, rgba(136, 136, 136, 0.2) 50%, transparent 100%)`,
+            background: isDark
+              ? `linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.06) 50%, transparent 100%)`
+              : `linear-gradient(90deg, transparent 0%, rgba(0,0,0,0.06) 50%, transparent 100%)`,
           },
         }}
       >
@@ -144,7 +128,7 @@ const SidebarFooter = (): JSX.Element => {
             title="Expand"
             placement="right"
             enterDelay={500}
-            aria-label="Expand drawer tooltip"
+            aria-label="Expand sidebar tooltip"
             arrow
           >
             {Button}

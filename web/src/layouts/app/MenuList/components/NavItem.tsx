@@ -2,9 +2,6 @@ import { useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useTheme } from '@mui/material/styles';
 import {
-  Avatar,
-  ButtonBase,
-  Chip,
   ListItemButton,
   ListItemIcon,
   ListItemText,
@@ -16,7 +13,7 @@ import { useDispatch, useSelector } from '@/store';
 import type { RootState } from '@/store/reducer';
 import { activeID, activeItem } from '@/store/slices/menu';
 import type { LinkTarget, NavItemType } from '../types';
-import { getNavButtonSx, getNavIconSx } from '../styles';
+import { getNavButtonSx, getNavIconSx, NAV_FONT_SIZE } from '../navSx';
 
 interface NavItemProps {
   item: NavItemType;
@@ -36,12 +33,16 @@ const NavItem = ({ item, level, parentId }: NavItemProps) => {
   const styleParams = { theme, level, isSelected, drawerOpen: isDrawerOpen };
 
   const IconComponent = item.icon;
+  const iconSize = isDrawerOpen ? '18px' : '22px';
   const itemIcon = IconComponent ? (
     <IconComponent
       stroke={1.5}
-      size={isDrawerOpen ? '20px' : '24px'}
+      size={iconSize}
       style={{
+        width: iconSize,
+        height: iconSize,
         color: isSelected ? theme.palette.secondary.main : theme.palette.text.primary,
+        ...(item.disabled && { opacity: 0.38 }),
       }}
     />
   ) : (
@@ -85,14 +86,20 @@ const NavItem = ({ item, level, parentId }: NavItemProps) => {
       selected={isSelected}
       onClick={() => item.id && itemHandler(item.id)}
     >
-      <ButtonBase aria-label="theme-icon" sx={{ borderRadius: '8px' }}>
-        <ListItemIcon sx={getNavIconSx(styleParams)}>{itemIcon}</ListItemIcon>
-      </ButtonBase>
+      <ListItemIcon sx={getNavIconSx(styleParams)}>{itemIcon}</ListItemIcon>
 
       {(isDrawerOpen || (!isDrawerOpen && level !== 1)) && (
         <ListItemText
           primary={
-            <Typography variant={isSelected ? 'h5' : 'body1'} color="inherit">
+            <Typography
+              sx={{
+                fontSize: NAV_FONT_SIZE,
+                fontWeight: 500,
+                lineHeight: 1.4,
+                letterSpacing: '-0.005em',
+              }}
+              color="inherit"
+            >
               {item.title}
             </Typography>
           }
@@ -100,7 +107,10 @@ const NavItem = ({ item, level, parentId }: NavItemProps) => {
             item.caption && (
               <Typography
                 variant="caption"
-                sx={{ fontSize: '0.6875rem', fontWeight: 500, textTransform: 'capitalize' }}
+                sx={{
+                  fontSize: '0.6875rem',
+                  fontWeight: 400,
+                }}
                 display="block"
                 gutterBottom
               >
@@ -108,16 +118,6 @@ const NavItem = ({ item, level, parentId }: NavItemProps) => {
               </Typography>
             )
           }
-        />
-      )}
-
-      {isDrawerOpen && item.chip && (
-        <Chip
-          color={item.chip.color}
-          variant={item.chip.variant}
-          size={item.chip.size}
-          label={item.chip.label}
-          avatar={item.chip.avatar ? <Avatar>{item.chip.avatar}</Avatar> : undefined}
         />
       )}
     </ListItemButton>

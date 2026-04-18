@@ -1,9 +1,9 @@
-import React from 'react';
+import type { JSX } from 'react';
 import { Box, Stack, Typography } from '@mui/material';
 
 import { Logo } from '@/components/Logo';
 
-const LandingPage: React.FC = () => {
+export default function LandingPage(): JSX.Element {
   return (
     <Box
       sx={{
@@ -39,6 +39,4 @@ const LandingPage: React.FC = () => {
       </Stack>
     </Box>
   );
-};
-
-export default LandingPage;
+}

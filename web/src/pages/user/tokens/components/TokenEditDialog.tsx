@@ -16,6 +16,7 @@ import type { AccessToken } from '@/types/token';
 
 import ScopeSelector from '@/pages/user/tokens/components/ScopeSelector';
 import { validateTokenName } from '@/pages/user/tokens/utils';
+import { RESOURCE_NAME_HINT } from '@/utils/validation';
 
 export interface TokenEditDialogProps {
   open: boolean;
@@ -86,7 +87,7 @@ export default function TokenEditDialog({
             value={name}
             onChange={(e) => setName(e.target.value)}
             error={name.length > 0 && !!nameError}
-            helperText={name.length > 0 && nameError ? nameError : 'Lowercase letters, numbers, and hyphens (e.g. ci-deploy-token)'}
+            helperText={name.length > 0 && nameError ? nameError : RESOURCE_NAME_HINT}
           />
 
           <Box>

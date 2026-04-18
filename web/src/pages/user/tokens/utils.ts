@@ -1,12 +1,7 @@
 import type { AccessToken } from '@/types/token';
+import { validateResourceName } from '@/utils/validation';
 
-const TOKEN_NAME_PATTERN = /^[a-z]([a-z0-9-]{0,61}[a-z0-9])?$/;
-
-export function validateTokenName(value: string): string | undefined {
-  if (!value) return undefined;
-  if (TOKEN_NAME_PATTERN.test(value)) return undefined;
-  return 'Must start with a lowercase letter, use only lowercase letters, numbers, and hyphens, and end with a letter or number (max 63 characters). Example: ci-deploy-token';
-}
+export const validateTokenName = validateResourceName;
 
 export function formatTokenDate(iso: string | null | undefined): string {
   if (!iso) return '\u2014';

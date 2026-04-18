@@ -57,6 +57,44 @@ export const SCOPE_GROUPS: ScopeGroup[] = [
     ],
   },
   {
+    id: 'module',
+    label: 'module',
+    description: 'Manage registered modules',
+    scopes: [
+      { value: 'module:read', label: 'View modules' },
+      { value: 'module:write', label: 'Create, update, and delete modules' },
+    ],
+  },
+  {
+    id: 'deploy',
+    label: 'deploy',
+    description: 'Create and observe deployments',
+    scopes: [
+      { value: 'deploy:read', label: 'View deployments and revisions' },
+      { value: 'deploy:write', label: 'Create, apply, and cancel deployments' },
+    ],
+  },
+  {
+    id: 'runner',
+    label: 'runner',
+    description: 'Manage runners and view their jobs',
+    scopes: [
+      { value: 'runner:read', label: 'View runners, runner status, and jobs' },
+      { value: 'runner:write', label: 'Create, update, delete runners and rotate tokens' },
+    ],
+  },
+  {
+    id: 'cluster',
+    label: 'cluster',
+    description: 'Manage Kubernetes clusters',
+    scopes: [
+      { value: 'cluster:read', label: 'View clusters' },
+      { value: 'cluster:write', label: 'Create, update, and delete clusters' },
+      { value: 'cluster:status', label: 'Report and read cluster health' },
+      { value: 'cluster:deploy', label: 'Trigger deployments to clusters' },
+    ],
+  },
+  {
     id: 'state',
     label: 'state',
     description: 'Manage deployment state',

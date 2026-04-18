@@ -25,6 +25,7 @@ import type { CreateTokenResponse } from '@/types/token';
 
 import ScopeSelector from '@/pages/user/tokens/components/ScopeSelector';
 import { validateTokenName } from '@/pages/user/tokens/utils';
+import { RESOURCE_NAME_HINT } from '@/utils/validation';
 
 const EXPIRATION_OPTIONS = [
   { value: '7', label: '7 days' },
@@ -200,7 +201,7 @@ export default function TokenCreatePage(): JSX.Element {
           value={name}
           onChange={(e) => setName(e.target.value)}
           error={name.length > 0 && !!nameError}
-          helperText={name.length > 0 && nameError ? nameError : 'Lowercase letters, numbers, and hyphens (e.g. ci-deploy-token)'}
+          helperText={name.length > 0 && nameError ? nameError : RESOURCE_NAME_HINT}
         />
       </Box>
 

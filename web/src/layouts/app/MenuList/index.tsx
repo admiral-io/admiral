@@ -1,56 +1,110 @@
-import { memo } from 'react';
+import { memo, useEffect, useMemo } from 'react';
+import { useLocation } from 'react-router-dom';
 import { Box, Typography } from '@mui/material';
+import AppsOutlinedIcon from '@mui/icons-material/AppsOutlined';
+import ViewModuleOutlinedIcon from '@mui/icons-material/ViewModuleOutlined';
+import FolderCopyOutlinedIcon from '@mui/icons-material/FolderCopyOutlined';
+import VpnKeyOutlinedIcon from '@mui/icons-material/VpnKeyOutlined';
+import DirectionsRunOutlinedIcon from '@mui/icons-material/DirectionsRunOutlined';
+import CloudOutlinedIcon from '@mui/icons-material/CloudOutlined';
+import TuneOutlinedIcon from '@mui/icons-material/TuneOutlined';
 
 import NavGroup from './components/NavGroup';
 import type { NavItemType } from './types';
-
-// Sidebar is intentionally empty while the UI is under construction.
-// Restore the entries below when shipping features:
-//
-//   import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined';
-//   import DeviceHubOutlinedIcon from '@mui/icons-material/DeviceHubOutlined';
-//   import AppsOutlinedIcon from '@mui/icons-material/AppsOutlined';
-//
-//   const stashedMenuItems: NavItemType[] = [
-//     {
-//       id: 'applications',
-//       title: 'Applications',
-//       type: 'item',
-//       icon: AppsOutlinedIcon,
-//       url: '/applications',
-//     },
-//     {
-//       id: 'clusters',
-//       title: 'Clusters',
-//       type: 'item',
-//       icon: DeviceHubOutlinedIcon,
-//       url: '/clusters',
-//     },
-//     {
-//       id: 'settings',
-//       title: 'Settings',
-//       type: 'collapse',
-//       icon: SettingsOutlinedIcon,
-//       children: [
-//         { id: 'users', title: 'Users', type: 'item', url: '/settings/users' },
-//         { id: 'variables', title: 'Variables', type: 'item', url: '/settings/variables' },
-//       ],
-//     },
-//   ];
+import { useDispatch } from '@/store';
+import { activeItem } from '@/store/slices/menu';
 
 const menuItems: { items: NavItemType[] } = {
   items: [
     {
-      id: 'root',
+      id: 'manage',
       type: 'group',
-      children: [],
+      children: [
+        {
+          id: 'applications',
+          title: 'Applications',
+          type: 'item',
+          icon: AppsOutlinedIcon,
+          url: '/applications',
+        },
+        {
+          id: 'catalog',
+          title: 'Catalog',
+          type: 'item',
+          icon: ViewModuleOutlinedIcon,
+          url: '/catalog',
+        },
+      ],
+    },
+    {
+      id: 'settings',
+      title: 'Settings',
+      type: 'group',
+      children: [
+        {
+          id: 'clusters',
+          title: 'Clusters',
+          type: 'item',
+          icon: CloudOutlinedIcon,
+          url: '/settings/clusters',
+        },
+        {
+          id: 'runners',
+          title: 'Runners',
+          type: 'item',
+          icon: DirectionsRunOutlinedIcon,
+          url: '/settings/runners',
+        },
+        {
+          id: 'credentials',
+          title: 'Credentials',
+          type: 'item',
+          icon: VpnKeyOutlinedIcon,
+          url: '/settings/credentials',
+        },
+        {
+          id: 'sources',
+          title: 'Repositories',
+          type: 'item',
+          icon: FolderCopyOutlinedIcon,
+          url: '/settings/sources',
+        },
+        {
+          id: 'variables',
+          title: 'Variables',
+          type: 'item',
+          icon: TuneOutlinedIcon,
+          url: '/settings/variables',
+        },
+      ],
     },
   ],
 };
 
+function collectNavUrls(items: NavItemType[]): string[] {
+  const urls: string[] = [];
+  for (const item of items) {
+    if (item.url) urls.push(item.url);
+    if (item.children) urls.push(...collectNavUrls(item.children));
+  }
+  return urls;
+}
+
 const MenuList = () => {
-  const navItems = menuItems.items.map((item) => {
-    const key = item.id || `menu-item-${Math.random()}`;
+  const { pathname } = useLocation();
+  const dispatch = useDispatch();
+
+  const knownUrls = useMemo(() => collectNavUrls(menuItems.items), []);
+
+  useEffect(() => {
+    const matchesSidebarRoute = knownUrls.some((url) => pathname.startsWith(url));
+    if (!matchesSidebarRoute) {
+      dispatch(activeItem([]));
+    }
+  }, [pathname, knownUrls, dispatch]);
+
+  const navItems = menuItems.items.map((item, index) => {
+    const key = item.id || `menu-item-${index}`;
 
     switch (item.type) {
       case 'group':
