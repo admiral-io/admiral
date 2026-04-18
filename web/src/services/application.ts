@@ -42,7 +42,7 @@ export async function listAll(): Promise<Application[]> {
   do {
     const page = await list({ page_size: 100, page_token });
     apps.push(...page.applications);
-    page_token = page.next_page_token;
+    page_token = page.next_page_token ?? undefined;
   } while (page_token);
 
   return apps;

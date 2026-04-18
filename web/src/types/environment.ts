@@ -1,14 +1,14 @@
 import { z } from 'zod';
 
 const actorRefSchema = z.object({
-  id: z.string().optional(),
-  display_name: z.string().optional(),
-  email: z.string().optional(),
+  id: z.string().nullish(),
+  display_name: z.string().nullish(),
+  email: z.string().nullish(),
 });
 
 const kubernetesConfigSchema = z.object({
   cluster_id: z.string(),
-  namespace: z.string().optional(),
+  namespace: z.string().nullish(),
 });
 
 const terraformConfigSchema = z.object({
@@ -27,20 +27,20 @@ export const environmentSchema = z.looseObject({
   id: z.uuid(),
   application_id: z.uuid(),
   name: z.string(),
-  description: z.string().optional(),
-  workload_targets: z.array(workloadTargetSchema).optional(),
-  infrastructure_targets: z.array(infrastructureTargetSchema).optional(),
-  labels: z.record(z.string(), z.string()).optional(),
-  has_pending_changes: z.boolean().optional(),
-  last_deployed_at: z.string().optional(),
-  created_by: actorRefSchema.optional(),
-  created_at: z.string().optional(),
-  updated_at: z.string().optional(),
+  description: z.string().nullish(),
+  workload_targets: z.array(workloadTargetSchema).nullish(),
+  infrastructure_targets: z.array(infrastructureTargetSchema).nullish(),
+  labels: z.record(z.string(), z.string()).nullish(),
+  has_pending_changes: z.boolean().nullish(),
+  last_deployed_at: z.string().nullish(),
+  created_by: actorRefSchema.nullish(),
+  created_at: z.string().nullish(),
+  updated_at: z.string().nullish(),
 });
 
 export const listEnvironmentsSchema = z.object({
   environments: z.array(environmentSchema).default([]),
-  next_page_token: z.string().optional(),
+  next_page_token: z.string().nullish(),
 });
 
 export type WorkloadTarget = z.infer<typeof workloadTargetSchema>;

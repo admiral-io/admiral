@@ -44,7 +44,7 @@ export async function listAll(): Promise<Environment[]> {
   do {
     const page = await list({ page_size: 100, page_token });
     all.push(...page.environments);
-    page_token = page.next_page_token;
+    page_token = page.next_page_token ?? undefined;
   } while (page_token);
 
   return all;
