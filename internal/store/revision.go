@@ -125,6 +125,27 @@ func (s *RevisionStore) CancelNonTerminal(ctx context.Context, deploymentID uuid
 		}).Error
 }
 
+func (s *RevisionStore) CancelStaleAwaitingApproval(ctx context.Context, componentID, environmentID, excludeDeploymentID uuid.UUID) (int64, error) {
+	result := s.db.WithContext(ctx).
+		Model(&model.Revision{}).
+		Where(`component_id = ? AND status = ? AND deployment_id != ?
+			AND deployment_id IN (
+				SELECT id FROM deployments WHERE environment_id = ?
+			)`,
+			componentID, model.RevisionStatusAwaitingApproval,
+			excludeDeploymentID, environmentID,
+		).
+		Updates(map[string]any{
+			"status":        model.RevisionStatusCanceled,
+			"error_message": "canceled: state invalidated by a newer apply",
+			"completed_at":  time.Now(),
+		})
+	if result.Error != nil {
+		return 0, fmt.Errorf("failed to cancel stale revisions: %w", result.Error)
+	}
+	return result.RowsAffected, nil
+}
+
 func (s *RevisionStore) Update(ctx context.Context, r *model.Revision, fields map[string]any) (*model.Revision, error) {
 	result := s.db.WithContext(ctx).Model(r).Updates(fields)
 	if result.Error != nil {

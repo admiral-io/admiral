@@ -2,6 +2,7 @@ server:
   listener:
     address: 0.0.0.0
     port: 8080
+  external_url: ${EXTERNAL_URL}
   timeouts:
     default: 15s
   logger:

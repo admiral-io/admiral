@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"os"
 	"strings"
 
 	"github.com/golang-migrate/migrate/v4"
@@ -25,9 +26,10 @@ type migrateCmd struct {
 }
 
 type migrateOpts struct {
-	force bool
-	down  bool
-	reset bool
+	force    bool
+	down     bool
+	reset    bool
+	seedFile string
 }
 
 type migrator struct {
@@ -89,7 +91,13 @@ last migration, or --reset to clear a dirty migration state.`,
 			case mc.opts.down:
 				return m.Down()
 			default:
-				return m.Up()
+				if err := m.Up(); err != nil {
+					return err
+				}
+				if mc.opts.seedFile != "" {
+					return m.Seed(mc.opts.seedFile)
+				}
+				return nil
 			}
 		},
 	}
@@ -97,6 +105,7 @@ last migration, or --reset to clear a dirty migration state.`,
 	cmd.Flags().BoolVarP(&mc.opts.force, "force", "f", false, "skip confirmation prompts")
 	cmd.Flags().BoolVar(&mc.opts.down, "down", false, "rollback one migration")
 	cmd.Flags().BoolVar(&mc.opts.reset, "reset", false, "reset dirty migration state")
+	cmd.Flags().StringVar(&mc.opts.seedFile, "seed", "", "execute SQL file post-migration (e.g. test fixtures)")
 	cmd.MarkFlagsMutuallyExclusive("down", "reset")
 
 	mc.cmd = cmd
@@ -274,6 +283,26 @@ func (m *migrator) Reset() error {
 	}
 
 	m.log.Info("Migration state reset; dirty flag cleared")
+	return nil
+}
+
+func (m *migrator) Seed(path string) error {
+	sqlDB, err := m.setupSqlClient()
+	if err != nil {
+		return err
+	}
+	defer sqlDB.Close()
+
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return fmt.Errorf("failed to read seed file: %w", err)
+	}
+
+	m.log.Info("Applying seed file", zap.String("path", path))
+	if _, err := sqlDB.Exec(string(data)); err != nil {
+		return fmt.Errorf("failed to execute seed SQL: %w", err)
+	}
+	m.log.Info("Seed applied successfully")
 	return nil
 }
 

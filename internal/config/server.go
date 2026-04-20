@@ -11,6 +11,7 @@ import (
 
 type Server struct {
 	Listener             Listener       `yaml:"listener"`
+	ExternalURL          string         `yaml:"external_url"`
 	Timeouts             Timeouts       `yaml:"timeouts"`
 	Logger               *logger.Config `yaml:"logger"`
 	AccessLog            *AccessLog     `yaml:"access_log"`
