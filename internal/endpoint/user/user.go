@@ -247,7 +247,7 @@ func (a *api) RevokePersonalAccessToken(ctx context.Context, req *userv1.RevokeP
 		return nil, status.Errorf(codes.NotFound, "token not found: %s", req.GetTokenId())
 	}
 
-	if err := a.tokenStore.Delete(ctx, req.GetTokenId()); err != nil {
+	if err := a.tokenStore.Revoke(ctx, req.GetTokenId()); err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to revoke token: %v", err)
 	}
 

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -32,7 +33,7 @@ const (
 )
 
 var (
-	filterColumns     = []string{"name", "kind"}
+	filterColumns     = []string{"name"}
 	jobsFilterColumns = []string{"status", "job_type", "deployment_id"}
 )
 
@@ -162,15 +163,9 @@ func (a *api) CreateRunner(ctx context.Context, req *runnerv1.CreateRunnerReques
 		return nil, status.Error(codes.Unauthenticated, "authentication required")
 	}
 
-	kind := model.RunnerKindFromProto(req.GetKind())
-	if kind == "" {
-		return nil, status.Error(codes.InvalidArgument, "runner kind is required")
-	}
-
 	r := &model.Runner{
 		Name:        req.GetName(),
 		Description: req.GetDescription(),
-		Kind:        kind,
 		Labels:      model.Labels(req.GetLabels()),
 		CreatedBy:   claims.Subject,
 	}
@@ -373,6 +368,9 @@ func (a *api) CreateRunnerToken(ctx context.Context, req *runnerv1.CreateRunnerT
 		expiry,
 	)
 	if err != nil {
+		if strings.Contains(err.Error(), "duplicate key") || strings.Contains(err.Error(), "unique constraint") {
+			return nil, status.Errorf(codes.AlreadyExists, "token name %q already exists for this runner", req.GetName())
+		}
 		return nil, status.Errorf(codes.Internal, "failed to create runner token: %v", err)
 	}
 
@@ -405,7 +403,7 @@ func (a *api) ListRunnerTokens(ctx context.Context, req *runnerv1.ListRunnerToke
 }
 
 func (a *api) GetRunnerToken(ctx context.Context, req *runnerv1.GetRunnerTokenRequest) (*runnerv1.GetRunnerTokenResponse, error) {
-	token, err := a.runnerTokenOrErr(ctx, req.GetRunnerId(), req.GetTokenId())
+	token, err := a.runnerTokenByID(ctx, req.GetTokenId())
 	if err != nil {
 		return nil, err
 	}
@@ -415,12 +413,12 @@ func (a *api) GetRunnerToken(ctx context.Context, req *runnerv1.GetRunnerTokenRe
 }
 
 func (a *api) RevokeRunnerToken(ctx context.Context, req *runnerv1.RevokeRunnerTokenRequest) (*runnerv1.RevokeRunnerTokenResponse, error) {
-	token, err := a.runnerTokenOrErr(ctx, req.GetRunnerId(), req.GetTokenId())
+	token, err := a.runnerTokenByID(ctx, req.GetTokenId())
 	if err != nil {
 		return nil, err
 	}
 
-	if err := a.tokenStore.Delete(ctx, token.Id); err != nil {
+	if err := a.tokenStore.Revoke(ctx, token.Id); err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to revoke runner token: %v", err)
 	}
 
@@ -457,23 +455,23 @@ func (a *api) Heartbeat(ctx context.Context, req *runnerv1.HeartbeatRequest) (*r
 	}, nil
 }
 
-func (a *api) runnerTokenOrErr(ctx context.Context, runnerIDStr, tokenID string) (*model.AccessToken, error) {
-	runnerID, err := uuid.Parse(runnerIDStr)
-	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "invalid runner ID: %v", err)
-	}
-
-	if _, err := a.store.Get(ctx, runnerID); err != nil {
-		return nil, status.Errorf(codes.NotFound, "runner not found: %s", runnerID)
-	}
-
+func (a *api) runnerTokenByID(ctx context.Context, tokenID string) (*model.AccessToken, error) {
 	token, err := a.tokenStore.Get(ctx, tokenID)
 	if err != nil {
 		return nil, status.Errorf(codes.NotFound, "token not found: %s", tokenID)
 	}
 
-	if token.Subject != runnerID.String() || token.Kind != model.AccessTokenKindSAT {
+	if token.Kind != model.AccessTokenKindSAT {
 		return nil, status.Errorf(codes.NotFound, "token not found: %s", tokenID)
+	}
+
+	// Verify the parent runner still exists.
+	runnerID, err := uuid.Parse(token.Subject)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "invalid runner reference on token")
+	}
+	if _, err := a.store.Get(ctx, runnerID); err != nil {
+		return nil, status.Errorf(codes.NotFound, "runner not found: %s", runnerID)
 	}
 
 	return token, nil

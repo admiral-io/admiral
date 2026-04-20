@@ -154,7 +154,7 @@ services:
     environment:
       - TEMPORAL_CLI_ADDRESS=temporal:7233
     entrypoint: >
-      bash -c "
+      sh -c "
         sleep 10 &&
         tctl --namespace admiral namespace register --description 'Admiral namespace' --retention 30 || true &&
         echo 'Namespace admiral created or already exists'

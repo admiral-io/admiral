@@ -12,8 +12,6 @@ import (
 	"gorm.io/gorm"
 )
 
-// --- AccessTokenKind ---
-
 type AccessTokenKind string
 
 const (
@@ -58,8 +56,6 @@ func (k *AccessTokenKind) String() string {
 	}
 }
 
-// --- AccessTokenStatus ---
-
 type AccessTokenStatus string
 
 const (
@@ -102,8 +98,6 @@ func (s *AccessTokenStatus) String() string {
 		return ""
 	}
 }
-
-// --- AccessTokenBindingType ---
 
 type AccessTokenBindingType string
 
@@ -149,8 +143,6 @@ func (b *AccessTokenBindingType) String() string {
 	}
 }
 
-// --- AccessToken ---
-
 type AccessToken struct {
 	Id              string                 `gorm:"column:id;primaryKey"`
 	Name            string                 `gorm:"column:name"`
@@ -168,6 +160,7 @@ type AccessToken struct {
 	CreatedAt       time.Time              `gorm:"column:created_at"`
 	UpdatedAt       time.Time              `gorm:"column:updated_at"`
 	ExpiresAt       *time.Time             `gorm:"column:expires_at"`
+	RevokedAt       *time.Time             `gorm:"column:revoked_at"`
 	DeletedAt       gorm.DeletedAt         `gorm:"column:deleted_at"`
 }
 
@@ -177,14 +170,19 @@ func (AccessToken) TableName() string {
 
 func (at *AccessToken) ToProto() *commonv1.AccessToken {
 	proto := &commonv1.AccessToken{
-		Id:        at.Id,
-		Name:      at.Name,
-		Scopes:    at.Scopes,
-		CreatedAt: timestamppb.New(at.CreatedAt),
+		Id:          at.Id,
+		Name:        at.Name,
+		TokenPrefix: at.TokenPrefix,
+		Scopes:      at.Scopes,
+		CreatedAt:   timestamppb.New(at.CreatedAt),
 	}
 
 	if at.ExpiresAt != nil {
 		proto.ExpiresAt = timestamppb.New(*at.ExpiresAt)
+	}
+
+	if at.RevokedAt != nil {
+		proto.RevokedAt = timestamppb.New(*at.RevokedAt)
 	}
 
 	switch at.Status {

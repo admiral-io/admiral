@@ -169,7 +169,7 @@ func (p *OIDCProvider) Exchange(ctx context.Context, code string) (string, error
 		Kind:        model.AccessTokenKindSession,
 		BindingType: model.AccessTokenBindingTypeUser,
 		TokenHash:   tokenHash,
-		TokenPrefix: plaintext[:len(PrefixSession)],
+		TokenPrefix: tokenPrefixFromPlaintext(plaintext),
 		Scopes:      pq.StringArray(SessionScopes),
 		Issuer:      p.oidcProviderName,
 		ExpiresAt:   idpTokenExpiry(oidcToken),
@@ -326,7 +326,7 @@ func (p *OIDCProvider) CreateToken(ctx context.Context, kind TokenKind, binding 
 		Kind:        dbKind,
 		BindingType: binding,
 		TokenHash:   tokenHash,
-		TokenPrefix: plaintext[:len(PrefixPAT)],
+		TokenPrefix: tokenPrefixFromPlaintext(plaintext),
 		Scopes:      pq.StringArray(scopes),
 	}
 

@@ -15,9 +15,11 @@ CREATE TABLE IF NOT EXISTS access_tokens (
     created_at        TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
     updated_at        TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
     expires_at        TIMESTAMP WITH TIME ZONE,
+    revoked_at        TIMESTAMP WITH TIME ZONE,
     deleted_at        TIMESTAMP WITH TIME ZONE
 );
 
 CREATE UNIQUE INDEX idx_access_tokens_token_hash ON access_tokens(token_hash);
+CREATE UNIQUE INDEX idx_access_tokens_subject_name ON access_tokens(subject, name) WHERE deleted_at IS NULL;
 CREATE INDEX idx_access_tokens_subject_kind ON access_tokens(subject, kind);
 CREATE INDEX idx_access_tokens_status ON access_tokens(status);

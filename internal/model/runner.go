@@ -15,30 +15,9 @@ import (
 )
 
 const (
-	RunnerKindInfrastructure = "INFRASTRUCTURE"
-	RunnerKindWorkflow       = "WORKFLOW"
-)
-
-const (
 	HeartbeatInterval = 30 * time.Second
 	HeartbeatTTL      = 3 * HeartbeatInterval
 )
-
-var runnerKindToProto = map[string]runnerv1.RunnerKind{
-	RunnerKindInfrastructure: runnerv1.RunnerKind_RUNNER_KIND_INFRASTRUCTURE,
-	RunnerKindWorkflow:       runnerv1.RunnerKind_RUNNER_KIND_WORKFLOW,
-}
-
-var runnerKindFromProto = map[runnerv1.RunnerKind]string{
-	runnerv1.RunnerKind_RUNNER_KIND_INFRASTRUCTURE: RunnerKindInfrastructure,
-	runnerv1.RunnerKind_RUNNER_KIND_WORKFLOW:       RunnerKindWorkflow,
-}
-
-func RunnerKindFromProto(k runnerv1.RunnerKind) string {
-	return runnerKindFromProto[k]
-}
-
-// --- Supporting types ---
 
 type ActiveJobInfo struct {
 	JobId     string    `json:"job_id"`
@@ -132,13 +111,10 @@ func RunnerStatusFromProto(p *runnerv1.RunnerStatus) *RunnerStatus {
 	return s
 }
 
-// --- Runner ---
-
 type Runner struct {
 	Id              uuid.UUID     `gorm:"type:uuid;default:gen_random_uuid();primaryKey"`
 	Name            string        `gorm:"uniqueIndex;not null"`
 	Description     string        `gorm:"type:text"`
-	Kind            string        `gorm:"not null"`
 	Labels          Labels        `gorm:"type:jsonb;default:'{}'"`
 	LastHeartbeatAt *time.Time    `gorm:"column:last_heartbeat_at"`
 	LastStatus      *RunnerStatus `gorm:"type:jsonb;column:last_status"`
@@ -154,7 +130,6 @@ func (r *Runner) ToProto() *runnerv1.Runner {
 		Id:           r.Id.String(),
 		Name:         r.Name,
 		Description:  r.Description,
-		Kind:         runnerKindToProto[r.Kind],
 		Labels:       r.Labels,
 		HealthStatus: DeriveHealthStatus(r.LastHeartbeatAt, time.Now()),
 		CreatedBy:    &commonv1.ActorRef{Id: r.CreatedBy},

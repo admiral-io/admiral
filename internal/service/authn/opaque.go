@@ -15,16 +15,11 @@ const (
 	PrefixSession   = "adme_"
 	opaqueRandBytes = 32
 	checksumLen     = 6
+	tokenPrefixLen  = 12
 )
 
-// base62 alphabet for CRC32 checksum encoding.
 const base62 = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
 
-// GenerateOpaqueToken creates a prefixed opaque token with a CRC32 checksum
-// and returns the plaintext and its SHA-256 hash for DB storage.
-//
-// Format: <prefix><base64url random><6-char base62 CRC32>
-// Example: admp_abc123...xyz_A1b2C3.
 func GenerateOpaqueToken(kind TokenKind) (plaintext string, hash []byte, err error) {
 	prefix, err := prefixForKind(kind)
 	if err != nil {
@@ -44,19 +39,15 @@ func GenerateOpaqueToken(kind TokenKind) (plaintext string, hash []byte, err err
 	return plaintext, h[:], nil
 }
 
-// HashOpaqueToken computes the SHA-256 hash of a raw opaque token string.
 func HashOpaqueToken(raw string) []byte {
 	h := sha256.Sum256([]byte(raw))
 	return h[:]
 }
 
-// IsOpaqueToken returns true if the token has an Admiral opaque prefix.
 func IsOpaqueToken(raw string) bool {
 	return strings.HasPrefix(raw, PrefixPAT) || strings.HasPrefix(raw, PrefixSAT) || strings.HasPrefix(raw, PrefixSession)
 }
 
-// ValidateChecksum verifies the CRC32 checksum suffix of an opaque token.
-// Returns true if the checksum is valid. Does not require a DB lookup.
 func ValidateChecksum(raw string) bool {
 	if len(raw) <= checksumLen {
 		return false
@@ -65,6 +56,13 @@ func ValidateChecksum(raw string) bool {
 	body := raw[:len(raw)-checksumLen]
 	expected := encodeBase62CRC32(body)
 	return raw[len(raw)-checksumLen:] == expected
+}
+
+func tokenPrefixFromPlaintext(plaintext string) string {
+	if len(plaintext) <= tokenPrefixLen {
+		return plaintext
+	}
+	return plaintext[:tokenPrefixLen]
 }
 
 func prefixForKind(kind TokenKind) (string, error) {
@@ -80,8 +78,6 @@ func prefixForKind(kind TokenKind) (string, error) {
 	}
 }
 
-// encodeBase62CRC32 computes CRC32 of s and encodes it as a fixed-length
-// base62 string (zero-padded to checksumLen characters).
 func encodeBase62CRC32(s string) string {
 	n := crc32.ChecksumIEEE([]byte(s))
 	buf := make([]byte, checksumLen)
