@@ -47,40 +47,31 @@ func (s *UserStore) UpsertByProviderSubject(ctx context.Context, providerSubject
 		return nil, errors.New("provider subject cannot be empty")
 	}
 
-	var user model.User
-	result := s.db.WithContext(ctx).Where("deleted_at IS NULL").First(&user, "provider_subject = ?", providerSubject)
-
-	if result.Error != nil {
-		if !errors.Is(result.Error, gorm.ErrRecordNotFound) {
-			return nil, fmt.Errorf("failed to retrieve user for subject %s: %v", providerSubject, result.Error)
-		}
-
-		user = model.User{
-			ProviderSubject: providerSubject,
-			Email:           profile.Email,
-			EmailVerified:   profile.EmailVerified,
-			Name:            profile.Name,
-			GivenName:       profile.GivenName,
-			FamilyName:      profile.FamilyName,
-			PictureUrl:      profile.PictureUrl,
-		}
-
-		if err := s.db.WithContext(ctx).Create(&user).Error; err != nil {
-			return nil, fmt.Errorf("failed to create user for subject %s: %v", providerSubject, err)
-		}
-
-		return &user, nil
+	user := model.User{
+		ProviderSubject: providerSubject,
+		Email:           profile.Email,
+		EmailVerified:   profile.EmailVerified,
+		Name:            profile.Name,
+		GivenName:       profile.GivenName,
+		FamilyName:      profile.FamilyName,
+		PictureUrl:      profile.PictureUrl,
 	}
 
-	user.Email = profile.Email
-	user.EmailVerified = profile.EmailVerified
-	user.Name = profile.Name
-	user.GivenName = profile.GivenName
-	user.FamilyName = profile.FamilyName
-	user.PictureUrl = profile.PictureUrl
-
-	if err := s.db.WithContext(ctx).Save(&user).Error; err != nil {
-		return nil, fmt.Errorf("failed to update user for subject %s: %v", providerSubject, err)
+	// Atomic upsert: insert or update profile fields on provider_subject conflict.
+	// Eliminates the TOCTOU race from the previous read-then-write approach.
+	err := s.db.WithContext(ctx).
+		Where("provider_subject = ?", providerSubject).
+		Assign(model.User{
+			Email:         profile.Email,
+			EmailVerified: profile.EmailVerified,
+			Name:          profile.Name,
+			GivenName:     profile.GivenName,
+			FamilyName:    profile.FamilyName,
+			PictureUrl:    profile.PictureUrl,
+		}).
+		FirstOrCreate(&user).Error
+	if err != nil {
+		return nil, fmt.Errorf("failed to upsert user for subject %s: %w", providerSubject, err)
 	}
 
 	return &user, nil

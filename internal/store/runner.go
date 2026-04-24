@@ -36,7 +36,7 @@ func (s *RunnerStore) Create(ctx context.Context, r *model.Runner) (*model.Runne
 
 func (s *RunnerStore) Get(ctx context.Context, id uuid.UUID) (*model.Runner, error) {
 	var r model.Runner
-	err := s.db.WithContext(ctx).Where("id = ?", id).First(&r).Error
+	err := s.db.WithContext(ctx).Scopes(WithActorRef("runners", "created_by")).Where("id = ?", id).First(&r).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, fmt.Errorf("runner not found: %s", id)
 	}
@@ -60,7 +60,7 @@ func (s *RunnerStore) GetByName(ctx context.Context, name string) (*model.Runner
 
 func (s *RunnerStore) List(ctx context.Context, scopes ...func(*gorm.DB) *gorm.DB) ([]model.Runner, error) {
 	var runners []model.Runner
-	err := s.db.WithContext(ctx).Scopes(scopes...).Find(&runners).Error
+	err := s.db.WithContext(ctx).Scopes(append(scopes, WithActorRef("runners", "created_by"))...).Find(&runners).Error
 	if err != nil {
 		return nil, fmt.Errorf("failed to list runners: %w", err)
 	}

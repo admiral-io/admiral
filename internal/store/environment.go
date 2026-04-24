@@ -37,7 +37,7 @@ func (s *EnvironmentStore) Create(ctx context.Context, env *model.Environment) (
 
 func (s *EnvironmentStore) Get(ctx context.Context, id uuid.UUID) (*model.Environment, error) {
 	var env model.Environment
-	err := s.db.WithContext(ctx).Where("id = ?", id).First(&env).Error
+	err := s.db.WithContext(ctx).Scopes(WithActorRef("environments", "created_by")).Where("id = ?", id).First(&env).Error
 
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, fmt.Errorf("environment not found: %s", id)
@@ -52,7 +52,7 @@ func (s *EnvironmentStore) Get(ctx context.Context, id uuid.UUID) (*model.Enviro
 
 func (s *EnvironmentStore) List(ctx context.Context, scopes ...func(*gorm.DB) *gorm.DB) ([]model.Environment, error) {
 	var envs []model.Environment
-	err := s.db.WithContext(ctx).Scopes(scopes...).Find(&envs).Error
+	err := s.db.WithContext(ctx).Scopes(append(scopes, WithActorRef("environments", "created_by"))...).Find(&envs).Error
 
 	if err != nil {
 		return nil, fmt.Errorf("failed to list environments: %w", err)

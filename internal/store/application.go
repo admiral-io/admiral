@@ -37,7 +37,7 @@ func (s *ApplicationStore) Create(ctx context.Context, app *model.Application) (
 
 func (s *ApplicationStore) Get(ctx context.Context, id uuid.UUID) (*model.Application, error) {
 	var app model.Application
-	err := s.db.WithContext(ctx).Where("id = ?", id).First(&app).Error
+	err := s.db.WithContext(ctx).Scopes(WithActorRef("applications", "created_by")).Where("id = ?", id).First(&app).Error
 
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, fmt.Errorf("application not found: %s", id)
@@ -52,7 +52,7 @@ func (s *ApplicationStore) Get(ctx context.Context, id uuid.UUID) (*model.Applic
 
 func (s *ApplicationStore) List(ctx context.Context, scopes ...func(*gorm.DB) *gorm.DB) ([]model.Application, error) {
 	var apps []model.Application
-	err := s.db.WithContext(ctx).Scopes(scopes...).Find(&apps).Error
+	err := s.db.WithContext(ctx).Scopes(append(scopes, WithActorRef("applications", "created_by"))...).Find(&apps).Error
 
 	if err != nil {
 		return nil, fmt.Errorf("failed to list applications: %w", err)
@@ -71,7 +71,6 @@ func (s *ApplicationStore) Update(ctx context.Context, app *model.Application, f
 		return nil, fmt.Errorf("application not found: %s", app.Id)
 	}
 
-	// Reload to get the updated record.
 	return s.Get(ctx, app.Id)
 }
 
