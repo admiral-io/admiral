@@ -68,6 +68,7 @@ used by Admiral SDKs and tooling.`,
 
 	cmd.AddCommand(
 		newMigrateCmd(opts).cmd,
+		newRotateKeysCmd(opts).cmd,
 		newStartCmd(opts).cmd,
 	)
 	root.cmd = cmd
