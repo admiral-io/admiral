@@ -132,3 +132,17 @@ func (g *Graph) TopoSort() ([][]string, error) {
 
 	return phases, nil
 }
+
+// ReverseTopoSort returns nodes grouped into phases in reverse topological
+// order. This is the execution order for destroy operations: dependents are
+// processed before their dependencies.
+func (g *Graph) ReverseTopoSort() ([][]string, error) {
+	phases, err := g.TopoSort()
+	if err != nil {
+		return nil, err
+	}
+	for i, j := 0, len(phases)-1; i < j; i, j = i+1, j-1 {
+		phases[i], phases[j] = phases[j], phases[i]
+	}
+	return phases, nil
+}

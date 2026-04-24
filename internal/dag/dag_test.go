@@ -137,6 +137,56 @@ func TestDependencies(t *testing.T) {
 	assertPhase(t, deps, []string{"cache", "db"})
 }
 
+func TestReverseTopoSort(t *testing.T) {
+	// Diamond: app depends on db and cache; db and cache depend on vpc
+	// Normal:  [[vpc], [cache, db], [app]]
+	// Reverse: [[app], [cache, db], [vpc]]
+	g := New()
+	g.AddEdge("db", "vpc")
+	g.AddEdge("cache", "vpc")
+	g.AddEdge("app", "db")
+	g.AddEdge("app", "cache")
+	phases, err := g.ReverseTopoSort()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(phases) != 3 {
+		t.Fatalf("expected 3 phases, got %d: %v", len(phases), phases)
+	}
+	assertPhase(t, phases[0], []string{"app"})
+	assertPhase(t, phases[1], []string{"cache", "db"})
+	assertPhase(t, phases[2], []string{"vpc"})
+}
+
+func TestReverseTopoSortLinear(t *testing.T) {
+	// c depends on b, b depends on a
+	// Normal:  [[a], [b], [c]]
+	// Reverse: [[c], [b], [a]]
+	g := New()
+	g.AddEdge("b", "a")
+	g.AddEdge("c", "b")
+	phases, err := g.ReverseTopoSort()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(phases) != 3 {
+		t.Fatalf("expected 3 phases, got %d: %v", len(phases), phases)
+	}
+	assertPhase(t, phases[0], []string{"c"})
+	assertPhase(t, phases[1], []string{"b"})
+	assertPhase(t, phases[2], []string{"a"})
+}
+
+func TestReverseTopoSortCycle(t *testing.T) {
+	g := New()
+	g.AddEdge("a", "b")
+	g.AddEdge("b", "a")
+	_, err := g.ReverseTopoSort()
+	if err == nil {
+		t.Fatal("expected cycle error, got nil")
+	}
+}
+
 func assertPhase(t *testing.T, got, want []string) {
 	t.Helper()
 	if len(got) != len(want) {
