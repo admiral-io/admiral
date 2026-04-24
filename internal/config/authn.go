@@ -22,6 +22,8 @@ type Authn struct {
 	SessionRefreshTTL time.Duration `yaml:"session_refresh_ttl"`
 }
 
+// UnmarshalYAML handles scopes as either a comma-separated string ("openid,email")
+// or a YAML list, since env var expansion always produces a string.
 func (a *Authn) UnmarshalYAML(unmarshal func(any) error) error {
 	type rawAuthn Authn
 	raw := rawAuthn{

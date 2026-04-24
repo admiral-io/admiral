@@ -53,7 +53,7 @@ func New(cfg *config.Config, logger *zap.Logger, _ tally.Scope) (service.Service
 		return nil, err
 	}
 
-	tokens, err := store.NewAccessTokenStore(db.GormDB())
+	tokens, err := store.NewTokenStore(db.GormDB())
 	if err != nil {
 		return nil, err
 	}

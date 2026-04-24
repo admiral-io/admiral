@@ -30,12 +30,12 @@ type OIDCProvider struct {
 	oidcVerifier     *oidc.IDTokenVerifier
 	signingKey       string
 	subjectClaim     string
-	tokenStore       *store.AccessTokenStore
+	tokenStore       *store.TokenStore
 	userStore        *store.UserStore
 	logger           *zap.Logger
 }
 
-func NewOIDCProvider(cfg *config.Config, logger *zap.Logger, tokens *store.AccessTokenStore, users *store.UserStore) (Service, error) {
+func NewOIDCProvider(cfg *config.Config, logger *zap.Logger, tokens *store.TokenStore, users *store.UserStore) (Service, error) {
 	httpClient := &http.Client{
 		Transport: &http.Transport{
 			TLSClientConfig: &tls.Config{
