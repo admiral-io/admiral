@@ -21,19 +21,17 @@ server:
     reporter_type: prometheus
 services:
   authn:
-    name: ${OAUTH2_NAME}
-    issuer: ${OAUTH2_ISSUER}
-    client_id: ${OAUTH2_CLIENT_ID}
-    client_secret: ${OAUTH2_CLIENT_SECRET}
-    scopes: ${OAUTH2_SCOPES}
-    redirect_url: ${OAUTH2_REDIRECT_URL}
-    signing_secret: ${OAUTH2_SIGNING_SECRET}
-    refresh_token_ttl: ${OAUTH2_REFRESH_TOKEN_TTL}
-  #    claim_mapping:
-  #      preferred_username: other_user_name
-  #      email: mail
-  #      groups: "cognito:groups"
-
+    name: ${AUTHN_NAME}
+    issuer: ${AUTHN_ISSUER}
+    client_id: ${AUTHN_CLIENT_ID}
+    client_secret: ${AUTHN_CLIENT_SECRET}
+    scopes: ${AUTHN_SCOPES}
+    redirect_url: ${AUTHN_REDIRECT_URL}
+    signing_secret: ${AUTHN_SIGNING_SECRET} # Min 32 chars. Generate with: openssl rand -hex 32
+    refresh_token_ttl: ${AUTHN_REFRESH_TOKEN_TTL}
+  encryption:
+    active_key: ${ENCRYPTION_ACTIVE_KEY} # Generate with: openssl rand -base64 32
+    old_key: ${ENCRYPTION_OLD_KEY}
   database:
     host: ${DATABASE_HOST}
     port: ${DATABASE_PORT}

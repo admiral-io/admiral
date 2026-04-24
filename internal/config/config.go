@@ -25,9 +25,9 @@ type Config struct {
 type Services struct {
 	Authn         *Authn         `yaml:"authn"`
 	Database      *Database      `yaml:"database"`
+	Encryption    *Encryption    `yaml:"encryption"`
 	Session       *Session       `yaml:"session"`
 	ObjectStorage *ObjectStorage `yaml:"object_storage"`
-	//Temporal      *Temporal      `yaml:"temporal"`
 }
 
 func Build(file string, envFiles []string, debug bool) (*Config, error) {
@@ -110,9 +110,9 @@ func setDefaults(cfg *Config) *Config {
 		cfg.Server,
 		cfg.Services.Authn,
 		cfg.Services.Database,
+		cfg.Services.Encryption,
 		cfg.Services.Session,
 		cfg.Services.ObjectStorage,
-		//cfg.Services.Temporal,
 	}
 
 	for _, c := range configs {
@@ -139,9 +139,9 @@ func (c *Config) validate() error {
 		{c.Server, "server", false},
 		{c.Services.Authn, "services.authn", false},
 		{c.Services.Database, "services.database", true},
+		{c.Services.Encryption, "services.encryption", true},
 		{c.Services.Session, "services.session", false},
 		{c.Services.ObjectStorage, "services.object_storage", true},
-		//{c.Services.Temporal, "services.temporal", true},
 	}
 
 	// Validate all configs
