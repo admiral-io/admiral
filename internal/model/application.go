@@ -16,10 +16,12 @@ type Application struct {
 	Name        string    `gorm:"uniqueIndex;not null"`
 	Description string    `gorm:"type:text"`
 	Labels      Labels    `gorm:"type:jsonb;default:'{}'"`
-	CreatedBy   string    `gorm:"not null"`
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
-	DeletedAt   gorm.DeletedAt `gorm:"index"`
+	CreatedBy      string    `gorm:"not null"`
+	CreatedAt      time.Time
+	UpdatedAt      time.Time
+	DeletedAt      gorm.DeletedAt `gorm:"index"`
+	CreatedByName  string         `gorm:"->;column:created_by_name"`
+	CreatedByEmail string         `gorm:"->;column:created_by_email"`
 }
 
 func (app *Application) ToProto() *applicationv1.Application {
@@ -29,7 +31,9 @@ func (app *Application) ToProto() *applicationv1.Application {
 		Description: app.Description,
 		Labels:      app.Labels,
 		CreatedBy: &commonv1.ActorRef{
-			Id: app.CreatedBy,
+			Id:          app.CreatedBy,
+			DisplayName: app.CreatedByName,
+			Email:       app.CreatedByEmail,
 		},
 		CreatedAt: timestamppb.New(app.CreatedAt),
 		UpdatedAt: timestamppb.New(app.UpdatedAt),

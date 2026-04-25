@@ -7,7 +7,6 @@ import FolderCopyOutlinedIcon from '@mui/icons-material/FolderCopyOutlined';
 import VpnKeyOutlinedIcon from '@mui/icons-material/VpnKeyOutlined';
 import DirectionsRunOutlinedIcon from '@mui/icons-material/DirectionsRunOutlined';
 import CloudOutlinedIcon from '@mui/icons-material/CloudOutlined';
-import TuneOutlinedIcon from '@mui/icons-material/TuneOutlined';
 
 import NavGroup from './components/NavGroup';
 import type { NavItemType } from './types';
@@ -68,13 +67,6 @@ const menuItems: { items: NavItemType[] } = {
           type: 'item',
           icon: FolderCopyOutlinedIcon,
           url: '/settings/sources',
-        },
-        {
-          id: 'variables',
-          title: 'Variables',
-          type: 'item',
-          icon: TuneOutlinedIcon,
-          url: '/settings/variables',
         },
       ],
     },

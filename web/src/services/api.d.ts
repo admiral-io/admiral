@@ -598,9 +598,10 @@ export interface paths {
          *      builds the dependency DAG, and begins rendering and executing revisions.
          *
          *      To destroy all resources in an environment (e.g., before deleting the
-         *      environment), set `destroy` to true. This runs Terraform destroy for
-         *      infrastructure components and deletes workload resources from the cluster,
-         *      in reverse dependency order.
+         *      environment), set `destroy` to true. This runs the engine's destroy
+         *      operation (e.g., `terraform destroy` / `tofu destroy`) for infrastructure
+         *      components and deletes workload resources from the cluster, in reverse
+         *      dependency order.
          *
          *      Concurrency: only one deployment can be active per application+environment
          *      at a time. If a deployment is already in progress (PENDING or RUNNING),
@@ -979,9 +980,9 @@ export interface paths {
         };
         /**
          * Retrieve a job bundle
-         * @description The bundle contains everything the runner needs to execute the Terraform
-         *      operation: rendered .tf files, resolved variables, provider configuration,
-         *      backend configuration, and the required Terraform version.
+         * @description The bundle contains everything the runner needs to execute the infrastructure
+         *      operation: rendered infrastructure files, resolved variables, provider
+         *      configuration, backend configuration, the target engine, and its version.
          *
          *      This endpoint is runner-facing and restricted to service access tokens.
          *
@@ -1138,6 +1139,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/runners/tokens/{token_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Retrieve a runner token
+         * @description Scope: `runner:read`
+         */
+        get: operations["RunnerAPI_GetRunnerToken"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/runners/tokens/{token_id}/revoke": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Revoke a runner token
+         * @description Scope: `runner:write`
+         */
+        post: operations["RunnerAPI_RevokeRunnerToken"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/runners/{runner.id}": {
         parameters: {
             query?: never;
@@ -1251,46 +1292,6 @@ export interface paths {
          *      Scope: `runner:write`
          */
         post: operations["RunnerAPI_CreateRunnerToken"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/runners/{runner_id}/tokens/{token_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Retrieve a runner token
-         * @description Scope: `runner:read`
-         */
-        get: operations["RunnerAPI_GetRunnerToken"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/runners/{runner_id}/tokens/{token_id}/revoke": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Revoke a runner token
-         * @description Scope: `runner:write`
-         */
-        post: operations["RunnerAPI_RevokeRunnerToken"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1659,13 +1660,10 @@ export interface paths {
         };
         /**
          * List variables
-         * @description The returned list is a resolved view based on the provided filters:
-         *        - No application_id or environment_id: global variables only.
-         *        - application_id only: global + app-level variables merged.
-         *        - application_id + environment_id: global + app + environment variables merged.
-         *
-         *      When variables with the same key exist at multiple levels, all are returned
-         *      so clients can determine precedence.
+         * @description The response is the raw union, not a precedence-resolved view: when the
+         *      same key exists at multiple levels, every entry is returned. This is
+         *      deliberate -- UIs need to show which level overrides which. Deployment
+         *      rendering applies precedence (env > app > global) automatically.
          *
          *      Scope: `var:read`
          */
@@ -3100,14 +3098,30 @@ export interface components {
         };
         /**
          * AccessToken
-         * @description AccessToken contains token metadata common to all token types (PAT, SAT).
-         *      The raw token secret is never included in this message — it is only returned
-         *      once at creation time via the `plain_text_token` field in Create responses.
+         * @description AccessToken contains metadata for an opaque access token issued by Admiral.
+         *
+         *      Admiral issues two kinds of tokens, distinguished by `token_type`:
+         *
+         *        - **Personal Access Tokens (PATs)** -- bound to a user, created by that
+         *          user via UserAPI. Scopes are user-selected at creation time. Intended
+         *          for CLI, CI, and human-driven automation.
+         *        - **Service Access Tokens (SATs)** -- bound to a cluster or runner,
+         *          created by administrators via ClusterAPI / RunnerAPI. Scopes are
+         *          auto-assigned from the resource type. Intended for long-lived agents
+         *          that authenticate as the cluster or runner itself.
+         *
+         *      The raw token secret is returned exactly once, in the `plain_text_token`
+         *      field of the Create response. This message carries only metadata; the
+         *      original secret is never retrievable after creation. The non-secret
+         *      `token_prefix` is safe to log and display.
          *
          *      Token CRUD is managed by each parent resource's API:
          *        - PATs:         UserAPI    (/v1/user/tokens)
          *        - Cluster SATs: ClusterAPI (/v1/clusters/{id}/tokens)
          *        - Runner SATs:  RunnerAPI  (/v1/runners/{id}/tokens)
+         *
+         *      IDP-issued JWTs (OAuth2/OIDC sessions) are not represented here; they are
+         *      resolved by separate middleware.
          * @example {
          *       "id": "9f8e7d6c-5b4a-3210-fedc-ba0987654321",
          *       "name": "ci-deploy-key",
@@ -3140,6 +3154,15 @@ export interface components {
              *      must start with a letter and end with an alphanumeric character (1-63 chars).
              */
             name?: string;
+            /**
+             * token_prefix
+             * @description Non-secret prefix of the token value -- the five-character brand
+             *      (`admp_` for PATs, `adms_` for SATs) followed by a short sample of
+             *      characters from the secret body (e.g., "adms_pL2m"). URL-safe and safe
+             *      to log and display. Use for incident response and audit trails without
+             *      exposing the secret.
+             */
+            token_prefix?: string;
             /**
              * token_type
              * @description The category of this token.
@@ -4297,6 +4320,32 @@ export interface components {
             deployment?: components["schemas"]["admiral.deployment.v1.Deployment"];
         };
         /**
+         * ChangeSummary
+         * @description ChangeSummary provides resource change counts from an infrastructure plan.
+         *      Engine-agnostic — the "+N / ~N / -N" shape is universal across Terraform,
+         *      OpenTofu, and similar engines.
+         */
+        "admiral.deployment.v1.ChangeSummary": {
+            /**
+             * additions
+             * Format: int32
+             * @description Number of resources to be created.
+             */
+            additions?: number;
+            /**
+             * changes
+             * Format: int32
+             * @description Number of resources to be updated in place.
+             */
+            changes?: number;
+            /**
+             * destructions
+             * Format: int32
+             * @description Number of resources to be destroyed.
+             */
+            destructions?: number;
+        };
+        /**
          * CreateDeploymentRequest
          * @description CreateDeploymentRequest triggers a new deployment.
          */
@@ -4320,10 +4369,10 @@ export interface components {
             message?: string;
             /**
              * destroy
-             * @description Destroy all resources in the environment. Runs Terraform destroy for
-             *      infra components and deletes workload resources from the cluster, in
-             *      reverse dependency order. Required before deleting an environment that
-             *      has active resources.
+             * @description Destroy all resources in the environment. Runs the engine's destroy
+             *      phase (`terraform destroy` / `tofu destroy`) for infra components and
+             *      deletes workload resources from the cluster, in reverse dependency
+             *      order. Required before deleting an environment that has active resources.
              */
             destroy?: boolean;
             /**
@@ -4354,6 +4403,12 @@ export interface components {
          *      environment. Each deployment produces one Revision per component. The
          *      deployment tracks the composite status across all revisions and provides
          *      the audit trail for what was deployed, when, and by whom.
+         *
+         *      Deployment records are immutable once created -- there is no UpdateDeployment
+         *      RPC and no `updated_at` field. The composite `status`, `revision_summary`,
+         *      and `completed_at` fields are server-maintained as revisions progress;
+         *      everything else is fixed at creation time. To change what is deployed,
+         *      create a new deployment.
          * @example {
          *       "id": "7e8f9a0b-1c2d-3e4f-5a6b-7c8d9e0f1a2b",
          *       "application_id": "a1b2c3d4-5678-9abc-def0-1234567890ab",
@@ -4410,9 +4465,10 @@ export interface components {
             /**
              * destroy
              * @description Whether this is a destroy deployment. Destroy deployments tear down all
-             *      resources in the environment: Terraform destroy for infra components,
-             *      resource deletion for workload components. Executed in reverse dependency
-             *      order. Required before an environment with active resources can be deleted.
+             *      resources in the environment: the engine's destroy phase for infra
+             *      components (`terraform destroy` / `tofu destroy`), resource deletion for
+             *      workload components. Executed in reverse dependency order. Required
+             *      before an environment with active resources can be deleted.
              */
             destroy?: boolean;
             /**
@@ -4511,13 +4567,19 @@ export interface components {
         "admiral.deployment.v1.ListDeploymentsRequest": {
             /**
              * filter
-             * @description Filter expression using the PEG filter DSL.
+             * @description Filter expression to narrow results. Uses the Admiral filter DSL.
              *
-             *      Common filter fields:
-             *        - `application_id` -- deployments for a specific application.
-             *        - `environment_id` -- deployments to a specific environment.
-             *        - `status` -- filter by deployment status.
+             *      Syntax: `field['name'] = 'value'` with AND/OR/NOT, comparison operators
+             *      (=, !=, <, >, <=, >=, ~=), and predicates (IN, BETWEEN, CONTAINS,
+             *      STARTS_WITH, ENDS_WITH, IS NULL, EXISTS).
+             *
+             *      Filterable fields:
+             *        - `application_id` -- deployments for a specific application (UUID).
+             *        - `environment_id` -- deployments to a specific environment (UUID).
+             *        - `status` -- filter by deployment status (PENDING, RUNNING, SUCCEEDED, ...).
              *        - `trigger_type` -- filter by trigger type (MANUAL, CI, DESTROY).
+             *
+             *      Example: `field['environment_id'] = '<uuid>' AND field['status'] = 'SUCCEEDED'`
              */
             filter?: string;
             /**
@@ -4623,13 +4685,16 @@ export interface components {
          * @description Revision represents an immutable, rendered artifact for a single component
          *      within a deployment. Each revision tracks the full lifecycle from rendering
          *      through execution, and stores references to the produced artifacts
-         *      (rendered manifests, Terraform plan files, etc.).
+         *      (rendered manifests, binary plan files, etc.).
          *
-         *      For infrastructure components (Terraform):
-         *        - Rendering produces .tf files and .tfvars with resolved variable values.
-         *        - `terraform plan` and `terraform apply` are executed by the assigned runner.
+         *      For infrastructure components (terraform-semantic engine -- Terraform or
+         *      OpenTofu):
+         *        - Rendering produces the infrastructure source tree (.tf files and
+         *          auto-loaded tfvars) with resolved variable values.
+         *        - The engine's plan and apply phases are executed by the assigned
+         *          runner (see JobBundle.engine for engine selection).
          *        - The plan output is stored for visibility.
-         *        - Each component has its own Terraform state.
+         *        - Each component has its own state, stored via the configured backend.
          *
          *      For workload components (Helm, Kustomize, manifests):
          *        - Rendering produces Kubernetes manifests (via helm template, kustomize
@@ -4714,14 +4779,16 @@ export interface components {
             artifact_url?: string;
             /**
              * plan_summary
-             * @description (Infrastructure only) The number of resources Terraform plans to add,
-             *      change, and destroy. Populated after planning completes.
+             * @description (Infrastructure only) The number of resources the plan will add,
+             *      change, and destroy. Populated after planning completes. Engine-agnostic:
+             *      applies to Terraform, OpenTofu, or any future engine that models changes
+             *      as create/update/delete counts.
              */
-            plan_summary?: components["schemas"]["admiral.deployment.v1.TerraformPlanSummary"];
+            plan_summary?: components["schemas"]["admiral.deployment.v1.ChangeSummary"];
             /**
              * has_plan_output
-             * @description True when plan output is available in object storage.
-             *      Fetch via GET /api/v1/deployments/{id}/revisions/{id}/plan.
+             * @description True when plan output is available in object storage. Fetch via
+             *      `GET /api/v1/deployments/{deployment_id}/revisions/{revision_id}/plan`.
              */
             has_plan_output?: boolean;
             /**
@@ -4828,30 +4895,6 @@ export interface components {
              * @description Number of revisions that have not started yet.
              */
             pending?: number;
-        };
-        /**
-         * TerraformPlanSummary
-         * @description TerraformPlanSummary provides resource change counts from a Terraform plan.
-         */
-        "admiral.deployment.v1.TerraformPlanSummary": {
-            /**
-             * additions
-             * Format: int32
-             * @description Number of resources to be created.
-             */
-            additions?: number;
-            /**
-             * changes
-             * Format: int32
-             * @description Number of resources to be updated in place.
-             */
-            changes?: number;
-            /**
-             * destructions
-             * Format: int32
-             * @description Number of resources to be destroyed.
-             */
-            destructions?: number;
         };
         /**
          * CreateEnvironmentRequest
@@ -5094,7 +5137,7 @@ export interface components {
          * InfrastructureTarget
          * @description InfrastructureTarget binds an environment to an infrastructure provisioning
          *      runtime. Each target carries type-specific configuration that references a
-         *      managed entity (e.g., a Runner for Terraform, a Connection for CloudFormation).
+         *      managed entity (e.g., a Runner for Terraform/OpenTofu).
          *
          *      At most one target per InfrastructureType is allowed per environment.
          */
@@ -5233,7 +5276,7 @@ export interface components {
          * WorkloadTarget
          * @description WorkloadTarget binds an environment to a workload runtime. Each target
          *      carries type-specific configuration that references a managed entity
-         *      (e.g., a Cluster for Kubernetes, a Connection for Cloud Run).
+         *      (e.g., a Cluster for Kubernetes).
          *
          *      At most one target per WorkloadType is allowed per environment.
          */
@@ -5644,11 +5687,6 @@ export interface components {
              */
             description?: string;
             /**
-             * kind
-             * @description The type of operations this runner executes.
-             */
-            kind?: components["schemas"]["admiral.runner.v1.RunnerKind"];
-            /**
              * labels
              * @description Arbitrary key-value labels for organizing and filtering runners.
              */
@@ -5747,6 +5785,42 @@ export interface components {
          */
         "admiral.runner.v1.DeleteRunnerResponse": Record<string, never>;
         /**
+         * Engine
+         * @description Engine identifies which infrastructure-as-code binary executes the job.
+         *      Deliberately narrow: only the terraform-semantic engines Admiral manages as
+         *      first-class citizens. Wrapper tools (e.g., terragrunt) and non-terraform-
+         *      semantic engines (Pulumi, CDK) are intentionally out of scope -- users
+         *      shell out to them via hooks if needed.
+         * @enum {string}
+         */
+        "admiral.runner.v1.Engine": "ENGINE_UNSPECIFIED" | "ENGINE_TERRAFORM" | "ENGINE_TOFU";
+        /**
+         * EngineOutput
+         * @description EngineOutput represents a single output value captured from the engine
+         *      after a successful apply (e.g., `terraform output -json` / `tofu output
+         *      -json`). Engine-agnostic: the three-field shape (value, type, sensitive)
+         *      generalizes across terraform-semantic engines.
+         */
+        "admiral.runner.v1.EngineOutput": {
+            /**
+             * value
+             * @description The output value, serialized as a string. Complex values (lists, maps)
+             *      are JSON-encoded.
+             */
+            value?: string;
+            /**
+             * type
+             * @description Engine type descriptor (e.g., "string", "number", "bool",
+             *      "list(string)", "map(string)", "object({...})").
+             */
+            type?: string;
+            /**
+             * sensitive
+             * @description Whether the engine marked this output as sensitive.
+             */
+            sensitive?: boolean;
+        };
+        /**
          * GetJobBundleRequest
          * @description GetJobBundleRequest identifies a job whose artifact bundle to fetch.
          */
@@ -5765,7 +5839,8 @@ export interface components {
         "admiral.runner.v1.GetJobBundleResponse": {
             /**
              * bundle
-             * @description The artifact bundle with everything needed to execute the TF operation.
+             * @description The artifact bundle with everything needed to execute the infrastructure
+             *      operation.
              */
             bundle?: components["schemas"]["admiral.runner.v1.JobBundle"];
         };
@@ -5830,15 +5905,13 @@ export interface components {
         };
         /**
          * GetRunnerTokenRequest
-         * @description GetRunnerTokenRequest identifies a runner SAT to retrieve.
+         * @description GetRunnerTokenRequest identifies a runner SAT to retrieve. Token IDs are
+         *      globally unique, so no runner scoping is required in the path; the server
+         *      resolves the parent runner from the token ID. Authorization is enforced
+         *      via the `runner:read` scope on the caller's token, not by path prefix --
+         *      a leaked token ID alone does not grant access.
          */
         "admiral.runner.v1.GetRunnerTokenRequest": {
-            /**
-             * runner_id
-             * Format: uuid
-             * @description The runner the token belongs to (UUID).
-             */
-            runner_id?: string;
             /**
              * token_id
              * Format: uuid
@@ -5898,6 +5971,109 @@ export interface components {
             next_heartbeat_seconds?: number;
         };
         /**
+         * Hook
+         * @description Hook is a single script hook delivered with a JobBundle. Scripts are
+         *      inlined by the server -- the runner never fetches them from elsewhere.
+         */
+        "admiral.runner.v1.Hook": {
+            /**
+             * script
+             * @description The script body to execute. Passed to the selected interpreter (see
+             *      `interpreter`). The runner closes stdin (/dev/null) so interactive
+             *      prompts cannot block execution.
+             */
+            script?: string;
+            /**
+             * timeout_seconds
+             * Format: int32
+             * @description Per-script timeout in seconds. If 0, the runner applies its built-in
+             *      default (currently 300s). A hook that exceeds its timeout is killed
+             *      and treated as a failure.
+             */
+            timeout_seconds?: number;
+            /**
+             * name
+             * @description Optional human-friendly name used in log lines and error messages
+             *      (e.g., "vault-login"). Not required to be unique.
+             */
+            name?: string;
+            /**
+             * interpreter
+             * @description Which interpreter runs `script`. UNSPECIFIED falls back to the runner's
+             *      default (currently bash). Unknown / unsupported values at runtime are
+             *      treated as a hook failure.
+             */
+            interpreter?: components["schemas"]["admiral.runner.v1.HookInterpreter"];
+        };
+        /**
+         * HookInterpreter
+         * @description HookInterpreter selects which language the runner uses to execute a hook's
+         *      script body. Deliberately narrow today -- the enum exists primarily as
+         *      forward plumbing so non-shell interpreters (Python, Node, etc.) can be
+         *      added without a breaking change if real demand emerges.
+         * @enum {string}
+         */
+        "admiral.runner.v1.HookInterpreter": "HOOK_INTERPRETER_UNSPECIFIED" | "HOOK_INTERPRETER_BASH";
+        /**
+         * Hooks
+         * @description Hooks groups the seven lifecycle extension points. Scripts within a list
+         *      run in list order. Failure behavior differs by phase:
+         *        - `before_*` hooks are fail-fast: the first non-zero exit aborts the
+         *          phase, the engine command does not run, and the job fails.
+         *        - `after_*` hooks run ONLY when the corresponding engine command
+         *          succeeded. If the engine command failed (non-zero exit), the matching
+         *          `after_*` list is skipped entirely and the job proceeds to `after_run`.
+         *          When they do run, they are run-all: every script executes regardless
+         *          of sibling failures, and individual non-zero exits are logged but do
+         *          not fail the job.
+         *        - `after_run` always runs, even when the engine command or any other
+         *          hook failed -- it is the runner's `finally` block. Also run-all.
+         */
+        "admiral.runner.v1.Hooks": {
+            /**
+             * before_init
+             * @description Scripts to run before the init phase (`terraform init` / `tofu init`).
+             *      Fail-fast.
+             */
+            before_init?: components["schemas"]["admiral.runner.v1.Hook"][];
+            /**
+             * after_init
+             * @description Scripts to run after the init phase succeeded. Run-all; skipped if
+             *      init failed.
+             */
+            after_init?: components["schemas"]["admiral.runner.v1.Hook"][];
+            /**
+             * before_plan
+             * @description Scripts to run before the plan phase (`terraform plan` / `tofu plan`;
+             *      plan and destroy-plan jobs). Fail-fast.
+             */
+            before_plan?: components["schemas"]["admiral.runner.v1.Hook"][];
+            /**
+             * after_plan
+             * @description Scripts to run after the plan phase succeeded. Run-all; skipped if
+             *      plan failed.
+             */
+            after_plan?: components["schemas"]["admiral.runner.v1.Hook"][];
+            /**
+             * before_apply
+             * @description Scripts to run before the apply phase (`terraform apply` / `tofu apply`;
+             *      apply and destroy-apply jobs). Fail-fast.
+             */
+            before_apply?: components["schemas"]["admiral.runner.v1.Hook"][];
+            /**
+             * after_apply
+             * @description Scripts to run after the apply phase succeeded. Run-all; skipped if
+             *      apply failed.
+             */
+            after_apply?: components["schemas"]["admiral.runner.v1.Hook"][];
+            /**
+             * after_run
+             * @description Scripts to run after the job completes, regardless of success or
+             *      failure. Always executed (finally-semantics). Run-all.
+             */
+            after_run?: components["schemas"]["admiral.runner.v1.Hook"][];
+        };
+        /**
          * Job
          * @description Job represents an infrastructure execution job assigned to a runner.
          *      Jobs bridge the Deployment/Revision system and the Runner execution plane.
@@ -5929,7 +6105,7 @@ export interface components {
             deployment_id?: string;
             /**
              * job_type
-             * @description The type of Terraform operation to execute.
+             * @description The type of infrastructure operation to execute.
              */
             job_type?: components["schemas"]["admiral.runner.v1.JobType"];
             /**
@@ -5955,14 +6131,16 @@ export interface components {
         };
         /**
          * JobBundle
-         * @description JobBundle contains everything a runner needs to execute a Terraform operation.
-         *      Fetched separately from ClaimJob to keep the claim response lightweight.
+         * @description JobBundle contains everything a runner needs to execute an infrastructure
+         *      operation. Fetched separately from ClaimJob to keep the claim response
+         *      lightweight.
          */
         "admiral.runner.v1.JobBundle": {
             /**
              * artifact_url
              * @description Signed URL to download the rendered artifact bundle (tar.gz containing
-             *      .tf files, .tfvars, etc.). Time-limited.
+             *      the rendered infrastructure source tree -- `.tf` files, auto-loaded
+             *      tfvars, etc.). Time-limited.
              */
             artifact_url?: string;
             /**
@@ -5972,8 +6150,16 @@ export interface components {
             artifact_checksum?: string;
             /**
              * variables
-             * @description Resolved variable values to inject as TF_VAR_* environment variables.
-             *      Sensitive values are included (runner is a trusted execution context).
+             * @description Resolved variable values written to the workspace as an auto-loaded
+             *      tfvars file. Sensitive values are included (runner is a trusted
+             *      execution context).
+             *
+             *      Encoding contract: the runner writes the map verbatim as HCL
+             *      `key = value` lines -- it does NOT re-quote strings or JSON-encode
+             *      complex types. The server is responsible for producing the correct HCL
+             *      literal for each variable's type (e.g., a string is already double-quoted,
+             *      a list is already `["a", "b"]`). Keys must match the infrastructure
+             *      module's variable names exactly.
              */
             variables?: {
                 [key: string]: string;
@@ -5988,15 +6174,32 @@ export interface components {
             };
             /**
              * backend_config
-             * @description Terraform backend configuration (JSON-encoded). Contains the backend
-             *      type and its configuration for state storage.
+             * @description Backend configuration (JSON-encoded). Contains the backend type and its
+             *      configuration for state storage. Engine-agnostic in shape; the engine's
+             *      own backend implementation consumes it.
              */
             backend_config?: string;
             /**
-             * terraform_version
-             * @description The Terraform version to use for this operation (e.g., "1.7.5").
+             * engine
+             * @description Which engine should execute this job. ENGINE_UNSPECIFIED means the
+             *      runner's default (currently terraform) is used.
              */
-            terraform_version?: string;
+            engine?: components["schemas"]["admiral.runner.v1.Engine"];
+            /**
+             * engine_version
+             * @description Version of the selected engine (e.g., "1.7.5"). When empty, the runner
+             *      uses whichever version it has pre-installed by default. When set, the
+             *      runner writes the appropriate version file (`.terraform-version` /
+             *      `.opentofu-version`) so tfenv / tofuenv dispatches to the matching
+             *      binary, downloading it on demand if not already cached.
+             *
+             *      If the runner cannot provide the requested version (download disabled,
+             *      no network egress, resolver error), the job fails fast with a
+             *      descriptive `JobResult.error_message`; the server does NOT re-route to
+             *      a different runner. Operators control which versions are permitted via
+             *      the runner image's tfenv/tofuenv configuration.
+             */
+            engine_version?: string;
             /**
              * working_directory
              * @description Subdirectory within the extracted archive where the executor should run
@@ -6008,10 +6211,19 @@ export interface components {
              * plan_file_url
              * @description (Apply/destroy-apply jobs only) URL to download the binary plan file
              *      produced by the preceding plan job. The runner downloads this file and
-             *      passes it to `terraform apply <plan_file>` to ensure the exact reviewed
-             *      plan is applied. Empty for plan jobs.
+             *      passes it to `apply <plan_file>` so the exact reviewed plan is applied.
+             *      Empty for plan jobs.
              */
             plan_file_url?: string;
+            /**
+             * hooks
+             * @description Shell-script hooks that run before and after each engine phase.
+             *      The runner invokes each hook via the Hook's selected interpreter (bash
+             *      by default) in the execution directory, with the same environment as the
+             *      engine. Hook stdout/stderr is folded into the job transcript. See the
+             *      Hooks message for per-phase failure semantics.
+             */
+            hooks?: components["schemas"]["admiral.runner.v1.Hooks"];
         };
         /** ProviderConfigsEntry */
         "admiral.runner.v1.JobBundle.ProviderConfigsEntry": {
@@ -6047,14 +6259,15 @@ export interface components {
             status?: components["schemas"]["admiral.runner.v1.JobStatus"];
             /**
              * plan_output
-             * @description (Plan jobs only) The Terraform plan output in human-readable format.
+             * @description (Plan jobs only) The engine's plan output in human-readable format
+             *      (e.g., the text emitted by `terraform plan` / `tofu plan`).
              */
             plan_output?: string;
             /**
              * plan_summary
              * @description (Plan jobs only) Summary of resource changes from the plan.
              */
-            plan_summary?: components["schemas"]["admiral.deployment.v1.TerraformPlanSummary"];
+            plan_summary?: components["schemas"]["admiral.deployment.v1.ChangeSummary"];
             /**
              * error_message
              * @description Error message if the job failed. Empty on success.
@@ -6067,17 +6280,18 @@ export interface components {
             logs_url?: string;
             /**
              * duration
-             * @description How long the Terraform operation took to execute.
+             * @description How long the infrastructure operation took to execute (engine run time,
+             *      excluding artifact download and workspace setup).
              */
             duration?: components["schemas"]["google.protobuf.Duration"];
             /**
              * outputs
-             * @description (Apply/destroy-apply jobs only) Terraform outputs captured via
-             *      `terraform output -json`. Keys are output names, values contain the
-             *      output value, type, and sensitivity flag.
+             * @description (Apply/destroy-apply jobs only) Engine outputs captured after a
+             *      successful apply (e.g., `terraform output -json`). Keys are output
+             *      names; values carry the output value, type, and sensitivity flag.
              */
             outputs?: {
-                [key: string]: components["schemas"]["admiral.runner.v1.TerraformOutput"];
+                [key: string]: components["schemas"]["admiral.runner.v1.EngineOutput"];
             };
         };
         /** OutputsEntry */
@@ -6085,7 +6299,7 @@ export interface components {
             /** key */
             key?: string;
             /** value */
-            value?: components["schemas"]["admiral.runner.v1.TerraformOutput"];
+            value?: components["schemas"]["admiral.runner.v1.EngineOutput"];
         };
         /**
          * JobStatus
@@ -6095,7 +6309,9 @@ export interface components {
         "admiral.runner.v1.JobStatus": "JOB_STATUS_UNSPECIFIED" | "JOB_STATUS_PENDING" | "JOB_STATUS_ASSIGNED" | "JOB_STATUS_RUNNING" | "JOB_STATUS_SUCCEEDED" | "JOB_STATUS_FAILED" | "JOB_STATUS_CANCELED";
         /**
          * JobType
-         * @description JobType identifies the kind of Terraform operation a job executes.
+         * @description JobType identifies the kind of infrastructure operation a job executes.
+         *      The concrete engine (Terraform or OpenTofu) is selected per job via
+         *      JobBundle.engine; the semantics of each type are identical across engines.
          * @enum {string}
          */
         "admiral.runner.v1.JobType": "JOB_TYPE_UNSPECIFIED" | "JOB_TYPE_PLAN" | "JOB_TYPE_APPLY" | "JOB_TYPE_DESTROY_PLAN" | "JOB_TYPE_DESTROY_APPLY";
@@ -6216,11 +6432,10 @@ export interface components {
              *
              *      Filterable fields:
              *        - `name` -- filter by runner name.
-             *        - `kind` -- filter by runner kind (INFRASTRUCTURE, WORKFLOW).
              *        - `health_status` -- filter by health status.
              *        - `labels.key` -- filter by label key.
              *
-             *      Example: `field['kind'] = 'INFRASTRUCTURE' AND field['health_status'] = 'HEALTHY'`
+             *      Example: `field['name'] = 'aws-prod' AND field['health_status'] = 'HEALTHY'`
              */
             filter?: string;
             /**
@@ -6281,15 +6496,13 @@ export interface components {
         };
         /**
          * RevokeRunnerTokenRequest
-         * @description RevokeRunnerTokenRequest identifies a runner SAT to revoke.
+         * @description RevokeRunnerTokenRequest identifies a runner SAT to revoke. Token IDs are
+         *      globally unique, so no runner scoping is required in the path; the server
+         *      resolves the parent runner from the token ID. Authorization is enforced
+         *      via the `runner:write` scope on the caller's token, not by path prefix --
+         *      a leaked token ID alone does not grant revocation.
          */
         "admiral.runner.v1.RevokeRunnerTokenRequest": {
-            /**
-             * runner_id
-             * Format: uuid
-             * @description The runner the token belongs to (UUID).
-             */
-            runner_id?: string;
             /**
              * token_id
              * Format: uuid
@@ -6311,8 +6524,9 @@ export interface components {
         /**
          * Runner
          * @description Runner represents a registered infrastructure execution runner within a
-         *      tenant. Runners claim and execute Terraform operations (plan, apply, destroy)
-         *      dispatched by the deployment engine.
+         *      tenant. Runners claim and execute infrastructure operations (plan, apply,
+         *      destroy) dispatched by the deployment engine, using the terraform-semantic
+         *      engine selected per job (Terraform or OpenTofu).
          * @example {
          *       "id": "b2c3d4e5-6789-0abc-def1-234567890abc",
          *       "name": "prod-terraform-runner",
@@ -6349,11 +6563,6 @@ export interface components {
              */
             description?: string;
             /**
-             * kind
-             * @description The type of operations this runner executes.
-             */
-            kind?: components["schemas"]["admiral.runner.v1.RunnerKind"];
-            /**
              * labels
              * @description Arbitrary key-value labels for organizing and filtering runners
              *      (e.g., `{"cloud": "aws", "team": "platform"}`).
@@ -6367,20 +6576,22 @@ export interface components {
              */
             health_status?: components["schemas"]["admiral.runner.v1.RunnerHealthStatus"];
             /**
-             * created_by
-             * @description The user or agent who created this runner (server-populated from token).
-             */
-            created_by?: components["schemas"]["admiral.common.v1.ActorRef"];
-            /**
              * created_at
              * @description When the runner record was created.
              */
             created_at?: components["schemas"]["google.protobuf.Timestamp"];
             /**
              * updated_at
-             * @description When the runner record was last updated.
+             * @description When the runner record was last updated via UpdateRunner. Heartbeats do
+             *      not bump this field -- liveness state is exposed separately via
+             *      RunnerStatus and health_status.
              */
             updated_at?: components["schemas"]["google.protobuf.Timestamp"];
+            /**
+             * created_by
+             * @description The user or agent who created this runner (server-populated from token).
+             */
+            created_by?: components["schemas"]["admiral.common.v1.ActorRef"];
         };
         /** LabelsEntry */
         "admiral.runner.v1.Runner.LabelsEntry": {
@@ -6397,15 +6608,6 @@ export interface components {
          */
         "admiral.runner.v1.RunnerHealthStatus": "RUNNER_HEALTH_STATUS_UNSPECIFIED" | "RUNNER_HEALTH_STATUS_PENDING" | "RUNNER_HEALTH_STATUS_HEALTHY" | "RUNNER_HEALTH_STATUS_DEGRADED" | "RUNNER_HEALTH_STATUS_UNREACHABLE";
         /**
-         * RunnerKind
-         * @description RunnerKind identifies the category of operations a runner executes. The
-         *      specific tool (Terraform, OpenTofu, Pulumi, ...) is reported per-runner via
-         *      RunnerStatus.tool_versions and is used for job-to-runner matching; the kind
-         *      itself is product-agnostic.
-         * @enum {string}
-         */
-        "admiral.runner.v1.RunnerKind": "RUNNER_KIND_UNSPECIFIED" | "RUNNER_KIND_INFRASTRUCTURE" | "RUNNER_KIND_WORKFLOW";
-        /**
          * RunnerStatus
          * @description RunnerStatus contains capacity and telemetry metrics for a runner, as
          *      reported via Heartbeat. This message is used in both the push payload
@@ -6414,6 +6616,11 @@ export interface components {
          *      Server-derived fields (health_status) are NOT included here -- they live
          *      on the Runner record and are returned alongside this message in
          *      GetRunnerStatusResponse.
+         *
+         *      Runner capabilities (which engines are installed, which credentials are
+         *      available, etc.) are operator-declared on the Runner record at registration
+         *      time -- they are NOT self-reported here. Heartbeat is purely for liveness
+         *      and capacity signals that change at runtime.
          */
         "admiral.runner.v1.RunnerStatus": {
             /**
@@ -6434,61 +6641,17 @@ export interface components {
              */
             max_concurrent_jobs?: number;
             /**
-             * available_providers
-             * @description Terraform providers available on this runner (e.g., ["aws", "google", "azurerm"]).
-             */
-            available_providers?: string[];
-            /**
-             * tool_versions
-             * @description CLI tool versions installed on this runner, detected at startup and
-             *      reported on every heartbeat. Visible to admins via GetRunnerStatus.
-             *      The server uses tool_versions to match jobs to capable runners (e.g.,
-             *      a job requiring Terraform 1.9.x will only be assigned to a runner
-             *      reporting a compatible version).
-             *      Keys are tool names (e.g., "terraform", "tofu", "helm", "kustomize", "kubectl").
-             *      Values are semantic versions (e.g., "1.7.5", "1.9.0").
-             */
-            tool_versions?: {
-                [key: string]: string;
-            };
-            /**
              * active_job_details
              * @description Details of jobs currently being executed by this runner instance. The
              *      worker thread updates job phase in shared memory; the heartbeat thread
              *      reads and includes it on each tick. Gives the server visibility into
              *      job progress for stuck-job detection and admin dashboards.
+             *
+             *      This is the complete set of jobs currently in flight on the instance --
+             *      the runner does not cap or sample this list. `len(active_job_details)`
+             *      equals `active_jobs` on every heartbeat.
              */
             active_job_details?: components["schemas"]["admiral.runner.v1.ActiveJobInfo"][];
-        };
-        /** ToolVersionsEntry */
-        "admiral.runner.v1.RunnerStatus.ToolVersionsEntry": {
-            /** key */
-            key?: string;
-            /** value */
-            value?: string;
-        };
-        /**
-         * TerraformOutput
-         * @description TerraformOutput represents a single output value from `terraform output -json`.
-         */
-        "admiral.runner.v1.TerraformOutput": {
-            /**
-             * value
-             * @description The output value, serialized as a string. Complex values (lists, maps)
-             *      are JSON-encoded.
-             */
-            value?: string;
-            /**
-             * type
-             * @description Terraform type descriptor (e.g., "string", "number", "bool",
-             *      "list(string)", "map(string)", "object({...})").
-             */
-            type?: string;
-            /**
-             * sensitive
-             * @description Whether Terraform marked this output as sensitive.
-             */
-            sensitive?: boolean;
         };
         /**
          * UpdateRunnerRequest
@@ -7831,7 +7994,10 @@ export interface components {
             /**
              * key
              * @description The variable name. Must be a valid environment variable identifier
-             *      (e.g., "DATABASE_URL", "API_KEY").
+             *      (e.g., "DATABASE_URL", "API_KEY"). Unlike Variable.key, dots are not
+             *      permitted here: dot-namespaced keys (e.g., "vpc.vpc_id") are reserved
+             *      for system-managed INFRASTRUCTURE variables captured from engine output
+             *      and cannot be created through this RPC.
              */
             key?: string;
             /**
@@ -7925,29 +8091,36 @@ export interface components {
          * ListVariablesRequest
          * @description ListVariablesRequest contains filters and pagination parameters.
          *
-         *      The filter determines which variables are included in the merged view
-         *      based on the presence of `application_id` and `environment_id` fields:
-         *        - Neither field in filter: global variables only.
-         *        - `application_id` in filter: global + app-level variables merged.
-         *        - `application_id` + `environment_id` in filter: global + app + environment
-         *          variables merged.
+         *      The `application_id` / `environment_id` filter fields also control which
+         *      levels are included in the returned union:
+         *        - Neither present: global variables only.
+         *        - `application_id` present: global + app-level variables.
+         *        - `application_id` + `environment_id` present: global + app + environment.
          *
-         *      When variables with the same key exist at multiple levels, all are returned
-         *      so clients can determine precedence.
+         *      The response returns all matching entries -- it does NOT apply precedence.
+         *      See the VariableAPI service docstring for the precedence order deployment
+         *      rendering applies (env > app > global).
          */
         "admiral.variable.v1.ListVariablesRequest": {
             /**
              * filter
-             * @description Filter expression using the PEG filter DSL.
+             * @description Filter expression to narrow results. Uses the Admiral filter DSL.
              *
-             *      Common filter fields:
-             *        - `application_id` -- scope to an application (triggers merge with
-             *          app-level variables alongside global variables).
-             *        - `environment_id` -- scope to an environment (requires application_id;
-             *          triggers merge with environment-level variables).
-             *        - `sensitive` -- filter by sensitivity.
-             *        - `type` -- filter by variable type.
-             *        - `key` -- filter by variable key (supports prefix matching).
+             *      Syntax: `field['name'] = 'value'` with AND/OR/NOT, comparison operators
+             *      (=, !=, <, >, <=, >=, ~=), and predicates (IN, BETWEEN, CONTAINS,
+             *      STARTS_WITH, ENDS_WITH, IS NULL, EXISTS).
+             *
+             *      Filterable fields:
+             *        - `application_id` -- scope to an application (UUID; also expands the
+             *          returned union to include app-level variables).
+             *        - `environment_id` -- scope to an environment (UUID; requires
+             *          application_id; also expands the union to include environment-level
+             *          variables).
+             *        - `sensitive` -- filter by sensitivity flag.
+             *        - `type` -- filter by variable type (STRING, NUMBER, BOOLEAN, COMPLEX).
+             *        - `key` -- filter by variable key (supports prefix matching via ~=).
+             *
+             *      Example: `field['application_id'] = '<uuid>' AND field['sensitive'] = 'false'`
              */
             filter?: string;
             /**
@@ -8109,8 +8282,8 @@ export interface components {
             /**
              * source
              * @description How the variable was created. USER for variables created via the API/CLI,
-             *      INFRASTRUCTURE for variables produced by terraform output capture.
-             *      Server-populated; not settable via CreateVariable.
+             *      INFRASTRUCTURE for variables produced by engine output capture (Terraform
+             *      or OpenTofu). Server-populated; not settable via CreateVariable.
              */
             source?: components["schemas"]["admiral.variable.v1.VariableSource"];
         };
@@ -9608,13 +9781,19 @@ export interface operations {
         parameters: {
             query?: {
                 /**
-                 * @description Filter expression using the PEG filter DSL.
+                 * @description Filter expression to narrow results. Uses the Admiral filter DSL.
                  *
-                 *      Common filter fields:
-                 *        - `application_id` -- deployments for a specific application.
-                 *        - `environment_id` -- deployments to a specific environment.
-                 *        - `status` -- filter by deployment status.
+                 *      Syntax: `field['name'] = 'value'` with AND/OR/NOT, comparison operators
+                 *      (=, !=, <, >, <=, >=, ~=), and predicates (IN, BETWEEN, CONTAINS,
+                 *      STARTS_WITH, ENDS_WITH, IS NULL, EXISTS).
+                 *
+                 *      Filterable fields:
+                 *        - `application_id` -- deployments for a specific application (UUID).
+                 *        - `environment_id` -- deployments to a specific environment (UUID).
+                 *        - `status` -- filter by deployment status (PENDING, RUNNING, SUCCEEDED, ...).
                  *        - `trigger_type` -- filter by trigger type (MANUAL, CI, DESTROY).
+                 *
+                 *      Example: `field['environment_id'] = '<uuid>' AND field['status'] = 'SUCCEEDED'`
                  */
                 filter?: string;
                 /** @description Maximum number of deployments to return per page. */
@@ -10528,11 +10707,10 @@ export interface operations {
                  *
                  *      Filterable fields:
                  *        - `name` -- filter by runner name.
-                 *        - `kind` -- filter by runner kind (INFRASTRUCTURE, WORKFLOW).
                  *        - `health_status` -- filter by health status.
                  *        - `labels.key` -- filter by label key.
                  *
-                 *      Example: `field['kind'] = 'INFRASTRUCTURE' AND field['health_status'] = 'HEALTHY'`
+                 *      Example: `field['name'] = 'aws-prod' AND field['health_status'] = 'HEALTHY'`
                  */
                 filter?: string;
                 /** @description Maximum number of runners to return per page. */
@@ -10577,6 +10755,63 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["admiral.runner.v1.CreateRunnerResponse"];
+                };
+            };
+        };
+    };
+    RunnerAPI_GetRunnerToken: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The unique identifier of the token (UUID). */
+                token_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["admiral.runner.v1.GetRunnerTokenResponse"];
+                };
+            };
+        };
+    };
+    RunnerAPI_RevokeRunnerToken: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The unique identifier of the token to revoke (UUID). */
+                token_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /**
+                     * token_id
+                     * Format: uuid
+                     * @description The unique identifier of the token to revoke (UUID).
+                     */
+                    token_id?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["admiral.runner.v1.RevokeRunnerTokenResponse"];
                 };
             };
         };
@@ -10812,73 +11047,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["admiral.runner.v1.CreateRunnerTokenResponse"];
-                };
-            };
-        };
-    };
-    RunnerAPI_GetRunnerToken: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description The runner the token belongs to (UUID). */
-                runner_id: string;
-                /** @description The unique identifier of the token (UUID). */
-                token_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Success */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["admiral.runner.v1.GetRunnerTokenResponse"];
-                };
-            };
-        };
-    };
-    RunnerAPI_RevokeRunnerToken: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description The runner the token belongs to (UUID). */
-                runner_id: string;
-                /** @description The unique identifier of the token to revoke (UUID). */
-                token_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    /**
-                     * runner_id
-                     * Format: uuid
-                     * @description The runner the token belongs to (UUID).
-                     */
-                    runner_id?: string;
-                    /**
-                     * token_id
-                     * Format: uuid
-                     * @description The unique identifier of the token to revoke (UUID).
-                     */
-                    token_id?: string;
-                };
-            };
-        };
-        responses: {
-            /** @description Success */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["admiral.runner.v1.RevokeRunnerTokenResponse"];
                 };
             };
         };
@@ -11490,16 +11658,23 @@ export interface operations {
         parameters: {
             query?: {
                 /**
-                 * @description Filter expression using the PEG filter DSL.
+                 * @description Filter expression to narrow results. Uses the Admiral filter DSL.
                  *
-                 *      Common filter fields:
-                 *        - `application_id` -- scope to an application (triggers merge with
-                 *          app-level variables alongside global variables).
-                 *        - `environment_id` -- scope to an environment (requires application_id;
-                 *          triggers merge with environment-level variables).
-                 *        - `sensitive` -- filter by sensitivity.
-                 *        - `type` -- filter by variable type.
-                 *        - `key` -- filter by variable key (supports prefix matching).
+                 *      Syntax: `field['name'] = 'value'` with AND/OR/NOT, comparison operators
+                 *      (=, !=, <, >, <=, >=, ~=), and predicates (IN, BETWEEN, CONTAINS,
+                 *      STARTS_WITH, ENDS_WITH, IS NULL, EXISTS).
+                 *
+                 *      Filterable fields:
+                 *        - `application_id` -- scope to an application (UUID; also expands the
+                 *          returned union to include app-level variables).
+                 *        - `environment_id` -- scope to an environment (UUID; requires
+                 *          application_id; also expands the union to include environment-level
+                 *          variables).
+                 *        - `sensitive` -- filter by sensitivity flag.
+                 *        - `type` -- filter by variable type (STRING, NUMBER, BOOLEAN, COMPLEX).
+                 *        - `key` -- filter by variable key (supports prefix matching via ~=).
+                 *
+                 *      Example: `field['application_id'] = '<uuid>' AND field['sensitive'] = 'false'`
                  */
                 filter?: string;
                 /** @description Maximum number of variables to return per page. */

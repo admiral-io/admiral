@@ -39,10 +39,11 @@ type QueryBuilder interface {
 }
 
 type queryBuilder struct {
+	table   string   // Table name for qualifying column references
 	columns []string // Whitelisted columns for filtering
 }
 
-func New(columns []string) QueryBuilder {
+func New(table string, columns []string) QueryBuilder {
 	defaultCols := []string{"id", "metadata", "created_at"}
 	colMap := map[string]bool{}
 	for _, c := range columns {
@@ -61,6 +62,7 @@ func New(columns []string) QueryBuilder {
 	}
 
 	return &queryBuilder{
+		table:   table,
 		columns: merged,
 	}
 }
@@ -97,7 +99,7 @@ func (qb *queryBuilder) ParseFilter(filter string) (string, map[string]any, erro
 			if !slices.Contains(qb.columns, k.Name) {
 				return "", nil, fmt.Errorf("query field '%s' is not whitelisted", k.Name)
 			}
-			colExpr = k.Name
+			colExpr = qb.table + "." + k.Name
 		case "meta":
 			parts := strings.Split(k.Name, ".")
 			for _, p := range parts {
@@ -184,7 +186,7 @@ func (qb *queryBuilder) PaginatedQuery(filter string, limit int32, pageToken *st
 
 			cursorTime := time.Unix(ts, 0)
 			cursorID := parts[1]
-			cursorCondition := `((created_at > @cursorTime) OR (created_at = @cursorTime AND id > @cursorID))`
+			cursorCondition := fmt.Sprintf(`((%s.created_at > @cursorTime) OR (%s.created_at = @cursorTime AND %s.id > @cursorID))`, qb.table, qb.table, qb.table)
 
 			if len(wq) > 0 {
 				wq += " AND " + cursorCondition
@@ -211,7 +213,7 @@ func (qb *queryBuilder) PaginatedQuery(filter string, limit int32, pageToken *st
 			queryLimit = limit
 		}
 
-		db = db.Order("created_at ASC, id ASC")
+		db = db.Order(qb.table + ".created_at ASC, " + qb.table + ".id ASC")
 		return db.Limit(int(queryLimit))
 	}
 }

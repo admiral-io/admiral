@@ -62,4 +62,5 @@ private/
 
 # AI
 .claude
+.cursor
 CLAUDE.md

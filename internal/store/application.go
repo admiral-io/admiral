@@ -37,7 +37,7 @@ func (s *ApplicationStore) Create(ctx context.Context, app *model.Application) (
 
 func (s *ApplicationStore) Get(ctx context.Context, id uuid.UUID) (*model.Application, error) {
 	var app model.Application
-	err := s.db.WithContext(ctx).Scopes(WithActorRef("applications", "created_by")).Where("id = ?", id).First(&app).Error
+	err := s.db.WithContext(ctx).Scopes(WithActorRef("applications", "created_by")).Where("applications.id = ?", id).Take(&app).Error
 
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, fmt.Errorf("application not found: %s", id)

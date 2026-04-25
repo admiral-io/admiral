@@ -24,7 +24,7 @@ type object struct {
 }
 
 func TestUUIDAsPrimaryKey(t *testing.T) {
-	qb := New([]string{"foo", "bar"})
+	qb := New("objects", []string{"foo", "bar"})
 	db, _ := gorm.Open(tests.DummyDialector{}, nil)
 
 	// Create an object with a UUID.
@@ -54,7 +54,7 @@ func TestUUIDAsPrimaryKey(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestMaxQueryLimit(t *testing.T) {
-	qb := New([]string{"foo", "bar"})
+	qb := New("objects", []string{"foo", "bar"})
 	db, _ := gorm.Open(tests.DummyDialector{}, nil)
 
 	testCases := []struct {
@@ -101,7 +101,7 @@ func TestMaxQueryLimit(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestMaxQueryLimitInSQL(t *testing.T) {
-	qb := New([]string{"foo", "bar"})
+	qb := New("objects", []string{"foo", "bar"})
 	db, _ := gorm.Open(tests.DummyDialector{}, nil)
 
 	t.Run("Default limit is 50 when zero is provided", func(t *testing.T) {
@@ -143,7 +143,7 @@ func TestMaxQueryLimitInSQL(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestPaginatedQueryBuilder(t *testing.T) {
-	qb := New([]string{"foo", "bar"})
+	qb := New("objects", []string{"foo", "bar"})
 	db, _ := gorm.Open(tests.DummyDialector{}, nil)
 
 	testCases := []struct {
@@ -155,7 +155,7 @@ func TestPaginatedQueryBuilder(t *testing.T) {
 		{
 			id:          "No filter",
 			input:       "",
-			expect:      "SELECT * FROM `objects` WHERE `objects`.`deleted_at` IS NULL ORDER BY created_at ASC, id ASC LIMIT ?",
+			expect:      "SELECT * FROM `objects` WHERE `objects`.`deleted_at` IS NULL ORDER BY objects.created_at ASC, objects.id ASC LIMIT ?",
 			shouldError: false,
 		},
 		{
@@ -167,67 +167,67 @@ func TestPaginatedQueryBuilder(t *testing.T) {
 		{
 			id:          "Search by field",
 			input:       "field['foo'] = value",
-			expect:      "SELECT * FROM `objects` WHERE foo = ? AND `objects`.`deleted_at` IS NULL ORDER BY created_at ASC, id ASC LIMIT ?",
+			expect:      "SELECT * FROM `objects` WHERE objects.foo = ? AND `objects`.`deleted_at` IS NULL ORDER BY objects.created_at ASC, objects.id ASC LIMIT ?",
 			shouldError: false,
 		},
 		{
 			id:          "Search by quoted field",
 			input:       "field['foo'] = 'value'",
-			expect:      "SELECT * FROM `objects` WHERE foo = ? AND `objects`.`deleted_at` IS NULL ORDER BY created_at ASC, id ASC LIMIT ?",
+			expect:      "SELECT * FROM `objects` WHERE objects.foo = ? AND `objects`.`deleted_at` IS NULL ORDER BY objects.created_at ASC, objects.id ASC LIMIT ?",
 			shouldError: false,
 		},
 		{
 			id:          "Search by multiple fields",
 			input:       "field['foo'] = value1 field['bar'] = value2",
-			expect:      "SELECT * FROM `objects` WHERE (foo = ? AND bar = ?) AND `objects`.`deleted_at` IS NULL ORDER BY created_at ASC, id ASC LIMIT ?",
+			expect:      "SELECT * FROM `objects` WHERE (objects.foo = ? AND objects.bar = ?) AND `objects`.`deleted_at` IS NULL ORDER BY objects.created_at ASC, objects.id ASC LIMIT ?",
 			shouldError: false,
 		},
 		{
 			id:          "Search by substring",
 			input:       "field['foo'] ~= value",
-			expect:      "SELECT * FROM `objects` WHERE foo ILIKE ? AND `objects`.`deleted_at` IS NULL ORDER BY created_at ASC, id ASC LIMIT ?",
+			expect:      "SELECT * FROM `objects` WHERE objects.foo ILIKE ? AND `objects`.`deleted_at` IS NULL ORDER BY objects.created_at ASC, objects.id ASC LIMIT ?",
 			shouldError: false,
 		},
 		{
 			id:          "Numeric equality",
 			input:       "field['foo'] = 0",
-			expect:      "SELECT * FROM `objects` WHERE foo = ? AND `objects`.`deleted_at` IS NULL ORDER BY created_at ASC, id ASC LIMIT ?",
+			expect:      "SELECT * FROM `objects` WHERE objects.foo = ? AND `objects`.`deleted_at` IS NULL ORDER BY objects.created_at ASC, objects.id ASC LIMIT ?",
 			shouldError: false,
 		},
 		{
 			id:          "Numeric less than",
 			input:       "field['foo'] < 0",
-			expect:      "SELECT * FROM `objects` WHERE foo < ? AND `objects`.`deleted_at` IS NULL ORDER BY created_at ASC, id ASC LIMIT ?",
+			expect:      "SELECT * FROM `objects` WHERE objects.foo < ? AND `objects`.`deleted_at` IS NULL ORDER BY objects.created_at ASC, objects.id ASC LIMIT ?",
 			shouldError: false,
 		},
 		{
 			id:          "Numeric less than or equal",
 			input:       "field['foo'] <= 0",
-			expect:      "SELECT * FROM `objects` WHERE foo <= ? AND `objects`.`deleted_at` IS NULL ORDER BY created_at ASC, id ASC LIMIT ?",
+			expect:      "SELECT * FROM `objects` WHERE objects.foo <= ? AND `objects`.`deleted_at` IS NULL ORDER BY objects.created_at ASC, objects.id ASC LIMIT ?",
 			shouldError: false,
 		},
 		{
 			id:          "Numeric greater than",
 			input:       "field['foo'] > 0",
-			expect:      "SELECT * FROM `objects` WHERE foo > ? AND `objects`.`deleted_at` IS NULL ORDER BY created_at ASC, id ASC LIMIT ?",
+			expect:      "SELECT * FROM `objects` WHERE objects.foo > ? AND `objects`.`deleted_at` IS NULL ORDER BY objects.created_at ASC, objects.id ASC LIMIT ?",
 			shouldError: false,
 		},
 		{
 			id:          "Numeric greater than or equal",
 			input:       "field['foo'] >= 0",
-			expect:      "SELECT * FROM `objects` WHERE foo >= ? AND `objects`.`deleted_at` IS NULL ORDER BY created_at ASC, id ASC LIMIT ?",
+			expect:      "SELECT * FROM `objects` WHERE objects.foo >= ? AND `objects`.`deleted_at` IS NULL ORDER BY objects.created_at ASC, objects.id ASC LIMIT ?",
 			shouldError: false,
 		},
 		{
 			id:          "Not equal operator",
 			input:       "field['foo'] != 'bar'",
-			expect:      "SELECT * FROM `objects` WHERE foo != ? AND `objects`.`deleted_at` IS NULL ORDER BY created_at ASC, id ASC LIMIT ?",
+			expect:      "SELECT * FROM `objects` WHERE objects.foo != ? AND `objects`.`deleted_at` IS NULL ORDER BY objects.created_at ASC, objects.id ASC LIMIT ?",
 			shouldError: false,
 		},
 		{
 			id:          "Multiple fields with AND keyword",
 			input:       "field['foo'] = 'value1' AND field['bar'] = 'value2'",
-			expect:      "SELECT * FROM `objects` WHERE (foo = ? AND bar = ?) AND `objects`.`deleted_at` IS NULL ORDER BY created_at ASC, id ASC LIMIT ?",
+			expect:      "SELECT * FROM `objects` WHERE (objects.foo = ? AND objects.bar = ?) AND `objects`.`deleted_at` IS NULL ORDER BY objects.created_at ASC, objects.id ASC LIMIT ?",
 			shouldError: false,
 		},
 		{
@@ -261,7 +261,7 @@ func TestPaginatedQueryBuilder(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestParseFilter(t *testing.T) {
-	queryBuilder := New([]string{"foo", "bar"})
+	queryBuilder := New("objects", []string{"foo", "bar"})
 
 	testCases := []struct {
 		id           string
@@ -285,119 +285,119 @@ func TestParseFilter(t *testing.T) {
 		{
 			id:           "Search by field",
 			input:        "field['foo'] = value",
-			expectQuery:  "foo = @p0",
+			expectQuery:  "objects.foo = @p0",
 			expectValues: map[string]interface{}{"p0": "value"},
 			shouldError:  false,
 		},
 		{
 			id:           "Search by double-quoted field key",
 			input:        `field[ "foo" ] = "value"`,
-			expectQuery:  "foo = @p0",
+			expectQuery:  "objects.foo = @p0",
 			expectValues: map[string]interface{}{"p0": "value"},
 			shouldError:  false,
 		},
 		{
 			id:           "Search by single quoted field",
 			input:        "field['foo'] = 'value'",
-			expectQuery:  "foo = @p0",
+			expectQuery:  "objects.foo = @p0",
 			expectValues: map[string]interface{}{"p0": "value"},
 			shouldError:  false,
 		},
 		{
 			id:           "Search by multiple fields",
 			input:        "field['foo'] = 'value1' field['bar'] = 'value2'",
-			expectQuery:  "foo = @p0 AND bar = @p1",
+			expectQuery:  "objects.foo = @p0 AND objects.bar = @p1",
 			expectValues: map[string]interface{}{"p0": "value1", "p1": "value2"},
 			shouldError:  false,
 		},
 		{
 			id:           "Search by substring",
 			input:        "field['foo'] ~= 'value'",
-			expectQuery:  "foo ILIKE @p0",
+			expectQuery:  "objects.foo ILIKE @p0",
 			expectValues: map[string]interface{}{"p0": "%value%"},
 			shouldError:  false,
 		},
 		{
 			id:           "Search by uuid",
 			input:        "field['foo'] = '258e4d48-0369-4287-a375-4a496718d174'",
-			expectQuery:  "foo = @p0",
+			expectQuery:  "objects.foo = @p0",
 			expectValues: map[string]interface{}{"p0": "258e4d48-0369-4287-a375-4a496718d174"},
 			shouldError:  false,
 		},
 		{
 			id:           "Numeric equality",
 			input:        "field['foo'] = 0",
-			expectQuery:  "foo = @p0",
+			expectQuery:  "objects.foo = @p0",
 			expectValues: map[string]interface{}{"p0": int64(0)},
 			shouldError:  false,
 		},
 		{
 			id:           "Numeric less than",
 			input:        "field['foo'] < 0",
-			expectQuery:  "foo < @p0",
+			expectQuery:  "objects.foo < @p0",
 			expectValues: map[string]interface{}{"p0": int64(0)},
 			shouldError:  false,
 		},
 		{
 			id:           "Numeric less than or equal",
 			input:        "field['foo'] <= 0",
-			expectQuery:  "foo <= @p0",
+			expectQuery:  "objects.foo <= @p0",
 			expectValues: map[string]interface{}{"p0": int64(0)},
 			shouldError:  false,
 		},
 		{
 			id:           "Numeric greater than",
 			input:        "field['foo'] > 0",
-			expectQuery:  "foo > @p0",
+			expectQuery:  "objects.foo > @p0",
 			expectValues: map[string]interface{}{"p0": int64(0)},
 			shouldError:  false,
 		},
 		{
 			id:           "Numeric greater than or equal",
 			input:        "field['foo'] >= 0",
-			expectQuery:  "foo >= @p0",
+			expectQuery:  "objects.foo >= @p0",
 			expectValues: map[string]interface{}{"p0": int64(0)},
 			shouldError:  false,
 		},
 		{
 			id:           "Not equal operator",
 			input:        "field['foo'] != 'bar'",
-			expectQuery:  "foo != @p0",
+			expectQuery:  "objects.foo != @p0",
 			expectValues: map[string]interface{}{"p0": "bar"},
 			shouldError:  false,
 		},
 		{
 			id:           "Explicit AND keyword",
 			input:        "field['foo'] = 'a' AND field['bar'] = 'b'",
-			expectQuery:  "foo = @p0 AND bar = @p1",
+			expectQuery:  "objects.foo = @p0 AND objects.bar = @p1",
 			expectValues: map[string]interface{}{"p0": "a", "p1": "b"},
 			shouldError:  false,
 		},
 		{
 			id:           "Case-insensitive AND keyword",
 			input:        "field['foo'] = 'a' and field['bar'] = 'b'",
-			expectQuery:  "foo = @p0 AND bar = @p1",
+			expectQuery:  "objects.foo = @p0 AND objects.bar = @p1",
 			expectValues: map[string]interface{}{"p0": "a", "p1": "b"},
 			shouldError:  false,
 		},
 		{
 			id:           "Integer value parsed as int64",
 			input:        "field['foo'] = 42",
-			expectQuery:  "foo = @p0",
+			expectQuery:  "objects.foo = @p0",
 			expectValues: map[string]interface{}{"p0": int64(42)},
 			shouldError:  false,
 		},
 		{
 			id:           "Float value with decimal",
 			input:        "field['foo'] = 3.14",
-			expectQuery:  "foo = @p0",
+			expectQuery:  "objects.foo = @p0",
 			expectValues: map[string]interface{}{"p0": float64(3.14)},
 			shouldError:  false,
 		},
 		{
 			id:           "Float value with exponent",
 			input:        "field['foo'] = 1e5",
-			expectQuery:  "foo = @p0",
+			expectQuery:  "objects.foo = @p0",
 			expectValues: map[string]interface{}{"p0": float64(100000)},
 			shouldError:  false,
 		},
@@ -421,7 +421,7 @@ func TestParseFilter(t *testing.T) {
 		{
 			id:           "Duplicate field names produce distinct params",
 			input:        "field['foo'] > 10 field['foo'] < 20",
-			expectQuery:  "foo > @p0 AND foo < @p1",
+			expectQuery:  "objects.foo > @p0 AND objects.foo < @p1",
 			expectValues: map[string]interface{}{"p0": int64(10), "p1": int64(20)},
 			shouldError:  false,
 		},
@@ -436,63 +436,63 @@ func TestParseFilter(t *testing.T) {
 		{
 			id:           "Boolean true value",
 			input:        "field['foo'] = true",
-			expectQuery:  "foo = @p0",
+			expectQuery:  "objects.foo = @p0",
 			expectValues: map[string]interface{}{"p0": true},
 			shouldError:  false,
 		},
 		{
 			id:           "Boolean false value",
 			input:        "field['foo'] = false",
-			expectQuery:  "foo = @p0",
+			expectQuery:  "objects.foo = @p0",
 			expectValues: map[string]interface{}{"p0": false},
 			shouldError:  false,
 		},
 		{
 			id:           "Case-insensitive boolean TRUE",
 			input:        "field['foo'] = TRUE",
-			expectQuery:  "foo = @p0",
+			expectQuery:  "objects.foo = @p0",
 			expectValues: map[string]interface{}{"p0": true},
 			shouldError:  false,
 		},
 		{
 			id:           "Negative integer",
 			input:        "field['foo'] = -42",
-			expectQuery:  "foo = @p0",
+			expectQuery:  "objects.foo = @p0",
 			expectValues: map[string]interface{}{"p0": int64(-42)},
 			shouldError:  false,
 		},
 		{
 			id:           "Negative float",
 			input:        "field['foo'] = -3.14",
-			expectQuery:  "foo = @p0",
+			expectQuery:  "objects.foo = @p0",
 			expectValues: map[string]interface{}{"p0": float64(-3.14)},
 			shouldError:  false,
 		},
 		{
 			id:           "Double-quoted string value",
 			input:        `field['foo'] = "hello world"`,
-			expectQuery:  "foo = @p0",
+			expectQuery:  "objects.foo = @p0",
 			expectValues: map[string]interface{}{"p0": "hello world"},
 			shouldError:  false,
 		},
 		{
 			id:           "Escaped single quote in value",
 			input:        "field['foo'] = 'it\\'s here'",
-			expectQuery:  "foo = @p0",
+			expectQuery:  "objects.foo = @p0",
 			expectValues: map[string]interface{}{"p0": "it's here"},
 			shouldError:  false,
 		},
 		{
 			id:           "Escaped double quote in value",
 			input:        `field['foo'] = "say \"hi\""`,
-			expectQuery:  "foo = @p0",
+			expectQuery:  "objects.foo = @p0",
 			expectValues: map[string]interface{}{"p0": `say "hi"`},
 			shouldError:  false,
 		},
 		{
 			id:           "Identifier value with dots",
 			input:        "field['foo'] = some.dotted.value",
-			expectQuery:  "foo = @p0",
+			expectQuery:  "objects.foo = @p0",
 			expectValues: map[string]interface{}{"p0": "some.dotted.value"},
 			shouldError:  false,
 		},
@@ -536,28 +536,28 @@ func TestParseFilter(t *testing.T) {
 		{
 			id:           "Default column created_at is filterable",
 			input:        "field['created_at'] > '2024-01-01'",
-			expectQuery:  "created_at > @p0",
+			expectQuery:  "objects.created_at > @p0",
 			expectValues: map[string]interface{}{"p0": "2024-01-01"},
 			shouldError:  false,
 		},
 		{
 			id:           "Default column id with non-UUID uses exact match",
 			input:        "field['id'] = 'somevalue'",
-			expectQuery:  "id = @p0",
+			expectQuery:  "objects.id = @p0",
 			expectValues: map[string]interface{}{"p0": "somevalue"},
 			shouldError:  false,
 		},
 		{
 			id:           "Default column id with UUID uses exact match",
 			input:        "field['id'] = '550e8400-e29b-41d4-a716-446655440000'",
-			expectQuery:  "id = @p0",
+			expectQuery:  "objects.id = @p0",
 			expectValues: map[string]interface{}{"p0": "550e8400-e29b-41d4-a716-446655440000"},
 			shouldError:  false,
 		},
 		{
 			id:           "Default column metadata is filterable as plain field",
 			input:        "field['metadata'] = 'test'",
-			expectQuery:  "metadata = @p0",
+			expectQuery:  "objects.metadata = @p0",
 			expectValues: map[string]interface{}{"p0": "test"},
 			shouldError:  false,
 		},
@@ -613,7 +613,7 @@ func TestParseFilter(t *testing.T) {
 		{
 			id:           "Three fields with mixed operators",
 			input:        "field['foo'] = 'a' AND field['bar'] > 10 AND field['id'] = '550e8400-e29b-41d4-a716-446655440000'",
-			expectQuery:  "foo = @p0 AND bar > @p1 AND id = @p2",
+			expectQuery:  "objects.foo = @p0 AND objects.bar > @p1 AND objects.id = @p2",
 			expectValues: map[string]interface{}{"p0": "a", "p1": int64(10), "p2": "550e8400-e29b-41d4-a716-446655440000"},
 			shouldError:  false,
 		},
@@ -640,7 +640,7 @@ func TestParseFilter(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestNewDefaultColumns(t *testing.T) {
-	qb := New([]string{"foo"})
+	qb := New("objects", []string{"foo"})
 
 	defaultCols := []string{"id", "metadata", "created_at"}
 	for _, col := range defaultCols {
@@ -668,7 +668,7 @@ func TestNewDefaultColumns(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestNewDeduplicatesDefaultColumns(t *testing.T) {
-	qb := New([]string{"id", "foo"})
+	qb := New("objects", []string{"id", "foo"})
 
 	_, _, err := qb.ParseFilter("field['id'] = '550e8400-e29b-41d4-a716-446655440000'")
 	assert.NoError(t, err)
@@ -683,7 +683,7 @@ func TestNewDeduplicatesDefaultColumns(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestPaginatedQueryPageToken(t *testing.T) {
-	qb := New([]string{"foo", "bar"})
+	qb := New("objects", []string{"foo", "bar"})
 	db, _ := gorm.Open(tests.DummyDialector{}, nil)
 
 	makeToken := func(payload string) *string {
@@ -701,7 +701,7 @@ func TestPaginatedQueryPageToken(t *testing.T) {
 		assert.Contains(t, sql, "created_at >")
 		assert.Contains(t, sql, "created_at =")
 		assert.Contains(t, sql, "id >")
-		assert.Contains(t, sql, "ORDER BY created_at ASC, id ASC")
+		assert.Contains(t, sql, "ORDER BY objects.created_at ASC, objects.id ASC")
 	})
 
 	t.Run("Valid page token with filter", func(t *testing.T) {
@@ -779,7 +779,7 @@ func TestPaginatedQueryPageToken(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestPaginatedQueryPageTokenEdgeCases(t *testing.T) {
-	qb := New([]string{"foo"})
+	qb := New("objects", []string{"foo"})
 	db, _ := gorm.Open(tests.DummyDialector{}, nil)
 
 	t.Run("Page token with pipe in cursor ID treats remainder as ID", func(t *testing.T) {
@@ -805,7 +805,7 @@ func TestPaginatedQueryPageTokenEdgeCases(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestPaginatedQueryOrdering(t *testing.T) {
-	qb := New([]string{"foo"})
+	qb := New("objects", []string{"foo"})
 	db, _ := gorm.Open(tests.DummyDialector{}, nil)
 
 	q := db.Session(&gorm.Session{DryRun: true}).
@@ -814,7 +814,7 @@ func TestPaginatedQueryOrdering(t *testing.T) {
 	require.NoError(t, q.Error)
 
 	sql := q.Statement.SQL.String()
-	assert.Contains(t, sql, "ORDER BY created_at ASC, id ASC")
+	assert.Contains(t, sql, "ORDER BY objects.created_at ASC, objects.id ASC")
 }
 
 // ---------------------------------------------------------------------------
@@ -822,7 +822,7 @@ func TestPaginatedQueryOrdering(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func FuzzParseFilter(f *testing.F) {
-	qb := New([]string{"foo", "bar", "baz", "name", "value"})
+	qb := New("objects", []string{"foo", "bar", "baz", "name", "value"})
 
 	// Seed the fuzzer with known good and bad inputs
 	testCases := []string{

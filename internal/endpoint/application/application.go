@@ -49,7 +49,7 @@ func New(_ *config.Config, log *zap.Logger, scope tally.Scope) (endpoint.Endpoin
 		store:  appStore,
 		logger: log.Named(Name),
 		scope:  scope.SubScope("application"),
-		qb:     querybuilder.New(filterColumns),
+		qb:     querybuilder.New("applications", filterColumns),
 	}, nil
 }
 
@@ -89,7 +89,7 @@ func (a *api) CreateApplication(ctx context.Context, req *applicationv1.CreateAp
 func (a *api) GetApplication(ctx context.Context, req *applicationv1.GetApplicationRequest) (*applicationv1.GetApplicationResponse, error) {
 	id, err := uuid.Parse(req.GetApplicationId())
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "invalid application ID: %v", err)
+		return nil, status.Errorf(codes.InvalidArgument, "invalid application id: %v", err)
 	}
 
 	app, err := a.store.Get(ctx, id)
@@ -105,8 +105,7 @@ func (a *api) GetApplication(ctx context.Context, req *applicationv1.GetApplicat
 func (a *api) ListApplications(ctx context.Context, req *applicationv1.ListApplicationsRequest) (*applicationv1.ListApplicationsResponse, error) {
 	var pageToken *string
 	if req.GetPageToken() != "" {
-		pt := req.GetPageToken()
-		pageToken = &pt
+		pageToken = new(req.GetPageToken())
 	}
 
 	apps, err := a.store.List(ctx, a.qb.PaginatedQuery(req.GetFilter(), req.GetPageSize(), pageToken))
