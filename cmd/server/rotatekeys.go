@@ -101,7 +101,7 @@ Use --status to see how many credentials use each key without making changes.`,
 
 func classifyCredentials(db *gorm.DB) (*keyStatus, []model.Credential, error) {
 	var creds []model.Credential
-	if err := db.Find(&creds).Error; err != nil {
+	if err := db.Unscoped().Find(&creds).Error; err != nil {
 		return nil, nil, fmt.Errorf("failed to load credentials: %w", err)
 	}
 

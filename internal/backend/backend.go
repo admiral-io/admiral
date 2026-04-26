@@ -43,10 +43,11 @@ type FetchOptions struct {
 
 // FetchResult describes successfully materialized source content.
 type FetchResult struct {
-	Dir      string // filesystem path containing the content
-	Revision string // resolved identifier (e.g., commit SHA)
-	Digest   string // content-addressing digest (e.g., "sha1:<commit>")
-	Cleanup  func() // caller MUST invoke when done
+	Dir              string // filesystem path containing the content
+	WorkingDirectory string // relative path within Dir the agent should chdir into
+	Revision         string // resolved identifier (e.g., commit SHA)
+	Digest           string // content-addressing digest (e.g., "sha1:<commit>")
+	Cleanup          func() // caller MUST invoke when done
 }
 
 // Version describes a single published version of a source's artifact.

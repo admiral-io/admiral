@@ -3,6 +3,7 @@ package environment
 import (
 	"context"
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"time"
 
@@ -28,17 +29,14 @@ const Name = "endpoint.environment"
 var filterColumns = []string{"name", "application_id"}
 
 type api struct {
-	store          *store.EnvironmentStore
-	componentStore *store.ComponentStore
-	overrideStore  *store.ComponentOverrideStore
-	revisionStore  *store.RevisionStore
-	qb             querybuilder.QueryBuilder
-	logger         *zap.Logger
-	scope          tally.Scope
+	store  *store.EnvironmentStore
+	qb     querybuilder.QueryBuilder
+	logger *zap.Logger
+	scope  tally.Scope
 }
 
 func New(_ *config.Config, log *zap.Logger, scope tally.Scope) (endpoint.Endpoint, error) {
-	db, err := service.GetService[database.Service]("service.database")
+	db, err := service.GetService[database.Service](database.Name)
 	if err != nil {
 		return nil, err
 	}
@@ -47,27 +45,12 @@ func New(_ *config.Config, log *zap.Logger, scope tally.Scope) (endpoint.Endpoin
 	if err != nil {
 		return nil, err
 	}
-	componentStore, err := store.NewComponentStore(db.GormDB())
-	if err != nil {
-		return nil, err
-	}
-	overrideStore, err := store.NewComponentOverrideStore(db.GormDB())
-	if err != nil {
-		return nil, err
-	}
-	revisionStore, err := store.NewRevisionStore(db.GormDB())
-	if err != nil {
-		return nil, err
-	}
 
 	return &api{
-		store:          envStore,
-		componentStore: componentStore,
-		overrideStore:  overrideStore,
-		revisionStore:  revisionStore,
-		logger:         log.Named(Name),
+		store:  envStore,
+		logger: log.Named(Name),
 		scope:  scope.SubScope("environment"),
-		qb:     querybuilder.New(filterColumns),
+		qb:     querybuilder.New("environments", filterColumns),
 	}, nil
 }
 
@@ -113,7 +96,11 @@ func (a *api) GetEnvironment(ctx context.Context, req *environmentv1.GetEnvironm
 		return nil, status.Errorf(codes.NotFound, "environment not found: %s", id)
 	}
 
-	env.HasPendingChanges = a.computePendingChanges(ctx, env.ApplicationId, env.Id)
+	pending, err := a.store.HasPendingChanges(ctx, env.ApplicationId, env.Id)
+	if err != nil {
+		a.logger.Warn("failed to compute pending changes", zap.String("environment_id", id.String()), zap.Error(err))
+	}
+	env.HasPendingChanges = pending
 
 	return &environmentv1.GetEnvironmentResponse{
 		Environment: env.ToProto(),
@@ -134,7 +121,11 @@ func (a *api) ListEnvironments(ctx context.Context, req *environmentv1.ListEnvir
 
 	resp := &environmentv1.ListEnvironmentsResponse{}
 	for i := range envs {
-		envs[i].HasPendingChanges = a.computePendingChanges(ctx, envs[i].ApplicationId, envs[i].Id)
+		pending, err := a.store.HasPendingChanges(ctx, envs[i].ApplicationId, envs[i].Id)
+		if err != nil {
+			a.logger.Warn("failed to compute pending changes", zap.String("environment_id", envs[i].Id.String()), zap.Error(err))
+		}
+		envs[i].HasPendingChanges = pending
 		resp.Environments = append(resp.Environments, envs[i].ToProto())
 	}
 
@@ -213,87 +204,20 @@ func (a *api) DeleteEnvironment(ctx context.Context, req *environmentv1.DeleteEn
 		return nil, status.Errorf(codes.InvalidArgument, "invalid environment ID: %v", err)
 	}
 
-	if err := a.store.Delete(ctx, id); err != nil {
-		return nil, status.Errorf(codes.NotFound, "environment not found: %s", id)
+	deploymentsDeleted, err := a.store.DeleteCascade(ctx, id, req.GetForce())
+	if err != nil {
+		if depErr, ok := errors.AsType[*store.HasDependentsError](err); ok {
+			return nil, status.Errorf(codes.FailedPrecondition, "%s", depErr.Error())
+		}
+		return nil, status.Errorf(codes.Internal, "failed to delete environment: %v", err)
+	}
+
+	if deploymentsDeleted > 0 {
+		a.logger.Info("force-deleted environment",
+			zap.String("environment_id", id.String()),
+			zap.Int64("deployments_deleted", deploymentsDeleted),
+		)
 	}
 
 	return &environmentv1.DeleteEnvironmentResponse{}, nil
-}
-
-// computePendingChanges returns true if any component in the application has
-// configuration that differs from its last successfully deployed revision in
-// this environment. Compares module_id, version, and values_template (after
-// override merge) against the last SUCCEEDED revision's snapshot.
-func (a *api) computePendingChanges(ctx context.Context, applicationID, environmentID uuid.UUID) bool {
-	components, err := a.componentStore.ListByApplicationID(ctx, applicationID)
-	if err != nil {
-		a.logger.Warn("pending changes: failed to list components",
-			zap.String("application_id", applicationID.String()),
-			zap.Error(err))
-		return false
-	}
-	if len(components) == 0 {
-		return false
-	}
-
-	overrides, err := a.overrideStore.ListByApplicationEnv(ctx, applicationID, environmentID)
-	if err != nil {
-		a.logger.Warn("pending changes: failed to list overrides",
-			zap.Error(err))
-		return false
-	}
-	overrideMap := make(map[uuid.UUID]*model.ComponentOverride, len(overrides))
-	for i := range overrides {
-		overrideMap[overrides[i].ComponentId] = &overrides[i]
-	}
-
-	lastDeployed, err := a.revisionStore.LastDeployedByAppEnv(ctx, applicationID, environmentID)
-	if err != nil {
-		a.logger.Warn("pending changes: failed to query last deployed",
-			zap.Error(err))
-		return false
-	}
-
-	// If nothing has ever been deployed, any component means pending changes.
-	if len(lastDeployed) == 0 && len(components) > 0 {
-		return true
-	}
-
-	for i := range components {
-		comp := components[i]
-		if comp.Kind != model.ComponentKindInfrastructure {
-			continue
-		}
-
-		// Apply environment override.
-		if o, ok := overrideMap[comp.Id]; ok {
-			if o.ApplyToModel(&comp) {
-				// Component is disabled for this environment. If it was
-				// previously deployed, that's a pending change.
-				if _, wasDeployed := lastDeployed[comp.Id]; wasDeployed {
-					return true
-				}
-				continue
-			}
-		}
-
-		rev, ok := lastDeployed[comp.Id]
-		if !ok {
-			// Component exists but has never been deployed here.
-			return true
-		}
-
-		// Compare the fields that matter for deployment.
-		if comp.ModuleId != rev.ModuleId {
-			return true
-		}
-		if comp.Version != rev.Version {
-			return true
-		}
-		if comp.ValuesTemplate != rev.ResolvedValues {
-			return true
-		}
-	}
-
-	return false
 }

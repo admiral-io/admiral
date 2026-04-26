@@ -3,6 +3,7 @@ package application
 import (
 	"context"
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"time"
 
@@ -35,7 +36,7 @@ type api struct {
 }
 
 func New(_ *config.Config, log *zap.Logger, scope tally.Scope) (endpoint.Endpoint, error) {
-	db, err := service.GetService[database.Service]("service.database")
+	db, err := service.GetService[database.Service](database.Name)
 	if err != nil {
 		return nil, err
 	}
@@ -187,8 +188,20 @@ func (a *api) DeleteApplication(ctx context.Context, req *applicationv1.DeleteAp
 		return nil, status.Errorf(codes.InvalidArgument, "invalid application ID: %v", err)
 	}
 
-	if err := a.store.Delete(ctx, id); err != nil {
-		return nil, status.Errorf(codes.NotFound, "application not found: %s", id)
+	result, err := a.store.DeleteCascade(ctx, id, req.GetForce())
+	if err != nil {
+		if depErr, ok := errors.AsType[*store.HasDependentsError](err); ok {
+			return nil, status.Errorf(codes.FailedPrecondition, "%s", depErr.Error())
+		}
+		return nil, status.Errorf(codes.Internal, "failed to delete application: %v", err)
+	}
+
+	if result.Environments > 0 || result.Deployments > 0 {
+		a.logger.Info("force-deleted application",
+			zap.String("application_id", id.String()),
+			zap.Int64("environments_deleted", result.Environments),
+			zap.Int64("deployments_deleted", result.Deployments),
+		)
 	}
 
 	return &applicationv1.DeleteApplicationResponse{}, nil

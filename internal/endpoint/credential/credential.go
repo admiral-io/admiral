@@ -20,6 +20,7 @@ import (
 	"go.admiral.io/admiral/internal/service"
 	"go.admiral.io/admiral/internal/service/authn"
 	"go.admiral.io/admiral/internal/service/database"
+	"go.admiral.io/admiral/internal/service/encryption"
 	"go.admiral.io/admiral/internal/store"
 	credentialv1 "go.admiral.io/sdk/proto/admiral/credential/v1"
 )
@@ -37,12 +38,17 @@ type api struct {
 }
 
 func New(_ *config.Config, log *zap.Logger, scope tally.Scope) (endpoint.Endpoint, error) {
-	db, err := service.GetService[database.Service]("service.database")
+	db, err := service.GetService[database.Service](database.Name)
 	if err != nil {
 		return nil, err
 	}
 
-	credStore, err := store.NewCredentialStore(db.GormDB())
+	enc, err := service.GetService[encryption.Service](encryption.Name)
+	if err != nil {
+		return nil, err
+	}
+
+	credStore, err := store.NewCredentialStore(db.GormDB(), enc)
 	if err != nil {
 		return nil, err
 	}
@@ -56,7 +62,7 @@ func New(_ *config.Config, log *zap.Logger, scope tally.Scope) (endpoint.Endpoin
 		sourceStore: srcStore,
 		logger:      log.Named(Name),
 		scope:       scope.SubScope("credential"),
-		qb:          querybuilder.New(filterColumns),
+		qb:          querybuilder.New("credentials", filterColumns),
 	}, nil
 }
 

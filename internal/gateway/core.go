@@ -23,6 +23,7 @@ import (
 	"go.admiral.io/admiral/internal/service"
 	authnsvc "go.admiral.io/admiral/internal/service/authn"
 	databasesvc "go.admiral.io/admiral/internal/service/database"
+	encryptionsvc "go.admiral.io/admiral/internal/service/encryption"
 	objstoresvc "go.admiral.io/admiral/internal/service/objectstorage"
 	sessionsvc "go.admiral.io/admiral/internal/service/session"
 )
@@ -31,6 +32,7 @@ var Services = service.Factory{
 	{Name: databasesvc.Name, Factory: databasesvc.New},
 	{Name: sessionsvc.Name, Factory: sessionsvc.New},
 	{Name: authnsvc.Name, Factory: authnsvc.New},
+	{Name: encryptionsvc.Name, Factory: encryptionsvc.New},
 	{Name: objstoresvc.Name, Factory: objstoresvc.New},
 }
 

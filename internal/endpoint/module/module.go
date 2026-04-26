@@ -20,6 +20,7 @@ import (
 	"go.admiral.io/admiral/internal/service"
 	"go.admiral.io/admiral/internal/service/authn"
 	"go.admiral.io/admiral/internal/service/database"
+	"go.admiral.io/admiral/internal/service/encryption"
 	"go.admiral.io/admiral/internal/store"
 	modulev1 "go.admiral.io/sdk/proto/admiral/module/v1"
 )
@@ -29,17 +30,22 @@ const Name = "endpoint.module"
 var filterColumns = []string{"name", "type", "source_id"}
 
 type api struct {
-	store      *store.ModuleStore
-	srcStore   *store.SourceStore
-	credStore  *store.CredentialStore
-	compStore  *store.ComponentStore
-	qb         querybuilder.QueryBuilder
-	logger     *zap.Logger
-	scope      tally.Scope
+	store     *store.ModuleStore
+	srcStore  *store.SourceStore
+	credStore *store.CredentialStore
+	compStore *store.ComponentStore
+	qb        querybuilder.QueryBuilder
+	logger    *zap.Logger
+	scope     tally.Scope
 }
 
 func New(_ *config.Config, log *zap.Logger, scope tally.Scope) (endpoint.Endpoint, error) {
-	db, err := service.GetService[database.Service]("service.database")
+	enc, err := service.GetService[encryption.Service](encryption.Name)
+	if err != nil {
+		return nil, err
+	}
+
+	db, err := service.GetService[database.Service](database.Name)
 	if err != nil {
 		return nil, err
 	}
@@ -54,7 +60,7 @@ func New(_ *config.Config, log *zap.Logger, scope tally.Scope) (endpoint.Endpoin
 		return nil, err
 	}
 
-	credStore, err := store.NewCredentialStore(db.GormDB())
+	credStore, err := store.NewCredentialStore(db.GormDB(), enc)
 	if err != nil {
 		return nil, err
 	}
@@ -71,7 +77,7 @@ func New(_ *config.Config, log *zap.Logger, scope tally.Scope) (endpoint.Endpoin
 		compStore: compStore,
 		logger:    log.Named(Name),
 		scope:     scope.SubScope("module"),
-		qb:        querybuilder.New(filterColumns),
+		qb:        querybuilder.New("modules", filterColumns),
 	}, nil
 }
 

@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"net/http"
+	"path/filepath"
 	"time"
 
 	"github.com/google/uuid"
@@ -53,7 +54,7 @@ type api struct {
 }
 
 func New(cfg *config.Config, log *zap.Logger, scope tally.Scope) (endpoint.Endpoint, error) {
-	db, err := service.GetService[database.Service]("service.database")
+	db, err := service.GetService[database.Service](database.Name)
 	if err != nil {
 		return nil, err
 	}
@@ -120,7 +121,7 @@ func New(cfg *config.Config, log *zap.Logger, scope tally.Scope) (endpoint.Endpo
 		objBucket:       objBucket,
 		logger:          log.Named(Name),
 		scope:           scope.SubScope("deployment"),
-		qb:              querybuilder.New(filterColumns),
+		qb:              querybuilder.New("deployments", filterColumns),
 	}, nil
 }
 
@@ -360,7 +361,7 @@ func (a *api) CreateDeployment(ctx context.Context, req *deploymentv1.CreateDepl
 				moduleId = comp.ModuleId
 				sourceId = &mod.SourceId
 				version = comp.Version
-				workingDirectory = mod.Path
+				workingDirectory = filepath.Join(mod.Root, mod.Path)
 
 				// Evaluate template expressions in values_template.
 				resolvedValues = comp.ValuesTemplate

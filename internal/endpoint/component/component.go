@@ -40,7 +40,7 @@ type api struct {
 }
 
 func New(_ *config.Config, log *zap.Logger, scope tally.Scope) (endpoint.Endpoint, error) {
-	db, err := service.GetService[database.Service]("service.database")
+	db, err := service.GetService[database.Service](database.Name)
 	if err != nil {
 		return nil, err
 	}
@@ -74,7 +74,7 @@ func New(_ *config.Config, log *zap.Logger, scope tally.Scope) (endpoint.Endpoin
 		envStore:  envStore,
 		logger:    log.Named(Name),
 		scope:     scope.SubScope("component"),
-		qb:        querybuilder.New(filterColumns),
+		qb:        querybuilder.New("components", filterColumns),
 	}, nil
 }
 

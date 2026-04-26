@@ -22,6 +22,7 @@ import (
 	"go.admiral.io/admiral/internal/service"
 	"go.admiral.io/admiral/internal/service/authn"
 	"go.admiral.io/admiral/internal/service/database"
+	"go.admiral.io/admiral/internal/service/encryption"
 	"go.admiral.io/admiral/internal/store"
 	sourcev1 "go.admiral.io/sdk/proto/admiral/source/v1"
 )
@@ -40,7 +41,7 @@ type api struct {
 }
 
 func New(_ *config.Config, log *zap.Logger, scope tally.Scope) (endpoint.Endpoint, error) {
-	db, err := service.GetService[database.Service]("service.database")
+	db, err := service.GetService[database.Service](database.Name)
 	if err != nil {
 		return nil, err
 	}
@@ -50,7 +51,12 @@ func New(_ *config.Config, log *zap.Logger, scope tally.Scope) (endpoint.Endpoin
 		return nil, err
 	}
 
-	credStore, err := store.NewCredentialStore(db.GormDB())
+	enc, err := service.GetService[encryption.Service](encryption.Name)
+	if err != nil {
+		return nil, err
+	}
+
+	credStore, err := store.NewCredentialStore(db.GormDB(), enc)
 	if err != nil {
 		return nil, err
 	}
@@ -66,7 +72,7 @@ func New(_ *config.Config, log *zap.Logger, scope tally.Scope) (endpoint.Endpoin
 		modStore:  modStore,
 		logger:    log.Named(Name),
 		scope:     scope.SubScope("source"),
-		qb:        querybuilder.New(filterColumns),
+		qb:        querybuilder.New("sources", filterColumns),
 	}, nil
 }
 
@@ -96,6 +102,13 @@ func (a *api) CreateSource(ctx context.Context, req *sourcev1.CreateSourceReques
 		credID, err := uuid.Parse(req.GetCredentialId())
 		if err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, "invalid credential ID: %v", err)
+		}
+		cred, err := a.credStore.Get(ctx, credID)
+		if err != nil {
+			return nil, status.Errorf(codes.NotFound, "credential not found: %s", credID)
+		}
+		if err := model.ValidateCredentialSourceCompat(cred.Type, src.Type, src.URL); err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "%v", err)
 		}
 		src.CredentialId = &credID
 	}
@@ -212,6 +225,34 @@ func (a *api) UpdateSource(ctx context.Context, req *sourcev1.UpdateSourceReques
 			return nil, status.Error(codes.InvalidArgument, "source type is immutable; delete and recreate to change types")
 		default:
 			return nil, status.Errorf(codes.InvalidArgument, "unsupported update field: %s", path)
+		}
+	}
+
+	// Validate credential-source compatibility when credential_id or url changes.
+	credChanged := fields["credential_id"] != nil
+	urlChanged := fields["url"] != nil
+	if credChanged || urlChanged {
+		effectiveURL := src.URL
+		if u, ok := fields["url"].(string); ok {
+			effectiveURL = u
+		}
+		var effectiveCredID *uuid.UUID
+		if credChanged {
+			if cid, ok := fields["credential_id"].(uuid.UUID); ok {
+				effectiveCredID = &cid
+			}
+			// credential_id set to nil means detach — no compat check needed.
+		} else {
+			effectiveCredID = src.CredentialId
+		}
+		if effectiveCredID != nil {
+			cred, err := a.credStore.Get(ctx, *effectiveCredID)
+			if err != nil {
+				return nil, status.Errorf(codes.NotFound, "credential not found: %s", effectiveCredID)
+			}
+			if err := model.ValidateCredentialSourceCompat(cred.Type, src.Type, effectiveURL); err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, "%v", err)
+			}
 		}
 	}
 

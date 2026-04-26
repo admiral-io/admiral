@@ -4,6 +4,7 @@ import (
 	"database/sql/driver"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -186,6 +187,54 @@ func SourceConfigFromProto(p *sourcev1.SourceConfig) SourceConfig {
 	}
 }
 
+// credentialSourceCompat defines which credential types are accepted by each
+// source type. For GIT sources, URL scheme further restricts the match (see
+// ValidateCredentialSourceCompat).
+var credentialSourceCompat = map[string]map[string]bool{
+	SourceTypeGit:       {CredentialTypeSSHKey: true, CredentialTypeBasicAuth: true},
+	SourceTypeTerraform: {CredentialTypeBearerToken: true},
+	SourceTypeHelm:      {CredentialTypeBasicAuth: true, CredentialTypeBearerToken: true},
+	SourceTypeOCI:       {CredentialTypeBasicAuth: true, CredentialTypeBearerToken: true},
+	SourceTypeHTTP:      {CredentialTypeBasicAuth: true, CredentialTypeBearerToken: true},
+}
+
+// ValidateCredentialSourceCompat checks that a credential type is compatible
+// with a source type and URL. For GIT sources, SSH_KEY requires an SSH URL and
+// BASIC_AUTH requires an HTTPS URL. For all other source types, SSH_KEY is
+// never valid.
+func ValidateCredentialSourceCompat(credType, sourceType, url string) error {
+	compat, ok := credentialSourceCompat[sourceType]
+	if !ok {
+		return fmt.Errorf("unsupported source type: %s", sourceType)
+	}
+	if !compat[credType] {
+		return fmt.Errorf("credential type %s is not compatible with source type %s", credType, sourceType)
+	}
+	if sourceType == SourceTypeGit {
+		ssh := isSSHURL(url)
+		if credType == CredentialTypeSSHKey && !ssh {
+			return fmt.Errorf("ssh_key credential requires an SSH git URL (ssh:// or git@host:); got %s", url)
+		}
+		if credType == CredentialTypeBasicAuth && ssh {
+			return fmt.Errorf("basic_auth credential requires an HTTPS git URL; got SSH URL %s", url)
+		}
+	}
+	return nil
+}
+
+// isSSHURL detects SSH-style git URLs: ssh:// prefix or SCP-style (git@host:path).
+func isSSHURL(target string) bool {
+	if strings.HasPrefix(target, "ssh://") {
+		return true
+	}
+	if strings.Contains(target, "://") {
+		return false
+	}
+	at := strings.Index(target, "@")
+	colon := strings.Index(target, ":")
+	return at >= 0 && colon > at
+}
+
 type Source struct {
 	Id             uuid.UUID    `gorm:"type:uuid;default:gen_random_uuid();primaryKey"`
 	Name           string       `gorm:"uniqueIndex;not null"`
@@ -203,6 +252,8 @@ type Source struct {
 	CreatedAt      time.Time
 	UpdatedAt      time.Time
 	DeletedAt      gorm.DeletedAt `gorm:"index"`
+	CreatedByName  string         `gorm:"->;column:created_by_name"`
+	CreatedByEmail string         `gorm:"->;column:created_by_email"`
 }
 
 func (s *Source) ToProto() *sourcev1.Source {
@@ -215,7 +266,7 @@ func (s *Source) ToProto() *sourcev1.Source {
 		Catalog:       s.Catalog,
 		Labels:        map[string]string(s.Labels),
 		LastTestError: s.LastTestError,
-		CreatedBy:     &commonv1.ActorRef{Id: s.CreatedBy},
+		CreatedBy:     &commonv1.ActorRef{Id: s.CreatedBy, DisplayName: s.CreatedByName, Email: s.CreatedByEmail},
 		CreatedAt:     timestamppb.New(s.CreatedAt),
 		UpdatedAt:     timestamppb.New(s.UpdatedAt),
 	}

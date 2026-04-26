@@ -46,7 +46,7 @@ type Route struct {
 }
 
 func New(unaryInterceptors []grpc.UnaryServerInterceptor, assets http.FileSystem, metricsHandler http.Handler, cfg config.Server) (*Mux, error) {
-	sessionService, err := service.GetService[session.Service]("service.session")
+	sessionService, err := service.GetService[session.Service](session.Name)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get session service: %w", err)
 	}

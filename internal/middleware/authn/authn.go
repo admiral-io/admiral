@@ -35,12 +35,12 @@ type mid struct {
 }
 
 func New(cfg *config.Config, logger *zap.Logger, _ tally.Scope) (middleware.Middleware, error) {
-	authnService, err := service.GetService[authn.Service]("service.authn")
+	authnService, err := service.GetService[authn.Service](authn.Name)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get authn service: %w", err)
 	}
 
-	sessionService, err := service.GetService[session.Service]("service.session")
+	sessionService, err := service.GetService[session.Service](session.Name)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get session service: %w", err)
 	}

@@ -32,7 +32,7 @@ type api struct {
 }
 
 func New(_ *config.Config, log *zap.Logger, scope tally.Scope) (endpoint.Endpoint, error) {
-	db, err := service.GetService[database.Service]("service.database")
+	db, err := service.GetService[database.Service](database.Name)
 	if err != nil {
 		return nil, err
 	}
@@ -47,7 +47,7 @@ func New(_ *config.Config, log *zap.Logger, scope tally.Scope) (endpoint.Endpoin
 		return nil, err
 	}
 
-	authnService, err := service.GetService[authn.Service]("service.authn")
+	authnService, err := service.GetService[authn.Service](authn.Name)
 	if err != nil {
 		return nil, err
 	}

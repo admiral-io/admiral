@@ -164,10 +164,9 @@ func (b *gitBackend) Fetch(ctx context.Context, cred *model.Credential, src *mod
 	}
 	revision := head.Hash().String()
 
-	workDir := dir
 	if opts.Root != "" {
-		workDir = filepath.Join(dir, opts.Root)
-		info, err := os.Stat(workDir)
+		rootDir := filepath.Join(dir, opts.Root)
+		info, err := os.Stat(rootDir)
 		if err != nil {
 			cleanup()
 			return nil, fmt.Errorf("git backend: subtree %q not found: %w", opts.Root, err)
@@ -179,10 +178,11 @@ func (b *gitBackend) Fetch(ctx context.Context, cred *model.Credential, src *mod
 	}
 
 	return &FetchResult{
-		Dir:      workDir,
-		Revision: revision,
-		Digest:   "sha1:" + revision,
-		Cleanup:  cleanup,
+		Dir:              dir,
+		WorkingDirectory: opts.Root,
+		Revision:         revision,
+		Digest:           "sha1:" + revision,
+		Cleanup:          cleanup,
 	}, nil
 }
 
