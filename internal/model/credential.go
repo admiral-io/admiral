@@ -59,14 +59,31 @@ type BearerTokenAuth struct {
 // AuthConfig is the JSONB-backed polymorphic auth configuration.
 // Kind is the discriminator; exactly one of the pointer fields is non-nil
 // when populated.
+//
+// The raw field holds pre-serialized bytes (e.g. an encrypted envelope) that
+// bypass normal JSON marshalling in Value(). This is set by the store layer
+// before GORM writes to the database.
 type AuthConfig struct {
 	Kind        string           `json:"type"`
 	SSHKey      *SSHKeyAuth      `json:"ssh_key,omitempty"`
 	BasicAuth   *BasicAuth       `json:"basic_auth,omitempty"`
 	BearerToken *BearerTokenAuth `json:"bearer_token,omitempty"`
+
+	raw []byte `json:"-"` // encrypted envelope or nil
 }
 
+// SetRaw sets pre-serialized bytes (e.g. an encrypted envelope) that Value()
+// will write directly to the database, bypassing normal JSON marshalling.
+func (a *AuthConfig) SetRaw(b []byte) { a.raw = b }
+
+// Raw returns the raw bytes from the last Scan, before any decryption.
+func (a AuthConfig) Raw() []byte { return a.raw }
+
 func (a AuthConfig) Value() (driver.Value, error) {
+	// If raw bytes are set (encrypted envelope), pass them through directly.
+	if a.raw != nil {
+		return string(a.raw), nil
+	}
 	b, err := json.Marshal(a)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal auth config: %w", err)
@@ -87,6 +104,9 @@ func (a *AuthConfig) Scan(value any) error {
 	default:
 		return fmt.Errorf("unsupported type for AuthConfig: %T", value)
 	}
+	// Stash raw bytes so the store layer can detect and decrypt envelopes.
+	a.raw = make([]byte, len(bytes))
+	copy(a.raw, bytes)
 	return json.Unmarshal(bytes, a)
 }
 
@@ -198,10 +218,12 @@ type Credential struct {
 	Type        string     `gorm:"not null"`
 	AuthConfig  AuthConfig `gorm:"type:jsonb;not null;default:'{}'"`
 	Labels      Labels     `gorm:"type:jsonb;default:'{}'"`
-	CreatedBy   string     `gorm:"not null"`
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
-	DeletedAt   gorm.DeletedAt `gorm:"index"`
+	CreatedBy      string     `gorm:"not null"`
+	CreatedAt      time.Time
+	UpdatedAt      time.Time
+	DeletedAt      gorm.DeletedAt `gorm:"index"`
+	CreatedByName  string         `gorm:"->;column:created_by_name"`
+	CreatedByEmail string         `gorm:"->;column:created_by_email"`
 }
 
 func (c *Credential) ToProto() *credentialv1.Credential {
@@ -211,7 +233,7 @@ func (c *Credential) ToProto() *credentialv1.Credential {
 		Description: c.Description,
 		Type:        credentialTypeToProto[c.Type],
 		Labels:      map[string]string(c.Labels),
-		CreatedBy:   &commonv1.ActorRef{Id: c.CreatedBy},
+		CreatedBy:   &commonv1.ActorRef{Id: c.CreatedBy, DisplayName: c.CreatedByName, Email: c.CreatedByEmail},
 		CreatedAt:   timestamppb.New(c.CreatedAt),
 		UpdatedAt:   timestamppb.New(c.UpdatedAt),
 	}

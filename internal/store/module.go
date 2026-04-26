@@ -35,7 +35,7 @@ func (s *ModuleStore) Create(ctx context.Context, mod *model.Module) (*model.Mod
 
 func (s *ModuleStore) Get(ctx context.Context, id uuid.UUID) (*model.Module, error) {
 	var mod model.Module
-	err := s.db.WithContext(ctx).Where("id = ?", id).First(&mod).Error
+	err := s.db.WithContext(ctx).Scopes(WithActorRef("modules", "created_by")).Where("modules.id = ?", id).Take(&mod).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, fmt.Errorf("module not found: %s", id)
 	}
@@ -47,7 +47,7 @@ func (s *ModuleStore) Get(ctx context.Context, id uuid.UUID) (*model.Module, err
 
 func (s *ModuleStore) List(ctx context.Context, scopes ...func(*gorm.DB) *gorm.DB) ([]model.Module, error) {
 	var mods []model.Module
-	err := s.db.WithContext(ctx).Scopes(scopes...).Find(&mods).Error
+	err := s.db.WithContext(ctx).Scopes(append(scopes, WithActorRef("modules", "created_by"))...).Find(&mods).Error
 	if err != nil {
 		return nil, fmt.Errorf("failed to list modules: %w", err)
 	}

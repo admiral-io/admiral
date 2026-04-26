@@ -41,7 +41,7 @@ func (a *api) CreateRunner(ctx context.Context, req *runnerv1.CreateRunnerReques
 		model.AccessTokenBindingTypeRunner,
 		defaultTokenName,
 		r.Id.String(),
-		[]string{runnerExecScope},
+		[]string{runnerExecScope, stateScope},
 		nil,
 	)
 	if err != nil {

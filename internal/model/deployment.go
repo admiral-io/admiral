@@ -58,10 +58,12 @@ type Deployment struct {
 	TriggeredBy        string     `gorm:"not null"`
 	Message            string     `gorm:"type:text;not null;default:''"`
 	Destroy            bool       `gorm:"not null;default:false"`
-	SourceDeploymentId *uuid.UUID `gorm:"type:uuid"`
-	CreatedAt          time.Time
-	UpdatedAt          time.Time
-	CompletedAt        *time.Time
+	SourceDeploymentId  *uuid.UUID `gorm:"type:uuid"`
+	CreatedAt           time.Time
+	UpdatedAt           time.Time
+	CompletedAt         *time.Time
+	TriggeredByName     string `gorm:"->;column:triggered_by_name"`
+	TriggeredByEmail    string `gorm:"->;column:triggered_by_email"`
 }
 
 func (d *Deployment) ToProto(summary *deploymentv1.RevisionSummary) *deploymentv1.Deployment {
@@ -71,7 +73,7 @@ func (d *Deployment) ToProto(summary *deploymentv1.RevisionSummary) *deploymentv
 		EnvironmentId:   d.EnvironmentId.String(),
 		Status:          deploymentStatusToProto[d.Status],
 		TriggerType:     deploymentTriggerToProto[d.TriggerType],
-		TriggeredBy:     &commonv1.ActorRef{Id: d.TriggeredBy},
+		TriggeredBy:     &commonv1.ActorRef{Id: d.TriggeredBy, DisplayName: d.TriggeredByName, Email: d.TriggeredByEmail},
 		Message:         d.Message,
 		Destroy:         d.Destroy,
 		RevisionSummary: summary,

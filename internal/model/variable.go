@@ -62,9 +62,11 @@ type Variable struct {
 	Description   string     `gorm:"type:varchar(1024);not null;default:''"`
 	ApplicationId *uuid.UUID `gorm:"type:uuid"`
 	EnvironmentId *uuid.UUID `gorm:"type:uuid"`
-	CreatedBy     string     `gorm:"type:text;not null"`
-	CreatedAt     time.Time
-	UpdatedAt     time.Time
+	CreatedBy      string     `gorm:"type:text;not null"`
+	CreatedAt      time.Time
+	UpdatedAt      time.Time
+	CreatedByName  string `gorm:"->;column:created_by_name"`
+	CreatedByEmail string `gorm:"->;column:created_by_email"`
 }
 
 func (v *Variable) Validate() error {
@@ -105,7 +107,7 @@ func (v *Variable) ToProto() *variablev1.Variable {
 		Type:        variableTypeToProto[v.Type],
 		Source:      variableSourceToProto[v.Source],
 		Description: v.Description,
-		CreatedBy:   &commonv1.ActorRef{Id: v.CreatedBy},
+		CreatedBy:   &commonv1.ActorRef{Id: v.CreatedBy, DisplayName: v.CreatedByName, Email: v.CreatedByEmail},
 		CreatedAt:   timestamppb.New(v.CreatedAt),
 		UpdatedAt:   timestamppb.New(v.UpdatedAt),
 	}
@@ -125,8 +127,8 @@ func (v *Variable) ToProto() *variablev1.Variable {
 	return out
 }
 
-func VariablesFromTerraformOutputs(
-	outputs map[string]*runnerv1.TerraformOutput,
+func VariablesFromEngineOutputs(
+	outputs map[string]*runnerv1.EngineOutput,
 	componentName string,
 	appID, envID uuid.UUID,
 	createdBy string,

@@ -39,7 +39,7 @@ func (s *VariableStore) Create(ctx context.Context, v *model.Variable) (*model.V
 
 func (s *VariableStore) Get(ctx context.Context, id uuid.UUID) (*model.Variable, error) {
 	var v model.Variable
-	err := s.db.WithContext(ctx).Where("id = ?", id).First(&v).Error
+	err := s.db.WithContext(ctx).Scopes(WithActorRef("variables", "created_by")).Where("variables.id = ?", id).Take(&v).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, fmt.Errorf("variable not found: %s", id)
 	}
@@ -51,7 +51,7 @@ func (s *VariableStore) Get(ctx context.Context, id uuid.UUID) (*model.Variable,
 
 func (s *VariableStore) List(ctx context.Context, scopes ...func(*gorm.DB) *gorm.DB) ([]model.Variable, error) {
 	var vs []model.Variable
-	err := s.db.WithContext(ctx).Scopes(scopes...).Find(&vs).Error
+	err := s.db.WithContext(ctx).Scopes(append(scopes, WithActorRef("variables", "created_by"))...).Find(&vs).Error
 	if err != nil {
 		return nil, fmt.Errorf("failed to list variables: %w", err)
 	}

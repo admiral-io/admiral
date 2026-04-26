@@ -36,7 +36,7 @@ func (s *ComponentStore) Create(ctx context.Context, c *model.Component) (*model
 
 func (s *ComponentStore) Get(ctx context.Context, id uuid.UUID) (*model.Component, error) {
 	var c model.Component
-	err := s.db.WithContext(ctx).Where("id = ?", id).First(&c).Error
+	err := s.db.WithContext(ctx).Scopes(WithActorRef("components", "created_by")).Where("components.id = ?", id).Take(&c).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, fmt.Errorf("component not found: %s", id)
 	}
@@ -48,7 +48,7 @@ func (s *ComponentStore) Get(ctx context.Context, id uuid.UUID) (*model.Componen
 
 func (s *ComponentStore) List(ctx context.Context, scopes ...func(*gorm.DB) *gorm.DB) ([]model.Component, error) {
 	var cs []model.Component
-	err := s.db.WithContext(ctx).Scopes(scopes...).Find(&cs).Error
+	err := s.db.WithContext(ctx).Scopes(append(scopes, WithActorRef("components", "created_by"))...).Find(&cs).Error
 	if err != nil {
 		return nil, fmt.Errorf("failed to list components: %w", err)
 	}
@@ -59,7 +59,7 @@ func (s *ComponentStore) ListByApplicationID(ctx context.Context, appID uuid.UUI
 	var cs []model.Component
 	err := s.db.WithContext(ctx).
 		Where("application_id = ?", appID).
-		Scopes(scopes...).
+		Scopes(append(scopes, WithActorRef("components", "created_by"))...).
 		Find(&cs).Error
 	if err != nil {
 		return nil, fmt.Errorf("failed to list components by application: %w", err)
@@ -144,6 +144,7 @@ func (s *ComponentOverrideStore) Set(ctx context.Context, o *model.ComponentOver
 func (s *ComponentOverrideStore) Get(ctx context.Context, componentID, environmentID uuid.UUID) (*model.ComponentOverride, error) {
 	var o model.ComponentOverride
 	err := s.db.WithContext(ctx).
+		Scopes(WithActorRef("component_overrides", "created_by")).
 		Where("component_id = ? AND environment_id = ?", componentID, environmentID).
 		First(&o).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -158,6 +159,7 @@ func (s *ComponentOverrideStore) Get(ctx context.Context, componentID, environme
 func (s *ComponentOverrideStore) ListByComponentID(ctx context.Context, componentID uuid.UUID) ([]model.ComponentOverride, error) {
 	var os []model.ComponentOverride
 	err := s.db.WithContext(ctx).
+		Scopes(WithActorRef("component_overrides", "created_by")).
 		Where("component_id = ?", componentID).
 		Find(&os).Error
 	if err != nil {
@@ -169,6 +171,7 @@ func (s *ComponentOverrideStore) ListByComponentID(ctx context.Context, componen
 func (s *ComponentOverrideStore) ListByApplicationEnv(ctx context.Context, appID, envID uuid.UUID) ([]model.ComponentOverride, error) {
 	var os []model.ComponentOverride
 	err := s.db.WithContext(ctx).
+		Scopes(WithActorRef("component_overrides", "created_by")).
 		Joins("JOIN components ON components.id = component_overrides.component_id").
 		Where("components.application_id = ? AND component_overrides.environment_id = ? AND components.deleted_at IS NULL", appID, envID).
 		Find(&os).Error

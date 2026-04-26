@@ -36,7 +36,7 @@ func (s *RunnerStore) Create(ctx context.Context, r *model.Runner) (*model.Runne
 
 func (s *RunnerStore) Get(ctx context.Context, id uuid.UUID) (*model.Runner, error) {
 	var r model.Runner
-	err := s.db.WithContext(ctx).Scopes(WithActorRef("runners", "created_by")).Where("id = ?", id).First(&r).Error
+	err := s.db.WithContext(ctx).Scopes(WithActorRef("runners", "created_by")).Where("runners.id = ?", id).Take(&r).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, fmt.Errorf("runner not found: %s", id)
 	}

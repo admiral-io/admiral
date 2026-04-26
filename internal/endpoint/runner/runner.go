@@ -17,7 +17,9 @@ import (
 	"go.admiral.io/admiral/internal/service"
 	"go.admiral.io/admiral/internal/service/authn"
 	"go.admiral.io/admiral/internal/service/database"
+	"go.admiral.io/admiral/internal/service/encryption"
 	"go.admiral.io/admiral/internal/service/objectstorage"
+	"go.admiral.io/admiral/internal/service/orchestration"
 	"go.admiral.io/admiral/internal/store"
 	runnerv1 "go.admiral.io/sdk/proto/admiral/runner/v1"
 )
@@ -26,6 +28,7 @@ const (
 	Name             = "endpoint.runner"
 	defaultTokenName = "default"
 	runnerExecScope  = "runner:exec"
+	stateScope       = "state:rw"
 )
 
 var (
@@ -41,17 +44,15 @@ type api struct {
 	jobStore        *store.JobStore
 	revisionStore   *store.RevisionStore
 	deploymentStore *store.DeploymentStore
-	envStore        *store.EnvironmentStore
 	componentStore  *store.ComponentStore
 	moduleStore     *store.ModuleStore
 	sourceStore     *store.SourceStore
 	credentialStore *store.CredentialStore
-	variableStore   *store.VariableStore
 	tokenIssuer     authn.TokenIssuer
 	sessionProvider authn.SessionProvider
 	objStore        objectstorage.Service
 	objBucket       string
-	baseURL         string
+	orchestration   *orchestration.Service
 	qb              querybuilder.QueryBuilder
 	jobsQB          querybuilder.QueryBuilder
 	logger          *zap.Logger
@@ -59,7 +60,7 @@ type api struct {
 }
 
 func New(cfg *config.Config, log *zap.Logger, scope tally.Scope) (endpoint.Endpoint, error) {
-	db, err := service.GetService[database.Service]("service.database")
+	db, err := service.GetService[database.Service](database.Name)
 	if err != nil {
 		return nil, err
 	}
@@ -100,7 +101,11 @@ func New(cfg *config.Config, log *zap.Logger, scope tally.Scope) (endpoint.Endpo
 	if err != nil {
 		return nil, err
 	}
-	credentialStore, err := store.NewCredentialStore(db.GormDB())
+	enc, err := service.GetService[encryption.Service](encryption.Name)
+	if err != nil {
+		return nil, err
+	}
+	credentialStore, err := store.NewCredentialStore(db.GormDB(), enc)
 	if err != nil {
 		return nil, err
 	}
@@ -109,7 +114,7 @@ func New(cfg *config.Config, log *zap.Logger, scope tally.Scope) (endpoint.Endpo
 		return nil, err
 	}
 
-	authnService, err := service.GetService[authn.Service]("service.authn")
+	authnService, err := service.GetService[authn.Service](authn.Name)
 	if err != nil {
 		return nil, err
 	}
@@ -119,28 +124,39 @@ func New(cfg *config.Config, log *zap.Logger, scope tally.Scope) (endpoint.Endpo
 		return nil, fmt.Errorf("object storage is required: %w", err)
 	}
 	objBucket := cfg.Services.ObjectStorage.Bucket
+	baseURL := strings.TrimRight(cfg.Server.ExternalURL, "/")
+
+	orch := orchestration.New(
+		jobStore,
+		revisionStore,
+		deploymentStore,
+		envStore,
+		variableStore,
+		objStore,
+		objBucket,
+		baseURL,
+		log,
+	)
 
 	return &api{
-		store:           runnerStore,
-		tokenStore:      tokenStore,
-		jobStore:        jobStore,
-		revisionStore:   revisionStore,
+		store:         runnerStore,
+		tokenStore:    tokenStore,
+		jobStore:      jobStore,
+		revisionStore: revisionStore,
 		deploymentStore: deploymentStore,
-		envStore:        envStore,
 		componentStore:  componentStore,
 		moduleStore:     moduleStore,
 		sourceStore:     sourceStore,
 		credentialStore: credentialStore,
-		variableStore:   variableStore,
 		tokenIssuer:     authnService,
 		sessionProvider: authnService,
 		objStore:        objStore,
 		objBucket:       objBucket,
-		baseURL:         strings.TrimRight(cfg.Server.ExternalURL, "/"),
+		orchestration:   orch,
 		logger:          log.Named(Name),
 		scope:           scope.SubScope("runner"),
-		qb:              querybuilder.New(filterColumns),
-		jobsQB:          querybuilder.New(jobsFilterColumns),
+		qb:              querybuilder.New("runners", filterColumns),
+		jobsQB:          querybuilder.New("jobs", jobsFilterColumns),
 	}, nil
 }
 

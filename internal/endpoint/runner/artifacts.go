@@ -102,7 +102,7 @@ func (a *api) serveArtifact(w http.ResponseWriter, r *http.Request) {
 	defer fetch.Cleanup()
 
 	if mod.Path != "" {
-		pathDir := filepath.Join(fetch.Dir, mod.Path)
+		pathDir := filepath.Join(fetch.Dir, fetch.WorkingDirectory, mod.Path)
 		info, err := os.Stat(pathDir)
 		if err != nil || !info.IsDir() {
 			a.logger.Error("artifact: module path not found",

@@ -79,9 +79,9 @@ func TestNewVariableStore(t *testing.T) {
 	})
 }
 
-func TestNewTokenStore(t *testing.T) {
+func TestNewAccessTokenStore(t *testing.T) {
 	t.Run("nil db", func(t *testing.T) {
-		_, err := NewTokenStore(nil)
+		_, err := NewAccessTokenStore(nil)
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "database is required")
 	})

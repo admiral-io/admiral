@@ -27,8 +27,6 @@ var componentKindToProto = map[string]componentv1.ComponentKind{
 	ComponentKindWorkload:       componentv1.ComponentKind_COMPONENT_KIND_WORKLOAD,
 }
 
-// --- Supporting types ---
-
 type ComponentOutput struct {
 	Name          string `json:"name"`
 	ValueTemplate string `json:"value_template"`
@@ -112,6 +110,8 @@ type Component struct {
 	CreatedAt      time.Time
 	UpdatedAt      time.Time
 	DeletedAt      gorm.DeletedAt `gorm:"index"`
+	CreatedByName  string         `gorm:"->;column:created_by_name"`
+	CreatedByEmail string         `gorm:"->;column:created_by_email"`
 }
 
 func (c *Component) ToProto() *componentv1.Component {
@@ -126,7 +126,7 @@ func (c *Component) ToProto() *componentv1.Component {
 		ValuesTemplate: c.ValuesTemplate,
 		DependsOn:      []string(c.DependsOn),
 		Outputs:        c.Outputs.ToProto(),
-		CreatedBy:      &commonv1.ActorRef{Id: c.CreatedBy},
+		CreatedBy:      &commonv1.ActorRef{Id: c.CreatedBy, DisplayName: c.CreatedByName, Email: c.CreatedByEmail},
 		CreatedAt:      timestamppb.New(c.CreatedAt),
 		UpdatedAt:      timestamppb.New(c.UpdatedAt),
 	}
@@ -179,6 +179,8 @@ type ComponentOverride struct {
 	CreatedBy      string            `gorm:"not null"`
 	CreatedAt      time.Time
 	UpdatedAt      time.Time
+	CreatedByName  string `gorm:"->;column:created_by_name"`
+	CreatedByEmail string `gorm:"->;column:created_by_email"`
 }
 
 func (o *ComponentOverride) TableName() string {
@@ -234,7 +236,7 @@ func (o *ComponentOverride) ToProto() *componentv1.ComponentOverride {
 		ComponentId:   o.ComponentId.String(),
 		EnvironmentId: o.EnvironmentId.String(),
 		Disabled:      o.Disabled,
-		CreatedBy:     &commonv1.ActorRef{Id: o.CreatedBy},
+		CreatedBy:     &commonv1.ActorRef{Id: o.CreatedBy, DisplayName: o.CreatedByName, Email: o.CreatedByEmail},
 		CreatedAt:     timestamppb.New(o.CreatedAt),
 		UpdatedAt:     timestamppb.New(o.UpdatedAt),
 	}

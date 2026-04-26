@@ -48,7 +48,7 @@ type TokenIssuer interface {
 }
 
 func New(cfg *config.Config, logger *zap.Logger, _ tally.Scope) (service.Service, error) {
-	db, err := service.GetService[database.Service]("service.database")
+	db, err := service.GetService[database.Service](database.Name)
 	if err != nil {
 		return nil, err
 	}

@@ -223,3 +223,78 @@ func TestNeedsRotation(t *testing.T) {
 	assert.True(t, NeedsRotation([]byte(`{"key":"old"}`)))
 	assert.False(t, NeedsRotation([]byte(`not json`)))
 }
+
+func TestDecryptAnyNoFallback(t *testing.T) {
+	key1 := generateKey(t)
+	key2 := generateKey(t)
+
+	enc1, err := NewEncryptor(key1, "")
+	require.NoError(t, err)
+
+	encrypted, err := enc1.Encrypt([]byte("secret"))
+	require.NoError(t, err)
+
+	// Encryptor with completely different key and no old key.
+	enc2, err := NewEncryptor(key2, "")
+	require.NoError(t, err)
+
+	_, err = enc2.DecryptAny(encrypted)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "no fallback key available")
+}
+
+func TestDecryptAnyInvalidJSON(t *testing.T) {
+	enc, err := NewEncryptor(generateKey(t), "")
+	require.NoError(t, err)
+
+	_, err = enc.DecryptAny([]byte("not json"))
+	assert.Error(t, err)
+}
+
+func TestDecryptUnknownSlot(t *testing.T) {
+	enc, err := NewEncryptor(generateKey(t), "")
+	require.NoError(t, err)
+
+	env := Envelope{KeySlot: "unknown", Nonce: "AAAA", Ciphertext: "BBBB"}
+	data, _ := json.Marshal(env)
+
+	_, err = enc.Decrypt(data)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "unknown key slot")
+}
+
+func TestDecryptInvalidNonce(t *testing.T) {
+	enc, err := NewEncryptor(generateKey(t), "")
+	require.NoError(t, err)
+
+	env := Envelope{KeySlot: "active", Nonce: "not-valid-base64!!!", Ciphertext: "AAAA"}
+	data, _ := json.Marshal(env)
+
+	_, err = enc.Decrypt(data)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "decoding nonce")
+}
+
+func TestDecryptInvalidCiphertext(t *testing.T) {
+	enc, err := NewEncryptor(generateKey(t), "")
+	require.NoError(t, err)
+
+	env := Envelope{KeySlot: "active", Nonce: base64.StdEncoding.EncodeToString(make([]byte, 12)), Ciphertext: "not-valid-base64!!!"}
+	data, _ := json.Marshal(env)
+
+	_, err = enc.Decrypt(data)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "decoding ciphertext")
+}
+
+func TestEnvelopeAlwaysUsesActiveSlot(t *testing.T) {
+	enc, err := NewEncryptor(generateKey(t), generateKey(t))
+	require.NoError(t, err)
+
+	encrypted, err := enc.Encrypt([]byte("test"))
+	require.NoError(t, err)
+
+	var env Envelope
+	require.NoError(t, json.Unmarshal(encrypted, &env))
+	assert.Equal(t, "active", env.KeySlot)
+}

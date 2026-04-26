@@ -71,10 +71,12 @@ type Module struct {
 	Root        string    `gorm:"type:text;not null;default:''"`
 	Path        string    `gorm:"type:text;not null;default:''"`
 	Labels      Labels    `gorm:"type:jsonb;default:'{}'"`
-	CreatedBy   string    `gorm:"not null"`
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
-	DeletedAt   gorm.DeletedAt `gorm:"index"`
+	CreatedBy      string    `gorm:"not null"`
+	CreatedAt      time.Time
+	UpdatedAt      time.Time
+	DeletedAt      gorm.DeletedAt `gorm:"index"`
+	CreatedByName  string         `gorm:"->;column:created_by_name"`
+	CreatedByEmail string         `gorm:"->;column:created_by_email"`
 }
 
 func (m *Module) ToProto() *modulev1.Module {
@@ -88,7 +90,7 @@ func (m *Module) ToProto() *modulev1.Module {
 		Root:        m.Root,
 		Path:        m.Path,
 		Labels:      map[string]string(m.Labels),
-		CreatedBy:   &commonv1.ActorRef{Id: m.CreatedBy},
+		CreatedBy:   &commonv1.ActorRef{Id: m.CreatedBy, DisplayName: m.CreatedByName, Email: m.CreatedByEmail},
 		CreatedAt:   timestamppb.New(m.CreatedAt),
 		UpdatedAt:   timestamppb.New(m.UpdatedAt),
 	}

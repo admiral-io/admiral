@@ -43,7 +43,7 @@ func (s *SourceStore) Create(ctx context.Context, src *model.Source) (*model.Sou
 
 func (s *SourceStore) Get(ctx context.Context, id uuid.UUID) (*model.Source, error) {
 	var src model.Source
-	err := s.db.WithContext(ctx).Where("id = ?", id).First(&src).Error
+	err := s.db.WithContext(ctx).Scopes(WithActorRef("sources", "created_by")).Where("sources.id = ?", id).Take(&src).Error
 
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, fmt.Errorf("source not found: %s", id)
@@ -58,7 +58,7 @@ func (s *SourceStore) Get(ctx context.Context, id uuid.UUID) (*model.Source, err
 
 func (s *SourceStore) List(ctx context.Context, scopes ...func(*gorm.DB) *gorm.DB) ([]model.Source, error) {
 	var srcs []model.Source
-	err := s.db.WithContext(ctx).Scopes(scopes...).Find(&srcs).Error
+	err := s.db.WithContext(ctx).Scopes(append(scopes, WithActorRef("sources", "created_by"))...).Find(&srcs).Error
 
 	if err != nil {
 		return nil, fmt.Errorf("failed to list sources: %w", err)
@@ -103,7 +103,6 @@ func (s *SourceStore) Delete(ctx context.Context, id uuid.UUID) error {
 	return nil
 }
 
-// CountByCredentialID returns the number of non-deleted Sources that reference the given credential.
 func (s *SourceStore) CountByCredentialID(ctx context.Context, credID uuid.UUID) (int64, error) {
 	var count int64
 	err := s.db.WithContext(ctx).

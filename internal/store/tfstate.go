@@ -31,7 +31,7 @@ func (s *TerraformStateStore) DB() *gorm.DB {
 func (s *TerraformStateStore) GetLatest(ctx context.Context, componentID, environmentID uuid.UUID) (*model.TerraformState, error) {
 	var st model.TerraformState
 	err := s.db.WithContext(ctx).
-		Where("component_id = ? AND environment_id = ?", componentID, environmentID).
+		Where("component_id = ? AND environment_id = ? AND storage_path != ''", componentID, environmentID).
 		Order("created_at DESC").
 		First(&st).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {

@@ -99,6 +99,8 @@ type Environment struct {
 	CreatedAt             time.Time
 	UpdatedAt             time.Time
 	DeletedAt             gorm.DeletedAt `gorm:"index"`
+	CreatedByName         string                `gorm:"->;column:created_by_name"`
+	CreatedByEmail        string                `gorm:"->;column:created_by_email"`
 }
 
 func (env *Environment) ToProto() *environmentv1.Environment {
@@ -109,7 +111,7 @@ func (env *Environment) ToProto() *environmentv1.Environment {
 		Description:       env.Description,
 		Labels:            map[string]string(env.Labels),
 		HasPendingChanges: env.HasPendingChanges,
-		CreatedBy:         &commonv1.ActorRef{Id: env.CreatedBy},
+		CreatedBy:         &commonv1.ActorRef{Id: env.CreatedBy, DisplayName: env.CreatedByName, Email: env.CreatedByEmail},
 		CreatedAt:         timestamppb.New(env.CreatedAt),
 		UpdatedAt:         timestamppb.New(env.UpdatedAt),
 	}

@@ -44,13 +44,13 @@ var revisionKindToProto = map[string]deploymentv1.RevisionKind{
 	ComponentKindWorkload:       deploymentv1.RevisionKind_REVISION_KIND_WORKLOAD,
 }
 
-type TerraformPlanSummary struct {
+type ChangeSummary struct {
 	Additions    int32 `json:"additions"`
 	Changes      int32 `json:"changes"`
 	Destructions int32 `json:"destructions"`
 }
 
-func (s TerraformPlanSummary) Value() (driver.Value, error) {
+func (s ChangeSummary) Value() (driver.Value, error) {
 	b, err := json.Marshal(s)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal plan summary: %w", err)
@@ -58,7 +58,7 @@ func (s TerraformPlanSummary) Value() (driver.Value, error) {
 	return string(b), nil
 }
 
-func (s *TerraformPlanSummary) Scan(value any) error {
+func (s *ChangeSummary) Scan(value any) error {
 	if value == nil {
 		return nil
 	}
@@ -69,16 +69,16 @@ func (s *TerraformPlanSummary) Scan(value any) error {
 	case []byte:
 		b = v
 	default:
-		return fmt.Errorf("cannot scan %T into TerraformPlanSummary", value)
+		return fmt.Errorf("cannot scan %T into ChangeSummary", value)
 	}
 	return json.Unmarshal(b, s)
 }
 
-func (s *TerraformPlanSummary) ToProto() *deploymentv1.TerraformPlanSummary {
+func (s *ChangeSummary) ToProto() *deploymentv1.ChangeSummary {
 	if s == nil {
 		return nil
 	}
-	return &deploymentv1.TerraformPlanSummary{
+	return &deploymentv1.ChangeSummary{
 		Additions:    s.Additions,
 		Changes:      s.Changes,
 		Destructions: s.Destructions,
@@ -103,7 +103,7 @@ type Revision struct {
 	ArtifactUrl      string                `gorm:"type:text;not null;default:''"`
 	PlanOutputKey    string                `gorm:"type:text;not null;default:''"`
 	PlanFileKey      string                `gorm:"type:text;not null;default:''"`
-	PlanSummary      *TerraformPlanSummary `gorm:"type:jsonb"`
+	PlanSummary      *ChangeSummary `gorm:"type:jsonb"`
 	ErrorMessage     string                `gorm:"type:text;not null;default:''"`
 	RetryCount       int32                 `gorm:"not null;default:0"`
 	CreatedAt        time.Time
@@ -184,7 +184,7 @@ func DeriveRevisionUpdate(jobType, reportedStatus string, result *runnerv1.JobRe
 		fields["status"] = RevisionStatusAwaitingApproval
 		fields["error_message"] = ""
 		if ps := result.GetPlanSummary(); ps != nil {
-			fields["plan_summary"] = &TerraformPlanSummary{
+			fields["plan_summary"] = &ChangeSummary{
 				Additions:    ps.GetAdditions(),
 				Changes:      ps.GetChanges(),
 				Destructions: ps.GetDestructions(),

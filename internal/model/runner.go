@@ -48,9 +48,7 @@ type RunnerStatus struct {
 	Version            string            `json:"version,omitempty"`
 	ActiveJobs         int32             `json:"active_jobs"`
 	MaxConcurrentJobs  int32             `json:"max_concurrent_jobs"`
-	AvailableProviders []string          `json:"available_providers,omitempty"`
-	ToolVersions       map[string]string `json:"tool_versions,omitempty"`
-	ActiveJobDetails   []ActiveJobInfo   `json:"active_job_details,omitempty"`
+	ActiveJobDetails []ActiveJobInfo `json:"active_job_details,omitempty"`
 }
 
 func (s RunnerStatus) Value() (driver.Value, error) {
@@ -82,11 +80,9 @@ func (s *RunnerStatus) ToProto() *runnerv1.RunnerStatus {
 		return nil
 	}
 	proto := &runnerv1.RunnerStatus{
-		Version:            s.Version,
-		ActiveJobs:         s.ActiveJobs,
-		MaxConcurrentJobs:  s.MaxConcurrentJobs,
-		AvailableProviders: s.AvailableProviders,
-		ToolVersions:       s.ToolVersions,
+		Version:           s.Version,
+		ActiveJobs:        s.ActiveJobs,
+		MaxConcurrentJobs: s.MaxConcurrentJobs,
 	}
 	for i := range s.ActiveJobDetails {
 		proto.ActiveJobDetails = append(proto.ActiveJobDetails, s.ActiveJobDetails[i].ToProto())
@@ -99,11 +95,9 @@ func RunnerStatusFromProto(p *runnerv1.RunnerStatus) *RunnerStatus {
 		return nil
 	}
 	s := &RunnerStatus{
-		Version:            p.GetVersion(),
-		ActiveJobs:         p.GetActiveJobs(),
-		MaxConcurrentJobs:  p.GetMaxConcurrentJobs(),
-		AvailableProviders: p.GetAvailableProviders(),
-		ToolVersions:       p.GetToolVersions(),
+		Version:           p.GetVersion(),
+		ActiveJobs:        p.GetActiveJobs(),
+		MaxConcurrentJobs: p.GetMaxConcurrentJobs(),
 	}
 	for _, j := range p.GetActiveJobDetails() {
 		s.ActiveJobDetails = append(s.ActiveJobDetails, ActiveJobInfoFromProto(j))
@@ -123,6 +117,8 @@ type Runner struct {
 	CreatedAt       time.Time
 	UpdatedAt       time.Time
 	DeletedAt       gorm.DeletedAt `gorm:"index"`
+	CreatedByName   string         `gorm:"->;column:created_by_name"`
+	CreatedByEmail  string         `gorm:"->;column:created_by_email"`
 }
 
 func (r *Runner) ToProto() *runnerv1.Runner {
@@ -132,7 +128,7 @@ func (r *Runner) ToProto() *runnerv1.Runner {
 		Description:  r.Description,
 		Labels:       r.Labels,
 		HealthStatus: DeriveHealthStatus(r.LastHeartbeatAt, time.Now()),
-		CreatedBy:    &commonv1.ActorRef{Id: r.CreatedBy},
+		CreatedBy:    &commonv1.ActorRef{Id: r.CreatedBy, DisplayName: r.CreatedByName, Email: r.CreatedByEmail},
 		CreatedAt:    timestamppb.New(r.CreatedAt),
 		UpdatedAt:    timestamppb.New(r.UpdatedAt),
 	}

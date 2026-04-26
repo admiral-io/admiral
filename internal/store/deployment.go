@@ -35,7 +35,7 @@ func (s *DeploymentStore) Create(ctx context.Context, d *model.Deployment) (*mod
 
 func (s *DeploymentStore) Get(ctx context.Context, id uuid.UUID) (*model.Deployment, error) {
 	var d model.Deployment
-	err := s.db.WithContext(ctx).Where("id = ?", id).First(&d).Error
+	err := s.db.WithContext(ctx).Scopes(WithActorRef("deployments", "triggered_by")).Where("deployments.id = ?", id).Take(&d).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, fmt.Errorf("deployment not found: %s", id)
 	}
@@ -47,7 +47,7 @@ func (s *DeploymentStore) Get(ctx context.Context, id uuid.UUID) (*model.Deploym
 
 func (s *DeploymentStore) List(ctx context.Context, scopes ...func(*gorm.DB) *gorm.DB) ([]model.Deployment, error) {
 	var deployments []model.Deployment
-	err := s.db.WithContext(ctx).Scopes(scopes...).Order("created_at DESC").Find(&deployments).Error
+	err := s.db.WithContext(ctx).Scopes(append(scopes, WithActorRef("deployments", "triggered_by"))...).Order("created_at DESC").Find(&deployments).Error
 	if err != nil {
 		return nil, fmt.Errorf("failed to list deployments: %w", err)
 	}
@@ -87,6 +87,34 @@ func (s *DeploymentStore) FindOldestQueued(ctx context.Context, appID, envID uui
 		return nil, fmt.Errorf("failed to find queued deployment: %w", err)
 	}
 	return &d, nil
+}
+
+func (s *DeploymentStore) DeleteByEnvironmentID(ctx context.Context, tx *gorm.DB, envID uuid.UUID) (int64, error) {
+	result := tx.WithContext(ctx).Where("environment_id = ?", envID).Delete(&model.Deployment{})
+	if result.Error != nil {
+		return 0, fmt.Errorf("failed to delete deployments for environment: %w", result.Error)
+	}
+	return result.RowsAffected, nil
+}
+
+func (s *DeploymentStore) DeleteByApplicationID(ctx context.Context, tx *gorm.DB, appID uuid.UUID) (int64, error) {
+	result := tx.WithContext(ctx).Where("application_id = ?", appID).Delete(&model.Deployment{})
+	if result.Error != nil {
+		return 0, fmt.Errorf("failed to delete deployments for application: %w", result.Error)
+	}
+	return result.RowsAffected, nil
+}
+
+func (s *DeploymentStore) CountByEnvironmentID(ctx context.Context, envID uuid.UUID) (int64, error) {
+	var count int64
+	err := s.db.WithContext(ctx).
+		Model(&model.Deployment{}).
+		Where("environment_id = ?", envID).
+		Count(&count).Error
+	if err != nil {
+		return 0, fmt.Errorf("failed to count deployments for environment: %w", err)
+	}
+	return count, nil
 }
 
 func (s *DeploymentStore) Update(ctx context.Context, d *model.Deployment, fields map[string]any) (*model.Deployment, error) {

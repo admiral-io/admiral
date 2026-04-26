@@ -4,10 +4,8 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
-	"time"
 
 	"github.com/google/uuid"
-	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
@@ -84,8 +82,7 @@ func (a *api) GetJobBundle(ctx context.Context, req *runnerv1.GetJobBundleReques
 		ArtifactUrl:      artifactURLForJob(jobID),
 		Variables:        vars,
 		WorkingDirectory: rev.WorkingDirectory,
-		BackendConfig:    a.buildBackendConfig(rev.ComponentId, dep.EnvironmentId),
-		TerraformVersion: "",
+		BackendConfig:    a.orchestration.BuildBackendConfig(rev.ComponentId, dep.EnvironmentId),
 	}
 
 	// For apply jobs, include the URL to download the binary plan file
@@ -123,101 +120,8 @@ func (a *api) ReportJobResult(ctx context.Context, req *runnerv1.ReportJobResult
 		return nil, status.Error(codes.InvalidArgument, "result is required")
 	}
 
-	jobStatus, err := model.JobStatusFromProto(result.GetStatus())
-	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "%v", err)
-	}
-
-	now := time.Now()
-
-	if _, err := a.jobStore.Update(ctx, job, map[string]any{
-		"status":       jobStatus,
-		"completed_at": now,
-	}); err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to update job: %v", err)
-	}
-
-	rev, err := a.revisionStore.Get(ctx, job.RevisionId)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to load revision: %v", err)
-	}
-
-	revFields := model.DeriveRevisionUpdate(job.JobType, jobStatus, result)
-	revFields["completed_at"] = now
-
-	// Persist plan output to object storage.
-	if planOutput := result.GetPlanOutput(); planOutput != "" {
-		key := fmt.Sprintf("plans/%s/plan.txt", rev.Id)
-		if err := a.objStore.PutObject(ctx, a.objBucket, key, []byte(planOutput)); err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to write plan output to object storage: %v", err)
-		}
-		revFields["plan_output_key"] = key
-	}
-
-	if _, err := a.revisionStore.Update(ctx, rev, revFields); err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to update revision: %v", err)
-	}
-
-	// Capture Terraform outputs after a successful apply.
-	dep, err := a.deploymentStore.Get(ctx, rev.DeploymentId)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to load deployment: %v", err)
-	}
-
-	if jobStatus == model.JobStatusSucceeded {
-		if err := a.captureOutputs(ctx, job, rev, dep, result); err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to capture outputs: %v", err)
-		}
-
-		// After a successful apply, cancel stale AWAITING_APPROVAL revisions
-		// for the same (component, environment) in other deployments. Their
-		// plans were computed against old state and are no longer valid.
-		if job.JobType == model.JobTypeApply || job.JobType == model.JobTypeDestroyApply {
-			canceled, err := a.revisionStore.CancelStaleAwaitingApproval(
-				ctx, rev.ComponentId, dep.EnvironmentId, dep.Id)
-			if err != nil {
-				a.logger.Error("state invalidation: failed to cancel stale revisions",
-					zap.String("component_id", rev.ComponentId.String()),
-					zap.String("environment_id", dep.EnvironmentId.String()),
-					zap.Error(err))
-			} else if canceled > 0 {
-				a.logger.Info("state invalidation: canceled stale awaiting-approval revisions",
-					zap.String("component_id", rev.ComponentId.String()),
-					zap.String("environment_id", dep.EnvironmentId.String()),
-					zap.Int64("count", canceled))
-			}
-		}
-
-		// Promote blocked jobs whose dependencies are now satisfied.
-		if err := a.promoteUnblockedJobs(ctx, rev); err != nil {
-			a.logger.Error("failed to promote unblocked jobs",
-				zap.String("deployment_id", rev.DeploymentId.String()),
-				zap.String("component", rev.ComponentName),
-				zap.Error(err))
-		}
-	}
-
-	// Recompute deployment composite status from the fresh revision set.
-	revisions, err := a.revisionStore.ListByDeployment(ctx, rev.DeploymentId)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to list revisions: %v", err)
-	}
-	depStatus := model.DeriveDeploymentStatus(revisions)
-	depFields := map[string]any{
-		"status":     depStatus,
-		"updated_at": now,
-	}
-	if model.IsTerminalDeploymentStatus(depStatus) {
-		depFields["completed_at"] = now
-	}
-	if _, err := a.deploymentStore.Update(ctx, dep, depFields); err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to update deployment: %v", err)
-	}
-
-	// When a deployment reaches a terminal state, promote the next queued
-	// deployment for the same (app, env).
-	if model.IsTerminalDeploymentStatus(depStatus) {
-		a.promoteQueuedDeployment(ctx, dep.ApplicationId, dep.EnvironmentId)
+	if err := a.orchestration.CompleteJob(ctx, job, result); err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to complete job: %v", err)
 	}
 
 	return &runnerv1.ReportJobResultResponse{Ack: true}, nil
