@@ -205,7 +205,7 @@ func (a *api) DeleteCredential(ctx context.Context, req *credentialv1.DeleteCred
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "invalid credential ID: %v", err)
 	}
-	
+
 	refCount, err := a.sourceStore.CountByCredentialID(ctx, id)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to check credential references: %v", err)

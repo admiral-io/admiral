@@ -20,6 +20,6 @@ CREATE TABLE IF NOT EXISTS access_tokens (
 );
 
 CREATE UNIQUE INDEX idx_access_tokens_token_hash ON access_tokens(token_hash);
-CREATE UNIQUE INDEX idx_access_tokens_subject_name ON access_tokens(subject, name) WHERE deleted_at IS NULL;
+CREATE UNIQUE INDEX idx_access_tokens_subject_name ON access_tokens(subject, name) WHERE deleted_at IS NULL AND kind <> 'session';
 CREATE INDEX idx_access_tokens_subject_kind ON access_tokens(subject, kind);
 CREATE INDEX idx_access_tokens_status ON access_tokens(status);

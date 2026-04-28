@@ -15,7 +15,6 @@ import (
 	variablev1 "go.admiral.io/sdk/proto/admiral/variable/v1"
 )
 
-// Variable type constants match the CHECK constraint in the migration.
 const (
 	VariableTypeString  = "STRING"
 	VariableTypeNumber  = "NUMBER"
@@ -23,7 +22,6 @@ const (
 	VariableTypeComplex = "COMPLEX"
 )
 
-// Variable source constants.
 const (
 	VariableSourceUser           = "USER"
 	VariableSourceInfrastructure = "INFRASTRUCTURE"
@@ -53,16 +51,16 @@ func VariableTypeFromProto(t variablev1.VariableType) string {
 }
 
 type Variable struct {
-	Id            uuid.UUID  `gorm:"type:uuid;default:gen_random_uuid();primaryKey"`
-	Key           string     `gorm:"type:varchar(63);not null"`
-	Value         string     `gorm:"type:text;not null;default:''"`
-	Sensitive     bool       `gorm:"not null;default:false"`
-	Type          string     `gorm:"type:text;not null;default:'STRING'"`
-	Source        string     `gorm:"type:text;not null;default:'USER'"`
-	Description   string     `gorm:"type:varchar(1024);not null;default:''"`
-	ApplicationId *uuid.UUID `gorm:"type:uuid"`
-	EnvironmentId *uuid.UUID `gorm:"type:uuid"`
-	CreatedBy      string     `gorm:"type:text;not null"`
+	Id             uuid.UUID `gorm:"type:uuid;default:gen_random_uuid();primaryKey"`
+	Key            string    `gorm:"type:varchar(63);not null"`
+	Value          string    `gorm:"type:text;not null;default:''"`
+	Sensitive      bool      `gorm:"not null;default:false"`
+	Type           string    `gorm:"type:text;not null;default:'STRING'"`
+	Source         string    `gorm:"type:text;not null;default:'USER'"`
+	Description    string    `gorm:"type:varchar(1024);not null;default:''"`
+	ApplicationId  uuid.UUID `gorm:"type:uuid;not null"`
+	EnvironmentId  uuid.UUID `gorm:"type:uuid;not null"`
+	CreatedBy      string    `gorm:"type:text;not null"`
 	CreatedAt      time.Time
 	UpdatedAt      time.Time
 	CreatedByName  string `gorm:"->;column:created_by_name"`
@@ -91,35 +89,34 @@ func (v *Variable) Validate() error {
 		return fmt.Errorf("unsupported variable type: %s", v.Type)
 	}
 
-	if v.EnvironmentId != nil && v.ApplicationId == nil {
-		return fmt.Errorf("environment_id requires application_id")
+	if v.ApplicationId == uuid.Nil {
+		return fmt.Errorf("application_id is required")
+	}
+	if v.EnvironmentId == uuid.Nil {
+		return fmt.Errorf("environment_id is required")
 	}
 
 	return nil
 }
 
 func (v *Variable) ToProto() *variablev1.Variable {
+	appID := v.ApplicationId.String()
+	envID := v.EnvironmentId.String()
 	out := &variablev1.Variable{
-		Id:          v.Id.String(),
-		Key:         v.Key,
-		Value:       v.Value,
-		Sensitive:   v.Sensitive,
-		Type:        variableTypeToProto[v.Type],
-		Source:      variableSourceToProto[v.Source],
-		Description: v.Description,
-		CreatedBy:   &commonv1.ActorRef{Id: v.CreatedBy, DisplayName: v.CreatedByName, Email: v.CreatedByEmail},
-		CreatedAt:   timestamppb.New(v.CreatedAt),
-		UpdatedAt:   timestamppb.New(v.UpdatedAt),
+		Id:            v.Id.String(),
+		Key:           v.Key,
+		Value:         v.Value,
+		Sensitive:     v.Sensitive,
+		Type:          variableTypeToProto[v.Type],
+		Source:        variableSourceToProto[v.Source],
+		Description:   v.Description,
+		ApplicationId: &appID,
+		EnvironmentId: &envID,
+		CreatedBy:     &commonv1.ActorRef{Id: v.CreatedBy, DisplayName: v.CreatedByName, Email: v.CreatedByEmail},
+		CreatedAt:     timestamppb.New(v.CreatedAt),
+		UpdatedAt:     timestamppb.New(v.UpdatedAt),
 	}
 
-	if v.ApplicationId != nil {
-		s := v.ApplicationId.String()
-		out.ApplicationId = &s
-	}
-	if v.EnvironmentId != nil {
-		s := v.EnvironmentId.String()
-		out.EnvironmentId = &s
-	}
 	if v.Sensitive {
 		out.Value = ""
 	}
@@ -129,20 +126,20 @@ func (v *Variable) ToProto() *variablev1.Variable {
 
 func VariablesFromEngineOutputs(
 	outputs map[string]*runnerv1.EngineOutput,
-	componentName string,
+	componentSlug string,
 	appID, envID uuid.UUID,
 	createdBy string,
 ) []Variable {
 	vars := make([]Variable, 0, len(outputs))
 	for name, out := range outputs {
 		vars = append(vars, Variable{
-			Key:           componentName + "." + name,
+			Key:           componentSlug + "." + name,
 			Value:         out.GetValue(),
 			Sensitive:     out.GetSensitive(),
 			Type:          tfTypeToVariableType(out.GetType()),
 			Source:        VariableSourceInfrastructure,
-			ApplicationId: &appID,
-			EnvironmentId: &envID,
+			ApplicationId: appID,
+			EnvironmentId: envID,
 			CreatedBy:     createdBy,
 		})
 	}
