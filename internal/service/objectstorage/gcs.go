@@ -8,6 +8,8 @@ import (
 	"io"
 	"time"
 
+	"cloud.google.com/go/auth"
+	"cloud.google.com/go/auth/credentials"
 	"cloud.google.com/go/storage"
 	"github.com/uber-go/tally/v4"
 	"go.uber.org/zap"
@@ -17,6 +19,8 @@ import (
 	"go.admiral.io/admiral/internal/config"
 )
 
+var gcsScopes = []string{storage.ScopeFullControl}
+
 type gcsService struct {
 	client *storage.Client
 	logger *zap.Logger
@@ -25,24 +29,12 @@ type gcsService struct {
 }
 
 func newGCSService(cfg *config.GCSStorageConfig, logger *zap.Logger, scope tally.Scope) (Service, error) {
-	var opts []option.ClientOption
-
-	switch {
-	case cfg.UseADC:
-		// Application Default Credentials – no opts needed
-	case cfg.CredentialsFile != "":
-		opts = append(opts, option.WithCredentialsFile(cfg.CredentialsFile))
-	case cfg.CredentialsJSON != "":
-		decoded, err := base64.StdEncoding.DecodeString(cfg.CredentialsJSON)
-		if err != nil {
-			return nil, fmt.Errorf("failed to decode GCS credentials_json: %w", err)
-		}
-		opts = append(opts, option.WithCredentialsJSON(decoded))
-	default:
-		logger.Warn("no GCS credentials specified; falling back to ADC")
+	creds, err := buildGCSCredentials(cfg)
+	if err != nil {
+		return nil, err
 	}
 
-	client, err := storage.NewClient(context.Background(), opts...)
+	client, err := storage.NewClient(context.Background(), option.WithAuthCredentials(creds))
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize GCS client: %w", err)
 	}
@@ -53,6 +45,37 @@ func newGCSService(cfg *config.GCSStorageConfig, logger *zap.Logger, scope tally
 		scope:  scope.SubScope("objectstorage"),
 		config: cfg,
 	}, nil
+}
+
+func buildGCSCredentials(cfg *config.GCSStorageConfig) (*auth.Credentials, error) {
+	opts := &credentials.DetectOptions{Scopes: gcsScopes}
+
+	switch {
+	case cfg.CredentialsFile != "":
+		creds, err := credentials.NewCredentialsFromFile(credentials.ServiceAccount, cfg.CredentialsFile, opts)
+		if err != nil {
+			return nil, fmt.Errorf("load GCS service account credentials from file: %w", err)
+		}
+		return creds, nil
+	case cfg.CredentialsJSON != "":
+		decoded, err := base64.StdEncoding.DecodeString(cfg.CredentialsJSON)
+		if err != nil {
+			return nil, fmt.Errorf("decode GCS credentials_json: %w", err)
+		}
+		creds, err := credentials.NewCredentialsFromJSON(credentials.ServiceAccount, decoded, opts)
+		if err != nil {
+			return nil, fmt.Errorf("load GCS service account credentials from json: %w", err)
+		}
+		return creds, nil
+	case cfg.UseADC:
+		creds, err := credentials.DetectDefault(opts)
+		if err != nil {
+			return nil, fmt.Errorf("detect GCS application default credentials: %w", err)
+		}
+		return creds, nil
+	default:
+		return nil, errors.New("gcs: no credential source configured (config validation should have caught this)")
+	}
 }
 
 func (s *gcsService) GetObject(ctx context.Context, bucket, path string) ([]byte, error) {

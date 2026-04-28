@@ -19,31 +19,33 @@ type EnvMeta struct {
 	Id   string
 }
 
-// DeployMeta exposes deployment metadata to template expressions via {{ .deploy.* }}.
-type DeployMeta struct {
+// RunMeta exposes run metadata to template expressions via {{ .run.* }}.
+type RunMeta struct {
 	Id string
 }
 
 // SelfMeta exposes the current component's own metadata via {{ .self.* }}.
 type SelfMeta struct {
 	Name string
+	Slug string
 }
 
 // EvalContext holds every namespace reachable from a template expression.
 //
-//	{{ .var.KEY }}              → Var[KEY]
-//	{{ .component.NAME.OUT }}  → Component[NAME][OUT]
-//	{{ .app.name }}            → App.Name
-//	{{ .env.name }}            → Env.Name
-//	{{ .deploy.id }}           → Deploy.Id
-//	{{ .self.name }}           → Self.Name
+//	{{ .var.KEY }}             → Var[KEY]
+//	{{ .output.SLUG.OUT }}    → Output[SLUG][OUT]
+//	{{ .app.name }}           → App.Name
+//	{{ .env.name }}           → Env.Name
+//	{{ .run.id }}             → Run.Id
+//	{{ .self.name }}          → Self.Name
+//	{{ .self.slug }}          → Self.Slug
 type EvalContext struct {
-	Var       map[string]any            // resolved variables (hierarchy-merged)
-	Component map[string]map[string]any // component_name → output_name → value
-	App       AppMeta
-	Env       EnvMeta
-	Deploy    DeployMeta
-	Self      SelfMeta
+	Var    map[string]any            // resolved variables (hierarchy-merged)
+	Output map[string]map[string]any // component_slug → output_name → value
+	App    AppMeta
+	Env    EnvMeta
+	Run    RunMeta
+	Self   SelfMeta
 }
 
 // Evaluate executes tmpl as a Go text/template against ctx and returns the
@@ -64,23 +66,23 @@ func Evaluate(tmpl string, ctx *EvalContext) (string, error) {
 	}
 
 	// Build a map[string]any so template authors write {{ .var.x }},
-	// {{ .component.vpc.id }}, {{ .app.name }} with lowercase namespace keys.
+	// {{ .output.vpc.id }}, {{ .app.name }} with lowercase namespace keys.
 	varMap := ctx.Var
 	if varMap == nil {
 		varMap = map[string]any{}
 	}
-	compMap := ctx.Component
-	if compMap == nil {
-		compMap = map[string]map[string]any{}
+	outMap := ctx.Output
+	if outMap == nil {
+		outMap = map[string]map[string]any{}
 	}
 
 	data := map[string]any{
-		"var":       varMap,
-		"component": compMap,
-		"app":       ctx.App,
-		"env":       ctx.Env,
-		"deploy":    ctx.Deploy,
-		"self":      ctx.Self,
+		"var":    varMap,
+		"output": outMap,
+		"app":    ctx.App,
+		"env":    ctx.Env,
+		"run":    ctx.Run,
+		"self":   ctx.Self,
 	}
 
 	var buf bytes.Buffer

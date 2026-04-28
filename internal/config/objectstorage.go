@@ -73,6 +73,22 @@ func (g *GCSStorageConfig) Validate() error {
 		return nil
 	}
 
+	count := 0
+	if g.UseADC {
+		count++
+	}
+	if g.CredentialsFile != "" {
+		count++
+	}
+	if g.CredentialsJSON != "" {
+		count++
+	}
+	if count == 0 {
+		return fmt.Errorf("one of use_adc, credentials_file, or credentials_json must be set")
+	}
+	if count > 1 {
+		return fmt.Errorf("use_adc, credentials_file, and credentials_json are mutually exclusive")
+	}
 	return nil
 }
 

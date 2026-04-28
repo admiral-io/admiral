@@ -41,7 +41,7 @@ func validAuthn() *Authn {
 		ClientID:      "client-id",
 		ClientSecret:  "client-secret",
 		RedirectURL:   "http://localhost:8080/callback",
-		SigningSecret:  "this-is-at-least-32-bytes-long!!",
+		SigningSecret: "this-is-at-least-32-bytes-long!!",
 	}
 }
 

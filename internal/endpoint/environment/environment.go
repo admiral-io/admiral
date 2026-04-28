@@ -12,6 +12,7 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"gorm.io/gorm"
 
 	"go.admiral.io/admiral/internal/config"
 	"go.admiral.io/admiral/internal/endpoint"
@@ -22,17 +23,22 @@ import (
 	"go.admiral.io/admiral/internal/service/database"
 	"go.admiral.io/admiral/internal/store"
 	environmentv1 "go.admiral.io/sdk/proto/admiral/environment/v1"
+	variablev1 "go.admiral.io/sdk/proto/admiral/variable/v1"
 )
 
 const Name = "endpoint.environment"
 
 var filterColumns = []string{"name", "application_id"}
 
+var variableFilterColumns = []string{"key", "sensitive", "type", "source"}
+
 type api struct {
-	store  *store.EnvironmentStore
-	qb     querybuilder.QueryBuilder
-	logger *zap.Logger
-	scope  tally.Scope
+	store    *store.EnvironmentStore
+	varStore *store.VariableStore
+	qb       querybuilder.QueryBuilder
+	varQb    querybuilder.QueryBuilder
+	logger   *zap.Logger
+	scope    tally.Scope
 }
 
 func New(_ *config.Config, log *zap.Logger, scope tally.Scope) (endpoint.Endpoint, error) {
@@ -46,11 +52,18 @@ func New(_ *config.Config, log *zap.Logger, scope tally.Scope) (endpoint.Endpoin
 		return nil, err
 	}
 
+	varStore, err := store.NewVariableStore(db.GormDB())
+	if err != nil {
+		return nil, err
+	}
+
 	return &api{
-		store:  envStore,
-		logger: log.Named(Name),
-		scope:  scope.SubScope("environment"),
-		qb:     querybuilder.New("environments", filterColumns),
+		store:    envStore,
+		varStore: varStore,
+		logger:   log.Named(Name),
+		scope:    scope.SubScope("environment"),
+		qb:       querybuilder.New("environments", filterColumns),
+		varQb:    querybuilder.New("variables", variableFilterColumns),
 	}, nil
 }
 
@@ -204,7 +217,7 @@ func (a *api) DeleteEnvironment(ctx context.Context, req *environmentv1.DeleteEn
 		return nil, status.Errorf(codes.InvalidArgument, "invalid environment ID: %v", err)
 	}
 
-	deploymentsDeleted, err := a.store.DeleteCascade(ctx, id, req.GetForce())
+	runsDeleted, err := a.store.DeleteCascade(ctx, id, req.GetForce())
 	if err != nil {
 		if depErr, ok := errors.AsType[*store.HasDependentsError](err); ok {
 			return nil, status.Errorf(codes.FailedPrecondition, "%s", depErr.Error())
@@ -212,12 +225,53 @@ func (a *api) DeleteEnvironment(ctx context.Context, req *environmentv1.DeleteEn
 		return nil, status.Errorf(codes.Internal, "failed to delete environment: %v", err)
 	}
 
-	if deploymentsDeleted > 0 {
+	if runsDeleted > 0 {
 		a.logger.Info("force-deleted environment",
 			zap.String("environment_id", id.String()),
-			zap.Int64("deployments_deleted", deploymentsDeleted),
+			zap.Int64("runs_deleted", runsDeleted),
 		)
 	}
 
 	return &environmentv1.DeleteEnvironmentResponse{}, nil
+}
+
+func (a *api) ListEnvironmentVariables(ctx context.Context, req *environmentv1.ListEnvironmentVariablesRequest) (*environmentv1.ListEnvironmentVariablesResponse, error) {
+	envID, err := uuid.Parse(req.GetEnvironmentId())
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "invalid environment ID: %v", err)
+	}
+
+	if _, err := a.store.Get(ctx, envID); err != nil {
+		return nil, status.Errorf(codes.NotFound, "environment not found: %s", envID)
+	}
+
+	var pageToken *string
+	if req.GetPageToken() != "" {
+		pt := req.GetPageToken()
+		pageToken = &pt
+	}
+
+	scopeEnv := func(db *gorm.DB) *gorm.DB {
+		return db.Where("variables.environment_id = ?", envID)
+	}
+
+	vars, err := a.varStore.List(ctx, scopeEnv, a.varQb.PaginatedQuery(req.GetFilter(), req.GetPageSize(), pageToken))
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to list environment variables: %v", err)
+	}
+
+	resp := &environmentv1.ListEnvironmentVariablesResponse{
+		Variables: make([]*variablev1.Variable, 0, len(vars)),
+	}
+	for i := range vars {
+		resp.Variables = append(resp.Variables, vars[i].ToProto())
+	}
+
+	if len(vars) > 0 && int32(len(vars)) == querybuilder.EffectiveLimit(req.GetPageSize()) {
+		last := vars[len(vars)-1]
+		token := fmt.Sprintf("%d|%s", last.CreatedAt.Unix(), last.Id.String())
+		resp.NextPageToken = base64.RawURLEncoding.EncodeToString([]byte(token))
+	}
+
+	return resp, nil
 }

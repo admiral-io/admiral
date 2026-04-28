@@ -196,11 +196,11 @@ func (a *api) DeleteApplication(ctx context.Context, req *applicationv1.DeleteAp
 		return nil, status.Errorf(codes.Internal, "failed to delete application: %v", err)
 	}
 
-	if result.Environments > 0 || result.Deployments > 0 {
+	if result.Environments > 0 || result.Runs > 0 {
 		a.logger.Info("force-deleted application",
 			zap.String("application_id", id.String()),
 			zap.Int64("environments_deleted", result.Environments),
-			zap.Int64("deployments_deleted", result.Deployments),
+			zap.Int64("runs_deleted", result.Runs),
 		)
 	}
 

@@ -10,7 +10,7 @@ const revisionSummarySchema = z.object({
   pending: z.number().nullish(),
 });
 
-export const deploymentSchema = z.object({
+export const runSchema = z.object({
   id: z.string(),
   application_id: z.string().nullish(),
   environment_id: z.string().nullish(),
@@ -19,14 +19,15 @@ export const deploymentSchema = z.object({
   triggered_by: z.string().nullish(),
   message: z.string().nullish(),
   destroy: z.boolean().nullish(),
-  source_deployment_id: z.string().nullish(),
+  source_run_id: z.string().nullish(),
+  change_set_id: z.string().nullish(),
   revision_summary: revisionSummarySchema.nullish(),
   created_at: z.string().nullish(),
   completed_at: z.string().nullish(),
 });
 
-export const listDeploymentsSchema = z.object({
-  deployments: z.array(deploymentSchema).default([]),
+export const listRunsSchema = z.object({
+  runs: z.array(runSchema).default([]),
   next_page_token: z.string().nullish(),
 });
 
@@ -38,9 +39,9 @@ const planSummarySchema = z.object({
 
 export const revisionSchema = z.object({
   id: z.string(),
-  deployment_id: z.string().nullish(),
+  run_id: z.string().nullish(),
   component_id: z.string().nullish(),
-  component_name: z.string().nullish(),
+  component_slug: z.string().nullish(),
   kind: z.string().nullish(),
   status: z.string().nullish(),
   source_id: z.string().nullish(),
@@ -66,9 +67,9 @@ export const listRevisionsSchema = z.object({
   next_page_token: z.string().nullish(),
 });
 
-export type Deployment = z.infer<typeof deploymentSchema>;
+export type Run = z.infer<typeof runSchema>;
 export type RevisionSummary = z.infer<typeof revisionSummarySchema>;
 export type Revision = z.infer<typeof revisionSchema>;
 export type TerraformPlanSummary = z.infer<typeof planSummarySchema>;
-export type ListDeploymentsResponse = z.infer<typeof listDeploymentsSchema>;
+export type ListRunsResponse = z.infer<typeof listRunsSchema>;
 export type ListRevisionsResponse = z.infer<typeof listRevisionsSchema>;

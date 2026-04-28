@@ -5,7 +5,7 @@ set -e
 mc alias set local http://minio:9000 "$MINIO_ROOT_USER" "$MINIO_ROOT_PASSWORD"
 
 # Create buckets
-mc mb -p local/admiral 2>/dev/null || true
+mc mb -p local/admiral --with-lock --with-versioning 2>/dev/null || true
 
 # Output confirmation
 echo "MinIO buckets setup completed"

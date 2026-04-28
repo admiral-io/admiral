@@ -5,7 +5,6 @@ import (
 	"slices"
 	"strings"
 
-	commonv1 "go.admiral.io/sdk/proto/admiral/common/v1"
 	"github.com/uber-go/tally/v4"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
@@ -17,6 +16,7 @@ import (
 	"go.admiral.io/admiral/internal/gateway/meta"
 	"go.admiral.io/admiral/internal/middleware"
 	"go.admiral.io/admiral/internal/service/authn"
+	commonv1 "go.admiral.io/sdk/proto/admiral/common/v1"
 )
 
 const Name = "middleware.authz"

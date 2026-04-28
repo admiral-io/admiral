@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/uber-go/tally/v4"
 	"go.uber.org/zap"
 
@@ -62,25 +63,7 @@ func TestNewGCSService(t *testing.T) {
 				CredentialsJSON: "invalid-base64",
 			},
 			expectError: true,
-			errorMsg:    "failed to decode GCS credentials_json",
-		},
-		{
-			name: "GCS config falls back to ADC",
-			config: &config.GCSStorageConfig{
-				ProjectID: "test-project",
-				// No credentials specified, should fall back to ADC
-			},
-			expectError: false, // Should work but log a warning
-		},
-		{
-			name: "GCS config with both file and JSON credentials",
-			config: &config.GCSStorageConfig{
-				ProjectID:       "test-project",
-				CredentialsFile: "/path/to/credentials.json",
-				CredentialsJSON: base64.StdEncoding.EncodeToString([]byte(`{"type":"service_account"}`)),
-				// File should take precedence
-			},
-			expectError: false,
+			errorMsg:    "decode GCS credentials_json",
 		},
 	}
 
@@ -94,14 +77,11 @@ func TestNewGCSService(t *testing.T) {
 					assert.Contains(t, err.Error(), tc.errorMsg)
 				}
 			} else {
-				// Note: These tests will fail in CI/CD without actual GCS credentials,
-				// but the validation logic should work
+				if err != nil && isExpectedGCSAuthFailure(err) {
+					return
+				}
 				if err != nil {
-					// If it fails due to GCS client initialization, that's expected
-					// We're mainly testing the configuration validation
-					if !strings.Contains(err.Error(), "failed to initialize GCS client") {
-						t.Errorf("Unexpected error: %v", err)
-					}
+					t.Errorf("Unexpected error: %v", err)
 					return
 				}
 
@@ -122,81 +102,25 @@ func TestGCSService_CredentialsConfiguration(t *testing.T) {
 	logger := zap.NewNop()
 	scope := tally.NoopScope
 
-	t.Run("credentials precedence", func(t *testing.T) {
-		testCases := []struct {
-			name            string
-			useADC          bool
-			credentialsFile string
-			credentialsJSON string
-			expectedMethod  string
-		}{
-			{
-				name:            "UseADC takes precedence",
-				useADC:          true,
-				credentialsFile: "/some/file",
-				credentialsJSON: "some-json",
-				expectedMethod:  "ADC",
-			},
-			{
-				name:            "CredentialsFile takes precedence over JSON",
-				useADC:          false,
-				credentialsFile: "/path/to/file.json",
-				credentialsJSON: base64.StdEncoding.EncodeToString([]byte(`{"type":"service_account"}`)),
-				expectedMethod:  "file",
-			},
-			{
-				name:            "CredentialsJSON when no file",
-				useADC:          false,
-				credentialsFile: "",
-				credentialsJSON: base64.StdEncoding.EncodeToString([]byte(`{"type":"service_account"}`)),
-				expectedMethod:  "json",
-			},
-			{
-				name:            "Falls back to ADC when nothing specified",
-				useADC:          false,
-				credentialsFile: "",
-				credentialsJSON: "",
-				expectedMethod:  "fallback-ADC",
-			},
+	t.Run("base64 decoding error surfaces", func(t *testing.T) {
+		cfg := &config.GCSStorageConfig{
+			ProjectID:       "test-project",
+			CredentialsJSON: "!!!not-valid-base64!!!",
 		}
-
-		for _, tc := range testCases {
-			t.Run(tc.name, func(t *testing.T) {
-				cfg := &config.GCSStorageConfig{
-					ProjectID:       "test-project",
-					UseADC:          tc.useADC,
-					CredentialsFile: tc.credentialsFile,
-					CredentialsJSON: tc.credentialsJSON,
-				}
-
-				// This will likely fail due to no actual GCS environment,
-				// but we can verify the configuration parsing works
-				_, err := newGCSService(cfg, logger, scope)
-
-				// We expect this to fail in test environment, but not due to config validation
-				if err != nil && !strings.Contains(err.Error(), "failed to initialize GCS client") {
-					// If it's a validation error, that's a real issue
-					if strings.Contains(err.Error(), "bucket name") {
-						t.Errorf("Configuration validation failed: %v", err)
-					}
-				}
-			})
-		}
+		_, err := newGCSService(cfg, logger, scope)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "decode GCS credentials_json")
 	})
 
-	t.Run("base64 decoding", func(t *testing.T) {
-		validJSON := `{"type":"service_account","project_id":"test"}`
-		validBase64 := base64.StdEncoding.EncodeToString([]byte(validJSON))
-
+	t.Run("credentials_json reaches credential loader", func(t *testing.T) {
+		validBase64 := base64.StdEncoding.EncodeToString([]byte(`{"type":"service_account","project_id":"test"}`))
 		cfg := &config.GCSStorageConfig{
 			ProjectID:       "test-project",
 			CredentialsJSON: validBase64,
 		}
-
-		// This should not fail due to base64 decoding
 		_, err := newGCSService(cfg, logger, scope)
-		if err != nil && strings.Contains(err.Error(), "failed to decode GCS credentials_json") {
-			t.Errorf("Base64 decoding should work: %v", err)
+		if err != nil {
+			assert.NotContains(t, err.Error(), "decode GCS credentials_json")
 		}
 	})
 }
@@ -500,16 +424,12 @@ func TestGCSService_ConfigValidation(t *testing.T) {
 	logger := zap.NewNop()
 	scope := tally.NoopScope
 
-	// This test function can validate GCS configuration that doesn't involve bucket names
-	// since bucket names are now passed as parameters to methods, not stored in config
 	t.Run("GCS config creation", func(t *testing.T) {
 		cfg := &config.GCSStorageConfig{
 			ProjectID: "test-project",
 			UseADC:    true,
 		}
 
-		// This may fail due to GCS client initialization in test environment,
-		// but should not fail due to configuration validation
 		service, err := newGCSService(cfg, logger, scope)
 		if err != nil && !strings.Contains(err.Error(), "failed to initialize GCS client") {
 			t.Errorf("Configuration should be valid: %v", err)
@@ -536,8 +456,6 @@ func TestGCSService_ErrorHandling(t *testing.T) {
 	ctx := context.Background()
 
 	t.Run("operations handle nil client gracefully in validation", func(t *testing.T) {
-		// These should fail at validation level, not panic due to nil client
-
 		_, err := mockGCS.GetObject(ctx, "", "path") // Invalid bucket
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "invalid bucket")

@@ -8,9 +8,8 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	commonv1 "go.admiral.io/sdk/proto/admiral/common/v1"
-
 	"go.admiral.io/admiral/internal/service/authn"
+	commonv1 "go.admiral.io/sdk/proto/admiral/common/v1"
 )
 
 func TestCheckTokenType(t *testing.T) {

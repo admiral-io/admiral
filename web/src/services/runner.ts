@@ -277,9 +277,9 @@ export async function createToken(params: CreateRunnerTokenParams): Promise<Crea
   return parsed.data;
 }
 
-export async function getToken(runnerId: string, tokenId: string): Promise<AccessToken> {
-  const { data, error } = await client.GET('/api/v1/runners/{runner_id}/tokens/{token_id}', {
-    params: { path: { runner_id: runnerId, token_id: tokenId } },
+export async function getToken(tokenId: string): Promise<AccessToken> {
+  const { data, error } = await client.GET('/api/v1/runners/tokens/{token_id}', {
+    params: { path: { token_id: tokenId } },
   });
 
   if (error) {
@@ -320,11 +320,11 @@ export async function listTokens(params: ListRunnerTokensParams): Promise<ListTo
   });
 }
 
-export async function revokeToken(runnerId: string, tokenId: string): Promise<AccessToken> {
+export async function revokeToken(tokenId: string): Promise<AccessToken> {
   const { data, error } = await client.POST(
-    '/api/v1/runners/{runner_id}/tokens/{token_id}/revoke',
+    '/api/v1/runners/tokens/{token_id}/revoke',
     {
-      params: { path: { runner_id: runnerId, token_id: tokenId } },
+      params: { path: { token_id: tokenId } },
       body: {},
     },
   );

@@ -102,7 +102,6 @@ func (g *Graph) TopoSort() ([][]string, error) {
 
 	for len(queue) > 0 {
 		phase := queue
-		queue = nil
 		processed += len(phase)
 		phases = append(phases, phase)
 

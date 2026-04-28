@@ -18,7 +18,7 @@ var AllScopes = []string{
 	"credential:read", "credential:write",
 	"source:read", "source:write",
 	"module:read", "module:write",
-	"deploy:read", "deploy:write",
+	"run:read", "run:write",
 	"runner:read", "runner:write", "runner:exec",
 	"state:read", "state:write", "state:admin",
 	"token:read", "token:write",

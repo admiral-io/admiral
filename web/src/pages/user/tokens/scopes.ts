@@ -66,12 +66,12 @@ export const SCOPE_GROUPS: ScopeGroup[] = [
     ],
   },
   {
-    id: 'deploy',
-    label: 'deploy',
-    description: 'Create and observe deployments',
+    id: 'run',
+    label: 'run',
+    description: 'Create and observe runs',
     scopes: [
-      { value: 'deploy:read', label: 'View deployments and revisions' },
-      { value: 'deploy:write', label: 'Create, apply, and cancel deployments' },
+      { value: 'run:read', label: 'View runs and revisions' },
+      { value: 'run:write', label: 'Create, apply, and cancel runs' },
     ],
   },
   {
@@ -81,6 +81,7 @@ export const SCOPE_GROUPS: ScopeGroup[] = [
     scopes: [
       { value: 'runner:read', label: 'View runners, runner status, and jobs' },
       { value: 'runner:write', label: 'Create, update, delete runners and rotate tokens' },
+      { value: 'runner:exec', label: 'Runner-only: claim jobs and report results' },
     ],
   },
   {

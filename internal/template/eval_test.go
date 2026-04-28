@@ -60,10 +60,10 @@ func TestEvaluate_EnvMeta(t *testing.T) {
 	}
 }
 
-func TestEvaluate_ComponentOutput(t *testing.T) {
-	tmpl := `{"vpc_id": "{{ .component.vpc.vpc_id }}"}`
+func TestEvaluate_OutputRef(t *testing.T) {
+	tmpl := `{"vpc_id": "{{ .output.vpc.vpc_id }}"}`
 	ctx := &EvalContext{
-		Component: map[string]map[string]any{
+		Output: map[string]map[string]any{
 			"vpc": {"vpc_id": "vpc-abc123"},
 		},
 	}
@@ -78,9 +78,9 @@ func TestEvaluate_ComponentOutput(t *testing.T) {
 }
 
 func TestEvaluate_ComplexTypeWithToJson(t *testing.T) {
-	tmpl := `{"subnet_ids": {{ .component.vpc.subnet_ids | toJson }}}`
+	tmpl := `{"subnet_ids": {{ .output.vpc.subnet_ids | toJson }}}`
 	ctx := &EvalContext{
-		Component: map[string]map[string]any{
+		Output: map[string]map[string]any{
 			"vpc": {
 				"subnet_ids": []any{"subnet-a", "subnet-b", "subnet-c"},
 			},
@@ -133,12 +133,12 @@ func TestEvaluate_StrictMissingVar(t *testing.T) {
 	}
 }
 
-func TestEvaluate_StrictMissingComponent(t *testing.T) {
-	tmpl := `{"vpc_id": "{{ .component.vpc.vpc_id }}"}`
+func TestEvaluate_StrictMissingOutput(t *testing.T) {
+	tmpl := `{"vpc_id": "{{ .output.vpc.vpc_id }}"}`
 	ctx := &EvalContext{}
 	_, err := Evaluate(tmpl, ctx)
 	if err == nil {
-		t.Fatal("expected error for missing component, got nil")
+		t.Fatal("expected error for missing output, got nil")
 	}
 }
 
@@ -222,7 +222,7 @@ func TestValidate_ValidTemplate(t *testing.T) {
 		"",
 		`{"static": "value"}`,
 		`{"region": "{{ .var.x }}"}`,
-		`{"ids": {{ .component.vpc.ids | toJson }}}`,
+		`{"ids": {{ .output.vpc.ids | toJson }}}`,
 		`{{ if eq .env.Name "prod" }}{"ha": true}{{ else }}{"ha": false}{{ end }}`,
 	}
 	for _, tmpl := range tests {

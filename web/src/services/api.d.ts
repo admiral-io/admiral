@@ -150,6 +150,194 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/changesets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List change sets
+         * @description Common filter fields: `application_id`, `environment_id`, `status`. The
+         *      returned `ChangeSet` records do not include entries or variable entries
+         *      -- call GetChangeSet for the full record.
+         *
+         *      Scope: `app:read`
+         */
+        get: operations["ChangeSetAPI_ListChangeSets"];
+        put?: never;
+        /**
+         * Create a change set
+         * @description Multiple change sets can be open against the same target simultaneously.
+         *      Conflicts are detected at deploy time, not at create time.
+         *
+         *      Scope: `app:write`
+         */
+        post: operations["ChangeSetAPI_CreateChangeSet"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/changesets/{change_set.id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Update a change set
+         * @description Rejected when the change set is not OPEN.
+         *
+         *      Scope: `app:write`
+         */
+        patch: operations["ChangeSetAPI_UpdateChangeSet"];
+        trace?: never;
+    };
+    "/api/v1/changesets/{change_set_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Retrieve a change set
+         * @description Scope: `app:read`
+         */
+        get: operations["ChangeSetAPI_GetChangeSet"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/changesets/{change_set_id}/copy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Copy a change set to another environment
+         * @description The target application is the source's application; only the environment
+         *      can be retargeted. After copying, the resulting change set can be
+         *      modified (entries added, removed, or rewritten) before being deployed.
+         *
+         *      Scope: `app:write`
+         */
+        post: operations["ChangeSetAPI_CopyChangeSet"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/changesets/{change_set_id}/discard": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Discard a change set
+         * @description Scope: `app:write`
+         */
+        post: operations["ChangeSetAPI_DiscardChangeSet"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/changesets/{change_set_id}/entries/{component_slug}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Add or update an entry
+         * @description The `change_type` field selects the operation:
+         *        - CREATE: add a new component. Requires `module_id`. Rejects if a
+         *          component with the same slug already exists in the application.
+         *        - UPDATE: change an existing component. The slug must match an
+         *          existing component in the application. Only non-empty optional
+         *          fields are recorded as changes.
+         *        - DESTROY: schedule the component for terraform destroy at deploy.
+         *        - ORPHAN: detach from management without destroying infrastructure.
+         *
+         *      Rejected when the change set is not OPEN.
+         *
+         *      Scope: `app:write`
+         */
+        put: operations["ChangeSetAPI_SetEntry"];
+        post?: never;
+        /**
+         * Remove an entry
+         * @description Rejected when the change set is not OPEN.
+         *
+         *      Scope: `app:write`
+         */
+        delete: operations["ChangeSetAPI_RemoveEntry"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/changesets/{change_set_id}/variables/{key}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set a variable
+         * @description To delete a variable on apply, use RemoveVariable -- it writes a
+         *      tombstone entry on the change set so the apply phase removes the key.
+         *
+         *      Rejected when the change set is not OPEN.
+         *
+         *      Scope: `app:write`
+         */
+        put: operations["ChangeSetAPI_SetVariable"];
+        post?: never;
+        /**
+         * Remove a variable on apply
+         * @description To withdraw the deletion intent before deploy, call SetVariable for the
+         *      same key with the desired value (which overwrites the tombstone).
+         *
+         *      Rejected when the change set is not OPEN.
+         *
+         *      Scope: `app:write`
+         */
+        delete: operations["ChangeSetAPI_RemoveVariable"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/clusters": {
         parameters: {
             query?: never;
@@ -361,143 +549,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/components": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * List components
-         * @description The response behavior depends on the filter:
-         *        - Filter by `application_id` only: returns application-level component
-         *          definitions (defaults).
-         *        - Filter by `application_id` + `environment_id`: returns the resolved
-         *          view with environment overrides applied. Disabled components are
-         *          included with `disabled=true`. The `has_override` field indicates
-         *          whether the component differs from its application-level default.
-         *
-         *      Scope: `app:read`
-         */
-        get: operations["ComponentAPI_ListComponents"];
-        put?: never;
-        /**
-         * Create a component
-         * @description The component name must be unique within the application. The module must
-         *      exist and be accessible to the caller's tenant.
-         *
-         *      Scope: `app:write`
-         */
-        post: operations["ComponentAPI_CreateComponent"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/components/{component.id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        /**
-         * Update a component
-         * @description When renaming a component, the server validates that no other components
-         *      reference the old name in their values_template expressions and rejects
-         *      the rename if references exist.
-         *
-         *      Scope: `app:write`
-         */
-        patch: operations["ComponentAPI_UpdateComponent"];
-        trace?: never;
-    };
-    "/api/v1/components/{component_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Retrieve a component
-         * @description Scope: `app:read`
-         */
-        get: operations["ComponentAPI_GetComponent"];
-        put?: never;
-        post?: never;
-        /**
-         * Delete a component
-         * @description Scope: `app:write`
-         */
-        delete: operations["ComponentAPI_DeleteComponent"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/components/{component_id}/overrides": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * List component overrides
-         * @description Scope: `env:read`
-         */
-        get: operations["ComponentAPI_ListComponentOverrides"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/components/{component_id}/overrides/{environment_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Retrieve a component override
-         * @description Scope: `env:read`
-         */
-        get: operations["ComponentAPI_GetComponentOverride"];
-        /**
-         * Set a component override
-         * @description For example, a "redis" component might use a Helm chart module in dev but
-         *      a Terraform ElastiCache module in prod.
-         *
-         *      This is an upsert -- if an override already exists for this component +
-         *      environment combination, it is replaced.
-         *
-         *      Scope: `env:write`
-         */
-        put: operations["ComponentAPI_SetComponentOverride"];
-        post?: never;
-        /**
-         * Delete a component override
-         * @description Scope: `env:write`
-         */
-        delete: operations["ComponentAPI_DeleteComponentOverride"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/v1/credentials": {
         parameters: {
             query?: never;
@@ -576,167 +627,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/deployments": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * List deployments
-         * @description Common filter fields: `application_id`, `environment_id`, `status`,
-         *      `trigger_type`. Use to view deployment history for an environment.
-         *
-         *      Scope: `deploy:read`
-         */
-        get: operations["DeploymentAPI_ListDeployments"];
-        put?: never;
-        /**
-         * Create a deployment
-         * @description The server resolves all components (with environment overrides applied),
-         *      builds the dependency DAG, and begins rendering and executing revisions.
-         *
-         *      To destroy all resources in an environment (e.g., before deleting the
-         *      environment), set `destroy` to true. This runs the engine's destroy
-         *      operation (e.g., `terraform destroy` / `tofu destroy`) for infrastructure
-         *      components and deletes workload resources from the cluster, in reverse
-         *      dependency order.
-         *
-         *      Concurrency: only one deployment can be active per application+environment
-         *      at a time. If a deployment is already in progress (PENDING or RUNNING),
-         *      the new deployment is queued and will start automatically when the
-         *      current deployment completes or is canceled.
-         *
-         *      Scope: `deploy:write`
-         */
-        post: operations["DeploymentAPI_CreateDeployment"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/deployments/{deployment_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Retrieve a deployment
-         * @description Scope: `deploy:read`
-         */
-        get: operations["DeploymentAPI_GetDeployment"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/deployments/{deployment_id}/apply": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Apply a planned deployment
-         * @description Scope: `deploy:write`
-         */
-        post: operations["DeploymentAPI_ApplyDeployment"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/deployments/{deployment_id}/cancel": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Cancel a deployment
-         * @description Scope: `deploy:write`
-         */
-        post: operations["DeploymentAPI_CancelDeployment"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/deployments/{deployment_id}/revisions": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * List revisions
-         * @description Scope: `deploy:read`
-         */
-        get: operations["DeploymentAPI_ListRevisions"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/deployments/{deployment_id}/revisions/{revision_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Retrieve a revision
-         * @description Scope: `deploy:read`
-         */
-        get: operations["DeploymentAPI_GetRevision"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/deployments/{deployment_id}/revisions/{revision_id}/retry": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Retry a revision
-         * @description Scope: `deploy:write`
-         */
-        post: operations["DeploymentAPI_RetryRevision"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/v1/environments": {
         parameters: {
             query?: never;
@@ -800,6 +690,28 @@ export interface paths {
          * @description Scope: `env:write`
          */
         delete: operations["EnvironmentAPI_DeleteEnvironment"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/environments/{environment_id}/variables": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List variables for an environment
+         * @description Sensitive variable values are masked in the response.
+         *
+         *      Scope: `var:read`
+         */
+        get: operations["EnvironmentAPI_ListEnvironmentVariables"];
+        put?: never;
+        post?: never;
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -1298,6 +1210,167 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/runs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List runs
+         * @description Common filter fields: `application_id`, `environment_id`, `status`,
+         *      `trigger_type`. Use to view run history for an environment.
+         *
+         *      Scope: `run:read`
+         */
+        get: operations["RunAPI_ListRuns"];
+        put?: never;
+        /**
+         * Create a run
+         * @description The server resolves all components (with environment overrides applied),
+         *      builds the dependency DAG, and begins rendering and executing revisions.
+         *
+         *      To destroy all resources in an environment (e.g., before deleting the
+         *      environment), set `destroy` to true. This runs the engine's destroy
+         *      operation (e.g., `terraform destroy` / `tofu destroy`) for infrastructure
+         *      components and deletes workload resources from the cluster, in reverse
+         *      dependency order.
+         *
+         *      Concurrency: only one run can be active per application+environment
+         *      at a time. If a run is already in progress (PENDING or RUNNING),
+         *      the new run is queued and will start automatically when the
+         *      current run completes or is canceled.
+         *
+         *      Scope: `run:write`
+         */
+        post: operations["RunAPI_CreateRun"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/runs/{run_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Retrieve a run
+         * @description Scope: `run:read`
+         */
+        get: operations["RunAPI_GetRun"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/runs/{run_id}/apply": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Apply a planned run
+         * @description Scope: `run:write`
+         */
+        post: operations["RunAPI_ApplyRun"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/runs/{run_id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Cancel a run
+         * @description Scope: `run:write`
+         */
+        post: operations["RunAPI_CancelRun"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/runs/{run_id}/revisions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List revisions
+         * @description Scope: `run:read`
+         */
+        get: operations["RunAPI_ListRevisions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/runs/{run_id}/revisions/{revision_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Retrieve a revision
+         * @description Scope: `run:read`
+         */
+        get: operations["RunAPI_GetRevision"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/runs/{run_id}/revisions/{revision_id}/retry": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Retry a revision
+         * @description Scope: `run:write`
+         */
+        post: operations["RunAPI_RetryRevision"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/sources": {
         parameters: {
             query?: never;
@@ -1651,84 +1724,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/variables": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * List variables
-         * @description The response is the raw union, not a precedence-resolved view: when the
-         *      same key exists at multiple levels, every entry is returned. This is
-         *      deliberate -- UIs need to show which level overrides which. Deployment
-         *      rendering applies precedence (env > app > global) automatically.
-         *
-         *      Scope: `var:read`
-         */
-        get: operations["VariableAPI_ListVariables"];
-        put?: never;
-        /**
-         * Create a variable
-         * @description Fails if a variable with the same key already exists at the same level
-         *      (same key + application_id + environment_id combination).
-         *
-         *      Scope: `var:write`
-         */
-        post: operations["VariableAPI_CreateVariable"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/variables/{variable.id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        /**
-         * Update a variable
-         * @description Scope: `var:write`
-         */
-        patch: operations["VariableAPI_UpdateVariable"];
-        trace?: never;
-    };
-    "/api/v1/variables/{variable_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Retrieve a variable
-         * @description Sensitive variable values are masked in the response.
-         *
-         *      Scope: `var:read`
-         */
-        get: operations["VariableAPI_GetVariable"];
-        put?: never;
-        post?: never;
-        /**
-         * Delete a variable
-         * @description Scope: `var:write`
-         */
-        delete: operations["VariableAPI_DeleteVariable"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1855,6 +1850,12 @@ export interface components {
              * @description The unique identifier of the application to delete (UUID).
              */
             application_id?: string;
+            /**
+             * force
+             * @description When true, bypass the children-exist check and cascade-delete all
+             *      environments and their deployments (metadata records only).
+             */
+            force?: boolean;
         };
         /**
          * DeleteApplicationResponse
@@ -1960,6 +1961,594 @@ export interface components {
              * @description The updated application.
              */
             application?: components["schemas"]["admiral.application.v1.Application"];
+        };
+        /**
+         * ChangeSet
+         * @description ChangeSet is a scoped, isolated proposal to mutate the deployed state of an
+         *      application within a single environment.
+         *
+         *      The change set holds two kinds of proposals:
+         *        - Component entries: per-slug deltas (CREATE/UPDATE/DESTROY/ORPHAN).
+         *        - Variable entries: per-key set or delete-on-apply.
+         *
+         *      The lifecycle has three states: OPEN, DEPLOYED, DISCARDED. Only OPEN change
+         *      sets can be mutated. DEPLOYED is reached when a deployment referencing the
+         *      change set succeeds; DISCARDED is reached via DiscardChangeSet.
+         */
+        "admiral.changeset.v1.ChangeSet": {
+            /**
+             * id
+             * Format: uuid
+             * @description Unique identifier for the change set (UUID).
+             */
+            id?: string;
+            /**
+             * application_id
+             * Format: uuid
+             * @description The application this change set targets (UUID).
+             */
+            application_id?: string;
+            /**
+             * environment_id
+             * Format: uuid
+             * @description The environment this change set targets (UUID).
+             */
+            environment_id?: string;
+            /**
+             * status
+             * @description Lifecycle status: OPEN, DEPLOYED, DISCARDED.
+             */
+            status?: string;
+            /**
+             * copied_from_id
+             * @description If this change set was created via CopyChangeSet, the UUID of the source
+             *      change set. Forms the promotion chain (e.g., dev -> staging -> prod).
+             *      Empty for change sets created directly via CreateChangeSet.
+             */
+            copied_from_id?: string;
+            /**
+             * title
+             * @description Human-readable title for the change set (e.g., "Bump database version").
+             */
+            title?: string;
+            /**
+             * description
+             * @description Optional longer description of what the change set proposes.
+             */
+            description?: string;
+            /**
+             * run_id
+             * @description The run that closed this change set (UUID). Populated when status
+             *      transitions to DEPLOYED. Empty otherwise.
+             */
+            run_id?: string;
+            /**
+             * entries
+             * @description Component entries proposed by this change set. Populated by GetChangeSet;
+             *      empty in ListChangeSets responses.
+             */
+            entries?: components["schemas"]["admiral.changeset.v1.ChangeSetEntry"][];
+            /**
+             * variable_entries
+             * @description Variable entries proposed by this change set. Populated by GetChangeSet;
+             *      empty in ListChangeSets responses.
+             */
+            variable_entries?: components["schemas"]["admiral.changeset.v1.ChangeSetVariableEntry"][];
+            /**
+             * created_by
+             * @description The user or agent that created this change set
+             *      (server-populated from token).
+             */
+            created_by?: components["schemas"]["admiral.common.v1.ActorRef"];
+            /**
+             * created_at
+             * @description When the change set was created.
+             */
+            created_at?: components["schemas"]["google.protobuf.Timestamp"];
+            /**
+             * updated_at
+             * @description When the change set was last updated (metadata, entries, variable
+             *      entries, or status).
+             */
+            updated_at?: components["schemas"]["google.protobuf.Timestamp"];
+        };
+        /**
+         * ChangeSetEntry
+         * @description ChangeSetEntry is a per-component proposal within a change set.
+         *
+         *      Patch semantics: optional fields that are absent mean "no change relative
+         *      to the component's current state at deploy time." Required fields per
+         *      `change_type`:
+         *        - CREATE: `module_id` required; `component_id` must be empty.
+         *        - UPDATE: `component_id` required; at least one optional field set.
+         *        - DESTROY / ORPHAN: `component_id` required; no patch fields allowed.
+         */
+        "admiral.changeset.v1.ChangeSetEntry": {
+            /**
+             * id
+             * Format: uuid
+             * @description Unique identifier for the entry (UUID).
+             */
+            id?: string;
+            /**
+             * change_set_id
+             * Format: uuid
+             * @description The change set this entry belongs to (UUID).
+             */
+            change_set_id?: string;
+            /**
+             * component_id
+             * @description The component this entry targets (UUID). Absent for CREATE entries
+             *      (the component does not exist yet).
+             */
+            component_id?: string;
+            /**
+             * component_slug
+             * @description Component slug (immutable semantic key). Required for all entries.
+             *      For CREATE entries, this is the slug of the component to be created.
+             *      For UPDATE/DESTROY/ORPHAN entries, this matches an existing component
+             *      in the application.
+             */
+            component_slug?: string;
+            /**
+             * change_type
+             * @description The change type: CREATE, UPDATE, DESTROY, or ORPHAN.
+             */
+            change_type?: string;
+            /**
+             * module_id
+             * Format: uuid
+             * @description The module to deploy (UUID). Required for CREATE; optional for UPDATE
+             *      (if changing the module); not allowed for DESTROY/ORPHAN.
+             */
+            module_id?: string | null;
+            /**
+             * version
+             * @description Optional ref override (e.g., tag, branch, or commit SHA). For UPDATE
+             *      entries, absent means "no change to version."
+             */
+            version?: string | null;
+            /**
+             * values_template
+             * @description Values template for module inputs. For UPDATE entries, absent means
+             *      "no change to values_template."
+             */
+            values_template?: string | null;
+            /**
+             * depends_on
+             * @description Explicit dependencies (component UUIDs). Whatever the client sends is
+             *      recorded; an empty list clears existing dependencies. Not allowed for
+             *      DESTROY/ORPHAN entries.
+             */
+            depends_on?: string[];
+            /**
+             * description
+             * @description Optional description for the proposed change (e.g., "Bump to v2.1.0
+             *      for performance fix"). For UPDATE entries, absent means "no change."
+             */
+            description?: string | null;
+            /**
+             * created_at
+             * @description When the entry was created.
+             */
+            created_at?: components["schemas"]["google.protobuf.Timestamp"];
+            /**
+             * updated_at
+             * @description When the entry was last replaced.
+             */
+            updated_at?: components["schemas"]["google.protobuf.Timestamp"];
+        };
+        /**
+         * ChangeSetVariableEntry
+         * @description ChangeSetVariableEntry is a per-key variable proposal within a change set.
+         *
+         *      At deploy time, each variable entry is applied to the change set's
+         *      environment: an entry with `value` set upserts the key, and an entry with
+         *      `value` absent (a tombstone) removes the key.
+         */
+        "admiral.changeset.v1.ChangeSetVariableEntry": {
+            /**
+             * id
+             * Format: uuid
+             * @description Unique identifier for the variable entry (UUID).
+             */
+            id?: string;
+            /**
+             * change_set_id
+             * Format: uuid
+             * @description The change set this entry belongs to (UUID).
+             */
+            change_set_id?: string;
+            /**
+             * key
+             * @description The variable key (e.g., "TF_VAR_region", "IMAGE_TAG").
+             */
+            key?: string;
+            /**
+             * value
+             * @description The value to set on apply. Absent means "delete this key on apply"
+             *      (tombstone). Masked in responses when `sensitive` is true.
+             */
+            value?: string | null;
+            /**
+             * type
+             * @description How the value should be interpreted by the rendering engine and
+             *      displayed in the UI.
+             */
+            type?: components["schemas"]["admiral.variable.v1.VariableType"];
+            /**
+             * sensitive
+             * @description When true, the value is encrypted at rest and masked in API responses.
+             */
+            sensitive?: boolean;
+            /**
+             * created_at
+             * @description When the variable entry was created or last replaced.
+             */
+            created_at?: components["schemas"]["google.protobuf.Timestamp"];
+        };
+        /**
+         * CopyChangeSetRequest
+         * @description CopyChangeSetRequest creates a new OPEN change set by copying an existing
+         *      one to a target environment.
+         */
+        "admiral.changeset.v1.CopyChangeSetRequest": {
+            /**
+             * change_set_id
+             * Format: uuid
+             * @description The source change set to copy (UUID). Can be in any status.
+             */
+            change_set_id?: string;
+            /**
+             * environment_id
+             * Format: uuid
+             * @description The target environment for the new change set (UUID). Must belong to
+             *      the source change set's application.
+             */
+            environment_id?: string;
+            /**
+             * title
+             * @description Optional title override. Defaults to the source's title when empty.
+             */
+            title?: string;
+            /**
+             * description
+             * @description Optional description override. Defaults to the source's description
+             *      when empty.
+             */
+            description?: string;
+        };
+        /**
+         * CopyChangeSetResponse
+         * @description CopyChangeSetResponse contains the newly created change set.
+         */
+        "admiral.changeset.v1.CopyChangeSetResponse": {
+            /**
+             * change_set
+             * @description The new change set with `copied_from_id` set to the source.
+             */
+            change_set?: components["schemas"]["admiral.changeset.v1.ChangeSet"];
+        };
+        /**
+         * CreateChangeSetRequest
+         * @description CreateChangeSetRequest opens a new change set for an (application,
+         *      environment) pair.
+         */
+        "admiral.changeset.v1.CreateChangeSetRequest": {
+            /**
+             * application_id
+             * Format: uuid
+             * @description The application this change set targets (UUID).
+             */
+            application_id?: string;
+            /**
+             * environment_id
+             * Format: uuid
+             * @description The environment this change set targets (UUID).
+             */
+            environment_id?: string;
+            /**
+             * title
+             * @description Optional human-readable title (e.g., "Bump database version").
+             */
+            title?: string;
+            /**
+             * description
+             * @description Optional longer description of what the change set proposes.
+             */
+            description?: string;
+        };
+        /**
+         * CreateChangeSetResponse
+         * @description CreateChangeSetResponse contains the newly created change set.
+         */
+        "admiral.changeset.v1.CreateChangeSetResponse": {
+            /**
+             * change_set
+             * @description The created change set. Status is OPEN; entries and variable entries
+             *      are empty.
+             */
+            change_set?: components["schemas"]["admiral.changeset.v1.ChangeSet"];
+        };
+        /**
+         * DiscardChangeSetRequest
+         * @description DiscardChangeSetRequest abandons an OPEN change set.
+         */
+        "admiral.changeset.v1.DiscardChangeSetRequest": {
+            /**
+             * change_set_id
+             * Format: uuid
+             * @description Unique identifier of the change set to discard (UUID).
+             */
+            change_set_id?: string;
+        };
+        /**
+         * DiscardChangeSetResponse
+         * @description DiscardChangeSetResponse contains the discarded change set.
+         */
+        "admiral.changeset.v1.DiscardChangeSetResponse": {
+            /**
+             * change_set
+             * @description The change set with status set to DISCARDED.
+             */
+            change_set?: components["schemas"]["admiral.changeset.v1.ChangeSet"];
+        };
+        /**
+         * GetChangeSetRequest
+         * @description GetChangeSetRequest identifies a change set to retrieve.
+         */
+        "admiral.changeset.v1.GetChangeSetRequest": {
+            /**
+             * change_set_id
+             * Format: uuid
+             * @description Unique identifier of the change set (UUID).
+             */
+            change_set_id?: string;
+        };
+        /**
+         * GetChangeSetResponse
+         * @description GetChangeSetResponse contains the change set with all entries inline.
+         */
+        "admiral.changeset.v1.GetChangeSetResponse": {
+            /**
+             * change_set
+             * @description The change set, with `entries` and `variable_entries` populated.
+             */
+            change_set?: components["schemas"]["admiral.changeset.v1.ChangeSet"];
+        };
+        /**
+         * ListChangeSetsRequest
+         * @description ListChangeSetsRequest contains pagination and filter parameters.
+         */
+        "admiral.changeset.v1.ListChangeSetsRequest": {
+            /**
+             * filter
+             * @description Filter expression to narrow results. Uses the Admiral filter DSL.
+             *
+             *      Syntax: `field['name'] = 'value'` with AND/OR/NOT, comparison operators
+             *      (=, !=, <, >, <=, >=, ~=), and predicates (IN, BETWEEN, CONTAINS,
+             *      STARTS_WITH, ENDS_WITH, IS NULL, EXISTS).
+             *
+             *      Filterable fields:
+             *        - `application_id` -- change sets for a specific application (UUID).
+             *        - `environment_id` -- change sets for a specific environment (UUID).
+             *        - `status` -- filter by status (OPEN, DEPLOYED, DISCARDED).
+             *
+             *      Example: `field['environment_id'] = '<uuid>' AND field['status'] = 'OPEN'`
+             */
+            filter?: string;
+            /**
+             * page_size
+             * Format: int32
+             * @description Maximum number of change sets to return per page.
+             */
+            page_size?: number;
+            /**
+             * page_token
+             * @description Opaque pagination token from a previous response.
+             */
+            page_token?: string;
+        };
+        /**
+         * ListChangeSetsResponse
+         * @description ListChangeSetsResponse contains a page of change sets.
+         */
+        "admiral.changeset.v1.ListChangeSetsResponse": {
+            /**
+             * change_sets
+             * @description The list of change sets, ordered from newest to oldest. Each record
+             *      omits `entries` and `variable_entries` -- call GetChangeSet for the
+             *      full record.
+             */
+            change_sets?: components["schemas"]["admiral.changeset.v1.ChangeSet"][];
+            /**
+             * next_page_token
+             * @description Pagination token for the next page. Empty when there are no more results.
+             */
+            next_page_token?: string;
+        };
+        /**
+         * RemoveEntryRequest
+         * @description RemoveEntryRequest deletes a single entry from an OPEN change set.
+         */
+        "admiral.changeset.v1.RemoveEntryRequest": {
+            /**
+             * change_set_id
+             * Format: uuid
+             * @description The change set (UUID).
+             */
+            change_set_id?: string;
+            /**
+             * component_slug
+             * @description Component slug of the entry to remove.
+             */
+            component_slug?: string;
+        };
+        /**
+         * RemoveEntryResponse
+         * @description RemoveEntryResponse is empty on success.
+         */
+        "admiral.changeset.v1.RemoveEntryResponse": Record<string, never>;
+        /**
+         * RemoveVariableRequest
+         * @description RemoveVariableRequest writes a tombstone variable entry that, when the
+         *      change set is deployed, removes the key from the target environment.
+         */
+        "admiral.changeset.v1.RemoveVariableRequest": {
+            /**
+             * change_set_id
+             * Format: uuid
+             * @description The change set (UUID).
+             */
+            change_set_id?: string;
+            /**
+             * key
+             * @description The variable key to remove on apply.
+             */
+            key?: string;
+        };
+        /**
+         * RemoveVariableResponse
+         * @description RemoveVariableResponse contains the tombstone variable entry.
+         */
+        "admiral.changeset.v1.RemoveVariableResponse": {
+            /**
+             * variable_entry
+             * @description The tombstone entry (value absent, marking the key for deletion on apply).
+             */
+            variable_entry?: components["schemas"]["admiral.changeset.v1.ChangeSetVariableEntry"];
+        };
+        /**
+         * SetEntryRequest
+         * @description SetEntryRequest creates or replaces a component entry within a change set.
+         */
+        "admiral.changeset.v1.SetEntryRequest": {
+            /**
+             * change_set_id
+             * Format: uuid
+             * @description The change set to add or replace the entry in (UUID).
+             */
+            change_set_id?: string;
+            /**
+             * component_slug
+             * @description Component slug (immutable semantic key). Required.
+             */
+            component_slug?: string;
+            /**
+             * change_type
+             * @description The change type: CREATE, UPDATE, DESTROY, or ORPHAN.
+             */
+            change_type?: string;
+            /**
+             * module_id
+             * Format: uuid
+             * @description The module to deploy (UUID). Required for CREATE; optional for UPDATE.
+             *      Not allowed for DESTROY/ORPHAN.
+             */
+            module_id?: string | null;
+            /**
+             * version
+             * @description Optional ref override.
+             */
+            version?: string | null;
+            /**
+             * values_template
+             * @description Values template for module inputs.
+             */
+            values_template?: string | null;
+            /**
+             * depends_on
+             * @description Explicit dependencies (component UUIDs). Empty list clears.
+             */
+            depends_on?: string[];
+            /**
+             * description
+             * @description Optional description of the proposed change.
+             */
+            description?: string | null;
+        };
+        /**
+         * SetEntryResponse
+         * @description SetEntryResponse contains the created or replaced entry.
+         */
+        "admiral.changeset.v1.SetEntryResponse": {
+            /**
+             * entry
+             * @description The entry as recorded on the change set.
+             */
+            entry?: components["schemas"]["admiral.changeset.v1.ChangeSetEntry"];
+        };
+        /**
+         * SetVariableRequest
+         * @description SetVariableRequest creates or replaces a variable entry within a change set.
+         */
+        "admiral.changeset.v1.SetVariableRequest": {
+            /**
+             * change_set_id
+             * Format: uuid
+             * @description The change set (UUID).
+             */
+            change_set_id?: string;
+            /**
+             * key
+             * @description The variable key.
+             */
+            key?: string;
+            /**
+             * value
+             * @description The value to set on apply. For COMPLEX type, must be valid JSON.
+             */
+            value?: string;
+            /**
+             * type
+             * @description How the value should be interpreted. Defaults to STRING when unspecified.
+             */
+            type?: components["schemas"]["admiral.variable.v1.VariableType"];
+            /**
+             * sensitive
+             * @description When true, the value is encrypted at rest and masked in API responses.
+             */
+            sensitive?: boolean;
+        };
+        /**
+         * SetVariableResponse
+         * @description SetVariableResponse contains the created or replaced variable entry.
+         */
+        "admiral.changeset.v1.SetVariableResponse": {
+            /**
+             * variable_entry
+             * @description The variable entry as recorded on the change set.
+             */
+            variable_entry?: components["schemas"]["admiral.changeset.v1.ChangeSetVariableEntry"];
+        };
+        /**
+         * UpdateChangeSetRequest
+         * @description UpdateChangeSetRequest updates a change set's mutable metadata.
+         */
+        "admiral.changeset.v1.UpdateChangeSetRequest": {
+            /**
+             * change_set
+             * @description The change set with updated fields. Only fields listed in `update_mask`
+             *      are applied.
+             */
+            change_set: components["schemas"]["admiral.changeset.v1.ChangeSet"];
+            /**
+             * update_mask
+             * @description The set of fields to update. Supported fields: `title`, `description`.
+             */
+            update_mask?: components["schemas"]["google.protobuf.FieldMask"];
+        };
+        /**
+         * UpdateChangeSetResponse
+         * @description UpdateChangeSetResponse contains the updated change set (metadata only;
+         *      entries are not returned -- call GetChangeSet for the full record).
+         */
+        "admiral.changeset.v1.UpdateChangeSetResponse": {
+            /**
+             * change_set
+             * @description The updated change set.
+             */
+            change_set?: components["schemas"]["admiral.changeset.v1.ChangeSet"];
         };
         /**
          * Cluster
@@ -3127,7 +3716,7 @@ export interface components {
          *       "name": "ci-deploy-key",
          *       "token_type": "TOKEN_TYPE_PAT",
          *       "scopes": [
-         *         "deploy:write",
+         *         "run:write",
          *         "app:read",
          *         "env:read"
          *       ],
@@ -3330,12 +3919,18 @@ export interface components {
             application_id?: string;
             /**
              * name
-             * @description Human-readable name for this component within the application
-             *      (e.g., "vpc", "redis", "api-server"). Unique within the application.
-             *      Lowercase alphanumeric and hyphens only (1-63 chars). This name is used
-             *      in template expressions: `{{ .component.<name>.<output> }}`.
+             * @description Mutable display label for this component within the application
+             *      (e.g., "Primary VPC", "Redis Cache"). Unique within the application.
              */
             name?: string;
+            /**
+             * slug
+             * @description Immutable semantic key for this component within the application
+             *      (e.g., "vpc", "redis", "api-server"). Used in template expressions:
+             *      `{{ .output.<slug>.<output> }}`, variable namespacing, and dependency
+             *      tracking. Defaults to name at creation if not provided.
+             */
+            slug?: string;
             /**
              * description
              * @description Optional description of the component's purpose
@@ -3349,6 +3944,16 @@ export interface components {
              *      explicitly for filtering and to determine execution behavior.
              */
             kind?: components["schemas"]["admiral.component.v1.ComponentKind"];
+            /**
+             * desired_state
+             * @description The desired lifecycle state of this component.
+             */
+            desired_state?: string;
+            /**
+             * deletion_protection
+             * @description When true, DESTROY operations are rejected for this component.
+             */
+            deletion_protection?: boolean;
             /**
              * module_id
              * Format: uuid
@@ -3581,364 +4186,6 @@ export interface components {
              * @description When the override was last updated.
              */
             updated_at?: components["schemas"]["google.protobuf.Timestamp"];
-        };
-        /**
-         * CreateComponentRequest
-         * @description CreateComponentRequest contains the parameters for adding a component to
-         *      an application.
-         */
-        "admiral.component.v1.CreateComponentRequest": {
-            /**
-             * application_id
-             * Format: uuid
-             * @description The application to add this component to (UUID).
-             */
-            application_id?: string;
-            /**
-             * name
-             * @description Human-readable name for this component. Must be unique within the
-             *      application. This name is used in template expressions.
-             */
-            name?: string;
-            /**
-             * description
-             * @description Optional description of the component's purpose.
-             */
-            description?: string;
-            /**
-             * module_id
-             * Format: uuid
-             * @description The module this component deploys (UUID).
-             */
-            module_id?: string;
-            /**
-             * version
-             * @description Optional ref override for the module's default ref. When empty, the
-             *      module's default ref is used.
-             */
-            version?: string;
-            /**
-             * values_template
-             * @description Values template mapping configuration into the module's inputs.
-             *      See Component.values_template for template expression syntax.
-             */
-            values_template?: string;
-            /**
-             * depends_on
-             * @description Explicit deployment-order dependencies (component UUIDs).
-             */
-            depends_on?: string[];
-            /**
-             * outputs
-             * @description Declared outputs for workload components.
-             *      Ignored for infrastructure components (Terraform outputs are
-             *      auto-discovered).
-             */
-            outputs?: components["schemas"]["admiral.component.v1.ComponentOutput"][];
-        };
-        /**
-         * CreateComponentResponse
-         * @description CreateComponentResponse contains the newly created component.
-         */
-        "admiral.component.v1.CreateComponentResponse": {
-            /**
-             * component
-             * @description The created component.
-             */
-            component?: components["schemas"]["admiral.component.v1.Component"];
-        };
-        /**
-         * DeleteComponentOverrideRequest
-         * @description DeleteComponentOverrideRequest removes an environment-level override.
-         */
-        "admiral.component.v1.DeleteComponentOverrideRequest": {
-            /**
-             * component_id
-             * Format: uuid
-             * @description The component (UUID).
-             */
-            component_id?: string;
-            /**
-             * environment_id
-             * Format: uuid
-             * @description The environment (UUID).
-             */
-            environment_id?: string;
-        };
-        /**
-         * DeleteComponentOverrideResponse
-         * @description DeleteComponentOverrideResponse is empty on success.
-         */
-        "admiral.component.v1.DeleteComponentOverrideResponse": Record<string, never>;
-        /**
-         * DeleteComponentRequest
-         * @description DeleteComponentRequest identifies a component to delete.
-         */
-        "admiral.component.v1.DeleteComponentRequest": {
-            /**
-             * component_id
-             * Format: uuid
-             * @description Unique identifier of the component to delete (UUID).
-             *      Fails if other components depend on this component (via depends_on
-             *      or output references in values_template).
-             */
-            component_id?: string;
-        };
-        /**
-         * DeleteComponentResponse
-         * @description DeleteComponentResponse is empty on success.
-         */
-        "admiral.component.v1.DeleteComponentResponse": Record<string, never>;
-        /**
-         * GetComponentOverrideRequest
-         * @description GetComponentOverrideRequest identifies a specific component + environment
-         *      override.
-         */
-        "admiral.component.v1.GetComponentOverrideRequest": {
-            /**
-             * component_id
-             * Format: uuid
-             * @description The component (UUID).
-             */
-            component_id?: string;
-            /**
-             * environment_id
-             * Format: uuid
-             * @description The environment (UUID).
-             */
-            environment_id?: string;
-        };
-        /**
-         * GetComponentOverrideResponse
-         * @description GetComponentOverrideResponse contains the override record.
-         */
-        "admiral.component.v1.GetComponentOverrideResponse": {
-            /**
-             * override
-             * @description The override record. Empty/not-found if no override exists.
-             */
-            override?: components["schemas"]["admiral.component.v1.ComponentOverride"];
-        };
-        /**
-         * GetComponentRequest
-         * @description GetComponentRequest identifies a component to retrieve.
-         */
-        "admiral.component.v1.GetComponentRequest": {
-            /**
-             * component_id
-             * Format: uuid
-             * @description Unique identifier of the component (UUID).
-             */
-            component_id?: string;
-        };
-        /**
-         * GetComponentResponse
-         * @description GetComponentResponse contains the component record.
-         */
-        "admiral.component.v1.GetComponentResponse": {
-            /**
-             * component
-             * @description The component record (application-level defaults).
-             */
-            component?: components["schemas"]["admiral.component.v1.Component"];
-        };
-        /**
-         * ListComponentOverridesRequest
-         * @description ListComponentOverridesRequest lists all overrides for a component.
-         */
-        "admiral.component.v1.ListComponentOverridesRequest": {
-            /**
-             * component_id
-             * Format: uuid
-             * @description Unique identifier of the component to list overrides for (UUID).
-             */
-            component_id?: string;
-            /**
-             * page_size
-             * Format: int32
-             * @description Maximum number of overrides to return per page.
-             */
-            page_size?: number;
-            /**
-             * page_token
-             * @description Opaque pagination token from a previous response.
-             */
-            page_token?: string;
-        };
-        /**
-         * ListComponentOverridesResponse
-         * @description ListComponentOverridesResponse contains all overrides for a component.
-         */
-        "admiral.component.v1.ListComponentOverridesResponse": {
-            /**
-             * overrides
-             * @description The list of environment-level overrides for the component.
-             */
-            overrides?: components["schemas"]["admiral.component.v1.ComponentOverride"][];
-            /**
-             * next_page_token
-             * @description Pagination token for the next page. Empty when there are no more results.
-             */
-            next_page_token?: string;
-        };
-        /**
-         * ListComponentsRequest
-         * @description ListComponentsRequest contains pagination, scoping, and filter parameters.
-         *
-         *      Scoping uses dedicated fields, not the filter DSL:
-         *        - `application_id` alone: application-level component defaults.
-         *        - `application_id` + `environment_id`: resolved view with environment
-         *          overrides applied. Each component reflects its effective module,
-         *          version, values_template, depends_on, and outputs. Disabled
-         *          components are included with `disabled=true`. Components with any
-         *          overridden field have `has_override=true`.
-         *
-         *      `filter` is reserved for predicates on component columns (`kind`,
-         *      `name`, `module_id`).
-         */
-        "admiral.component.v1.ListComponentsRequest": {
-            /**
-             * application_id
-             * Format: uuid
-             * @description Scope listing to a specific application (UUID). Required for meaningful
-             *      results since components always belong to an application.
-             */
-            application_id?: string;
-            /**
-             * environment_id
-             * Format: uuid
-             * @description When set alongside `application_id`, returns the resolved view with
-             *      environment overrides applied (UUID). Optional.
-             */
-            environment_id?: string | null;
-            /**
-             * filter
-             * @description Filter expression using the PEG filter DSL. Filterable fields:
-             *        - `kind` -- filter by component kind (INFRASTRUCTURE, WORKLOAD).
-             *        - `name` -- filter by component name.
-             *        - `module_id` -- filter by module reference.
-             */
-            filter?: string;
-            /**
-             * page_size
-             * Format: int32
-             * @description Maximum number of components to return per page.
-             */
-            page_size?: number;
-            /**
-             * page_token
-             * @description Opaque pagination token from a previous response.
-             */
-            page_token?: string;
-        };
-        /**
-         * ListComponentsResponse
-         * @description ListComponentsResponse contains a page of components.
-         */
-        "admiral.component.v1.ListComponentsResponse": {
-            /**
-             * components
-             * @description The list of components. When `environment_id` is present in the filter,
-             *      each component reflects the resolved view with overrides applied.
-             */
-            components?: components["schemas"]["admiral.component.v1.Component"][];
-            /**
-             * next_page_token
-             * @description Pagination token for the next page. Empty when there are no more results.
-             */
-            next_page_token?: string;
-        };
-        /**
-         * SetComponentOverrideRequest
-         * @description SetComponentOverrideRequest creates or replaces an environment-level override.
-         */
-        "admiral.component.v1.SetComponentOverrideRequest": {
-            /**
-             * component_id
-             * Format: uuid
-             * @description The component to override (UUID).
-             */
-            component_id?: string;
-            /**
-             * environment_id
-             * Format: uuid
-             * @description The environment this override applies to (UUID).
-             */
-            environment_id?: string;
-            /**
-             * disabled
-             * @description When true, the component is not deployed in this environment.
-             */
-            disabled?: boolean;
-            /**
-             * module_id
-             * Format: uuid
-             * @description Override module (UUID). When set, replaces the component's default module.
-             */
-            module_id?: string | null;
-            /**
-             * version
-             * @description Override version. When set, replaces the component's default version.
-             */
-            version?: string | null;
-            /**
-             * values_template
-             * @description Override values template. When set, completely replaces the component's
-             *      default values template (no merge).
-             */
-            values_template?: string | null;
-            /**
-             * depends_on
-             * @description Override depends_on (component UUIDs). When set, replaces the component's
-             *      default depends_on.
-             */
-            depends_on?: string[];
-            /**
-             * outputs
-             * @description Override outputs. When set, replaces the component's declared outputs.
-             */
-            outputs?: components["schemas"]["admiral.component.v1.ComponentOutput"][];
-        };
-        /**
-         * SetComponentOverrideResponse
-         * @description SetComponentOverrideResponse contains the override record.
-         */
-        "admiral.component.v1.SetComponentOverrideResponse": {
-            /**
-             * override
-             * @description The created or updated override.
-             */
-            override?: components["schemas"]["admiral.component.v1.ComponentOverride"];
-        };
-        /**
-         * UpdateComponentRequest
-         * @description UpdateComponentRequest contains the component fields to update.
-         */
-        "admiral.component.v1.UpdateComponentRequest": {
-            /**
-             * component
-             * @description The component with updated fields. Only fields specified in
-             *      `update_mask` are updated.
-             */
-            component: components["schemas"]["admiral.component.v1.Component"];
-            /**
-             * update_mask
-             * @description The set of fields to update. If unset, all mutable fields are updated.
-             *      Supported fields: `name`, `description`, `module_id`, `version`,
-             *      `values_template`, `depends_on`, `outputs`.
-             */
-            update_mask?: components["schemas"]["google.protobuf.FieldMask"];
-        };
-        /**
-         * UpdateComponentResponse
-         * @description UpdateComponentResponse contains the updated component.
-         */
-        "admiral.component.v1.UpdateComponentResponse": {
-            /**
-             * component
-             * @description The updated component.
-             */
-            component?: components["schemas"]["admiral.component.v1.Component"];
         };
         /**
          * AuthConfig
@@ -4262,641 +4509,6 @@ export interface components {
             credential?: components["schemas"]["admiral.credential.v1.Credential"];
         };
         /**
-         * ApplyDeploymentRequest
-         * @description ApplyDeploymentRequest transitions a planned deployment to apply phase.
-         */
-        "admiral.deployment.v1.ApplyDeploymentRequest": {
-            /**
-             * deployment_id
-             * Format: uuid
-             * @description Unique identifier of the deployment to apply (UUID).
-             */
-            deployment_id?: string;
-            /**
-             * message
-             * @description Optional message describing the apply (e.g., "Approved by @martin").
-             */
-            message?: string;
-        };
-        /**
-         * ApplyDeploymentResponse
-         * @description ApplyDeploymentResponse contains the deployment after apply jobs are
-         *      dispatched.
-         */
-        "admiral.deployment.v1.ApplyDeploymentResponse": {
-            /**
-             * deployment
-             * @description The deployment with status advanced to RUNNING. Revisions that were
-             *      AWAITING_APPROVAL are now APPLYING.
-             */
-            deployment?: components["schemas"]["admiral.deployment.v1.Deployment"];
-        };
-        /**
-         * CancelDeploymentRequest
-         * @description CancelDeploymentRequest cancels an in-progress deployment.
-         */
-        "admiral.deployment.v1.CancelDeploymentRequest": {
-            /**
-             * deployment_id
-             * Format: uuid
-             * @description Unique identifier of the deployment to cancel (UUID).
-             */
-            deployment_id?: string;
-            /**
-             * reason
-             * @description Optional reason for cancellation.
-             */
-            reason?: string;
-        };
-        /**
-         * CancelDeploymentResponse
-         * @description CancelDeploymentResponse contains the updated deployment.
-         */
-        "admiral.deployment.v1.CancelDeploymentResponse": {
-            /**
-             * deployment
-             * @description The canceled deployment.
-             */
-            deployment?: components["schemas"]["admiral.deployment.v1.Deployment"];
-        };
-        /**
-         * ChangeSummary
-         * @description ChangeSummary provides resource change counts from an infrastructure plan.
-         *      Engine-agnostic — the "+N / ~N / -N" shape is universal across Terraform,
-         *      OpenTofu, and similar engines.
-         */
-        "admiral.deployment.v1.ChangeSummary": {
-            /**
-             * additions
-             * Format: int32
-             * @description Number of resources to be created.
-             */
-            additions?: number;
-            /**
-             * changes
-             * Format: int32
-             * @description Number of resources to be updated in place.
-             */
-            changes?: number;
-            /**
-             * destructions
-             * Format: int32
-             * @description Number of resources to be destroyed.
-             */
-            destructions?: number;
-        };
-        /**
-         * CreateDeploymentRequest
-         * @description CreateDeploymentRequest triggers a new deployment.
-         */
-        "admiral.deployment.v1.CreateDeploymentRequest": {
-            /**
-             * application_id
-             * Format: uuid
-             * @description The application to deploy (UUID).
-             */
-            application_id?: string;
-            /**
-             * environment_id
-             * Format: uuid
-             * @description The target environment (UUID).
-             */
-            environment_id?: string;
-            /**
-             * message
-             * @description Optional message describing this deployment.
-             */
-            message?: string;
-            /**
-             * destroy
-             * @description Destroy all resources in the environment. Runs the engine's destroy
-             *      phase (`terraform destroy` / `tofu destroy`) for infra components and
-             *      deletes workload resources from the cluster, in reverse dependency
-             *      order. Required before deleting an environment that has active resources.
-             */
-            destroy?: boolean;
-            /**
-             * source_deployment_id
-             * @description Optional: deploy from a prior deployment's configuration snapshots
-             *      instead of from the current component HEAD. When set, each revision is
-             *      seeded from the source deployment's revision for the same component
-             *      (module_id, version, resolved_values, source_id, working_directory).
-             *      This is the rollback mechanism: re-plan and re-apply a known-good
-             *      configuration against the current infrastructure state.
-             */
-            source_deployment_id?: string;
-        };
-        /**
-         * CreateDeploymentResponse
-         * @description CreateDeploymentResponse contains the newly created deployment.
-         */
-        "admiral.deployment.v1.CreateDeploymentResponse": {
-            /**
-             * deployment
-             * @description The created deployment. Status will be PENDING initially.
-             */
-            deployment?: components["schemas"]["admiral.deployment.v1.Deployment"];
-        };
-        /**
-         * Deployment
-         * @description Deployment represents a single deployment of an application to an
-         *      environment. Each deployment produces one Revision per component. The
-         *      deployment tracks the composite status across all revisions and provides
-         *      the audit trail for what was deployed, when, and by whom.
-         *
-         *      Deployment records are immutable once created -- there is no UpdateDeployment
-         *      RPC and no `updated_at` field. The composite `status`, `revision_summary`,
-         *      and `completed_at` fields are server-maintained as revisions progress;
-         *      everything else is fixed at creation time. To change what is deployed,
-         *      create a new deployment.
-         * @example {
-         *       "id": "7e8f9a0b-1c2d-3e4f-5a6b-7c8d9e0f1a2b",
-         *       "application_id": "a1b2c3d4-5678-9abc-def0-1234567890ab",
-         *       "environment_id": "e5f6a7b8-9012-3cde-f456-789012345678",
-         *       "status": "DEPLOYMENT_STATUS_SUCCEEDED",
-         *       "version": "42",
-         *       "description": "Deploy v2.4.1 with updated ingress rules",
-         *       "created_by": "d290f1ee-6c54-4b01-90e6-d701748f0851",
-         *       "created_at": "2025-11-20T14:00:00Z",
-         *       "updated_at": "2025-11-20T14:12:00Z",
-         *       "completed_at": "2025-11-20T14:12:00Z"
-         *     }
-         */
-        "admiral.deployment.v1.Deployment": {
-            /**
-             * id
-             * Format: uuid
-             * @description Unique identifier for the deployment (UUID).
-             */
-            id?: string;
-            /**
-             * application_id
-             * Format: uuid
-             * @description The application being deployed (UUID).
-             */
-            application_id?: string;
-            /**
-             * environment_id
-             * Format: uuid
-             * @description The target environment (UUID).
-             */
-            environment_id?: string;
-            /**
-             * status
-             * @description Composite status derived from all component revisions.
-             */
-            status?: components["schemas"]["admiral.deployment.v1.DeploymentStatus"];
-            /**
-             * trigger_type
-             * @description What triggered this deployment.
-             */
-            trigger_type?: components["schemas"]["admiral.deployment.v1.DeploymentTriggerType"];
-            /**
-             * triggered_by
-             * @description The user or agent that triggered the deployment (server-populated from token).
-             */
-            triggered_by?: components["schemas"]["admiral.common.v1.ActorRef"];
-            /**
-             * message
-             * @description Optional message describing the deployment (e.g., "Deploying v2.1.0
-             *      with new caching layer" or "Rolling back to stable after API errors").
-             */
-            message?: string;
-            /**
-             * destroy
-             * @description Whether this is a destroy deployment. Destroy deployments tear down all
-             *      resources in the environment: the engine's destroy phase for infra
-             *      components (`terraform destroy` / `tofu destroy`), resource deletion for
-             *      workload components. Executed in reverse dependency order. Required
-             *      before an environment with active resources can be deleted.
-             */
-            destroy?: boolean;
-            /**
-             * source_deployment_id
-             * @description If this deployment was created as a rollback from a prior deployment,
-             *      this field contains the source deployment's UUID. Empty for normal
-             *      deployments.
-             */
-            source_deployment_id?: string;
-            /**
-             * revision_summary
-             * @description Summary counts for quick status display.
-             */
-            revision_summary?: components["schemas"]["admiral.deployment.v1.RevisionSummary"];
-            /**
-             * created_at
-             * @description When the deployment was created.
-             */
-            created_at?: components["schemas"]["google.protobuf.Timestamp"];
-            /**
-             * completed_at
-             * @description When the deployment finished (all revisions completed, failed, or
-             *      canceled). Absent while the deployment is in progress.
-             */
-            completed_at?: components["schemas"]["google.protobuf.Timestamp"];
-        };
-        /**
-         * DeploymentStatus
-         * @description DeploymentStatus represents the composite status of a deployment, derived
-         *      from the statuses of all its component revisions.
-         * @enum {string}
-         */
-        "admiral.deployment.v1.DeploymentStatus": "DEPLOYMENT_STATUS_UNSPECIFIED" | "DEPLOYMENT_STATUS_PENDING" | "DEPLOYMENT_STATUS_QUEUED" | "DEPLOYMENT_STATUS_RUNNING" | "DEPLOYMENT_STATUS_SUCCEEDED" | "DEPLOYMENT_STATUS_PARTIALLY_FAILED" | "DEPLOYMENT_STATUS_FAILED" | "DEPLOYMENT_STATUS_CANCELED";
-        /**
-         * DeploymentTriggerType
-         * @description DeploymentTriggerType indicates what initiated the deployment.
-         * @enum {string}
-         */
-        "admiral.deployment.v1.DeploymentTriggerType": "DEPLOYMENT_TRIGGER_TYPE_UNSPECIFIED" | "DEPLOYMENT_TRIGGER_TYPE_MANUAL" | "DEPLOYMENT_TRIGGER_TYPE_CI" | "DEPLOYMENT_TRIGGER_TYPE_DESTROY";
-        /**
-         * GetDeploymentRequest
-         * @description GetDeploymentRequest identifies a deployment to retrieve.
-         */
-        "admiral.deployment.v1.GetDeploymentRequest": {
-            /**
-             * deployment_id
-             * Format: uuid
-             * @description Unique identifier of the deployment (UUID).
-             */
-            deployment_id?: string;
-        };
-        /**
-         * GetDeploymentResponse
-         * @description GetDeploymentResponse contains the deployment record.
-         */
-        "admiral.deployment.v1.GetDeploymentResponse": {
-            /**
-             * deployment
-             * @description The deployment record with current status.
-             */
-            deployment?: components["schemas"]["admiral.deployment.v1.Deployment"];
-        };
-        /**
-         * GetRevisionRequest
-         * @description GetRevisionRequest identifies a revision within a deployment.
-         */
-        "admiral.deployment.v1.GetRevisionRequest": {
-            /**
-             * deployment_id
-             * Format: uuid
-             * @description The deployment (UUID).
-             */
-            deployment_id?: string;
-            /**
-             * revision_id
-             * Format: uuid
-             * @description The revision (UUID).
-             */
-            revision_id?: string;
-        };
-        /**
-         * GetRevisionResponse
-         * @description GetRevisionResponse contains the revision record.
-         */
-        "admiral.deployment.v1.GetRevisionResponse": {
-            /**
-             * revision
-             * @description The revision record with current status and artifacts.
-             */
-            revision?: components["schemas"]["admiral.deployment.v1.Revision"];
-        };
-        /**
-         * ListDeploymentsRequest
-         * @description ListDeploymentsRequest contains pagination and filter parameters.
-         */
-        "admiral.deployment.v1.ListDeploymentsRequest": {
-            /**
-             * filter
-             * @description Filter expression to narrow results. Uses the Admiral filter DSL.
-             *
-             *      Syntax: `field['name'] = 'value'` with AND/OR/NOT, comparison operators
-             *      (=, !=, <, >, <=, >=, ~=), and predicates (IN, BETWEEN, CONTAINS,
-             *      STARTS_WITH, ENDS_WITH, IS NULL, EXISTS).
-             *
-             *      Filterable fields:
-             *        - `application_id` -- deployments for a specific application (UUID).
-             *        - `environment_id` -- deployments to a specific environment (UUID).
-             *        - `status` -- filter by deployment status (PENDING, RUNNING, SUCCEEDED, ...).
-             *        - `trigger_type` -- filter by trigger type (MANUAL, CI, DESTROY).
-             *
-             *      Example: `field['environment_id'] = '<uuid>' AND field['status'] = 'SUCCEEDED'`
-             */
-            filter?: string;
-            /**
-             * page_size
-             * Format: int32
-             * @description Maximum number of deployments to return per page.
-             */
-            page_size?: number;
-            /**
-             * page_token
-             * @description Opaque pagination token from a previous response.
-             */
-            page_token?: string;
-        };
-        /**
-         * ListDeploymentsResponse
-         * @description ListDeploymentsResponse contains a page of deployments.
-         */
-        "admiral.deployment.v1.ListDeploymentsResponse": {
-            /**
-             * deployments
-             * @description The list of deployments, ordered from newest to oldest.
-             */
-            deployments?: components["schemas"]["admiral.deployment.v1.Deployment"][];
-            /**
-             * next_page_token
-             * @description Pagination token for the next page. Empty when there are no more results.
-             */
-            next_page_token?: string;
-        };
-        /**
-         * ListRevisionsRequest
-         * @description ListRevisionsRequest lists all revisions for a deployment.
-         */
-        "admiral.deployment.v1.ListRevisionsRequest": {
-            /**
-             * deployment_id
-             * Format: uuid
-             * @description Unique identifier of the deployment to list revisions for (UUID).
-             */
-            deployment_id?: string;
-            /**
-             * page_size
-             * Format: int32
-             * @description Maximum number of revisions to return per page.
-             */
-            page_size?: number;
-            /**
-             * page_token
-             * @description Opaque pagination token from a previous response.
-             */
-            page_token?: string;
-        };
-        /**
-         * ListRevisionsResponse
-         * @description ListRevisionsResponse contains all revisions for a deployment.
-         */
-        "admiral.deployment.v1.ListRevisionsResponse": {
-            /**
-             * revisions
-             * @description The list of revisions, ordered by dependency graph (upstream first).
-             */
-            revisions?: components["schemas"]["admiral.deployment.v1.Revision"][];
-            /**
-             * next_page_token
-             * @description Pagination token for the next page. Empty when there are no more results.
-             */
-            next_page_token?: string;
-        };
-        /**
-         * RetryRevisionRequest
-         * @description RetryRevisionRequest retries a failed revision.
-         */
-        "admiral.deployment.v1.RetryRevisionRequest": {
-            /**
-             * deployment_id
-             * Format: uuid
-             * @description The deployment (UUID).
-             */
-            deployment_id?: string;
-            /**
-             * revision_id
-             * Format: uuid
-             * @description The revision to retry (UUID). Must be in FAILED status.
-             */
-            revision_id?: string;
-        };
-        /**
-         * RetryRevisionResponse
-         * @description RetryRevisionResponse contains the updated revision.
-         */
-        "admiral.deployment.v1.RetryRevisionResponse": {
-            /**
-             * revision
-             * @description The retried revision. Status resets and retry_count is incremented.
-             *      Downstream revisions that were BLOCKED will automatically unblock
-             *      if this revision succeeds.
-             */
-            revision?: components["schemas"]["admiral.deployment.v1.Revision"];
-        };
-        /**
-         * Revision
-         * @description Revision represents an immutable, rendered artifact for a single component
-         *      within a deployment. Each revision tracks the full lifecycle from rendering
-         *      through execution, and stores references to the produced artifacts
-         *      (rendered manifests, binary plan files, etc.).
-         *
-         *      For infrastructure components (terraform-semantic engine -- Terraform or
-         *      OpenTofu):
-         *        - Rendering produces the infrastructure source tree (.tf files and
-         *          auto-loaded tfvars) with resolved variable values.
-         *        - The engine's plan and apply phases are executed by the assigned
-         *          runner (see JobBundle.engine for engine selection).
-         *        - The plan output is stored for visibility.
-         *        - Each component has its own state, stored via the configured backend.
-         *
-         *      For workload components (Helm, Kustomize, manifests):
-         *        - Rendering produces Kubernetes manifests (via helm template, kustomize
-         *          build, or raw file collection).
-         *        - Manifests are ordered (CRDs before resources, namespaces first).
-         *        - The rendered bundle is sent to the K8s agent for application.
-         */
-        "admiral.deployment.v1.Revision": {
-            /**
-             * id
-             * Format: uuid
-             * @description Unique identifier for the revision (UUID).
-             */
-            id?: string;
-            /**
-             * deployment_id
-             * Format: uuid
-             * @description The deployment this revision belongs to (UUID).
-             */
-            deployment_id?: string;
-            /**
-             * component_id
-             * Format: uuid
-             * @description The component this revision is for (UUID).
-             */
-            component_id?: string;
-            /**
-             * component_name
-             * @description Component name at the time of deployment (denormalized for display).
-             */
-            component_name?: string;
-            /**
-             * kind
-             * @description Component kind at the time of deployment (after override resolution).
-             */
-            kind?: components["schemas"]["admiral.deployment.v1.RevisionKind"];
-            /**
-             * status
-             * @description Lifecycle status of this revision.
-             */
-            status?: components["schemas"]["admiral.deployment.v1.RevisionStatus"];
-            /**
-             * source_id
-             * @description The source used for this revision (UUID, after override resolution).
-             */
-            source_id?: string;
-            /**
-             * version
-             * @description The version deployed (after override resolution).
-             */
-            version?: string;
-            /**
-             * resolved_values
-             * @description The resolved values template snapshot -- the values_template with all
-             *      variable references and component output references fully resolved.
-             *      Stored for audit: shows exactly what inputs were used. Sensitive
-             *      variable values are masked in API responses.
-             */
-            resolved_values?: string;
-            /**
-             * depends_on
-             * @description Component IDs that this revision depends on. Populated from the resolved
-             *      depends_on list plus implicit dependencies from template expressions.
-             */
-            depends_on?: string[];
-            /**
-             * blocked_by
-             * @description Component IDs that are blocking this revision. Only populated when
-             *      status is BLOCKED -- indicates which upstream components failed.
-             */
-            blocked_by?: string[];
-            /**
-             * artifact_checksum
-             * @description SHA-256 checksum of the rendered artifact bundle (tar.gz).
-             */
-            artifact_checksum?: string;
-            /**
-             * artifact_url
-             * @description Storage location of the rendered artifact bundle. Internal reference
-             *      used by agents/runners to fetch the bundle.
-             */
-            artifact_url?: string;
-            /**
-             * plan_summary
-             * @description (Infrastructure only) The number of resources the plan will add,
-             *      change, and destroy. Populated after planning completes. Engine-agnostic:
-             *      applies to Terraform, OpenTofu, or any future engine that models changes
-             *      as create/update/delete counts.
-             */
-            plan_summary?: components["schemas"]["admiral.deployment.v1.ChangeSummary"];
-            /**
-             * has_plan_output
-             * @description True when plan output is available in object storage. Fetch via
-             *      `GET /api/v1/deployments/{deployment_id}/revisions/{revision_id}/plan`.
-             */
-            has_plan_output?: boolean;
-            /**
-             * error_message
-             * @description Error message if the revision failed. Empty on success.
-             */
-            error_message?: string;
-            /**
-             * retry_count
-             * Format: int32
-             * @description Number of retry attempts. Starts at 0 for the initial attempt.
-             */
-            retry_count?: number;
-            /**
-             * created_at
-             * @description When the revision was created (same as deployment created_at).
-             */
-            created_at?: components["schemas"]["google.protobuf.Timestamp"];
-            /**
-             * started_at
-             * @description When the revision started execution (transitioned from PENDING/QUEUED).
-             */
-            started_at?: components["schemas"]["google.protobuf.Timestamp"];
-            /**
-             * completed_at
-             * @description When the revision finished (succeeded, failed, or canceled).
-             */
-            completed_at?: components["schemas"]["google.protobuf.Timestamp"];
-            /**
-             * module_id
-             * @description The module used for this revision (UUID, after override resolution).
-             *      Captures which module produced the source_id and version, needed for
-             *      rollback (re-deploying from a prior revision's snapshot).
-             */
-            module_id?: string;
-            /**
-             * working_directory
-             * @description Subdirectory within the delivered archive where the executor runs.
-             *      Empty means the archive root. Populated from the module's path field
-             *      at snapshot time so that relative module references resolve correctly.
-             */
-            working_directory?: string;
-        };
-        /**
-         * RevisionKind
-         * @description RevisionKind mirrors ComponentKind but is stored on the revision to capture
-         *      the effective kind at deployment time (may differ from the component default
-         *      if an environment override changed the source type).
-         * @enum {string}
-         */
-        "admiral.deployment.v1.RevisionKind": "REVISION_KIND_UNSPECIFIED" | "REVISION_KIND_INFRASTRUCTURE" | "REVISION_KIND_WORKLOAD";
-        /**
-         * RevisionStatus
-         * @description RevisionStatus represents the lifecycle status of a single component
-         *      revision within a deployment.
-         * @enum {string}
-         */
-        "admiral.deployment.v1.RevisionStatus": "REVISION_STATUS_UNSPECIFIED" | "REVISION_STATUS_PENDING" | "REVISION_STATUS_QUEUED" | "REVISION_STATUS_PLANNING" | "REVISION_STATUS_AWAITING_APPROVAL" | "REVISION_STATUS_APPLYING" | "REVISION_STATUS_SUCCEEDED" | "REVISION_STATUS_FAILED" | "REVISION_STATUS_BLOCKED" | "REVISION_STATUS_CANCELED";
-        /**
-         * RevisionSummary
-         * @description RevisionSummary provides aggregate counts of revision statuses within a
-         *      deployment, enabling quick status display without loading all revisions.
-         */
-        "admiral.deployment.v1.RevisionSummary": {
-            /**
-             * total
-             * Format: int32
-             * @description Total number of component revisions in this deployment.
-             */
-            total?: number;
-            /**
-             * succeeded
-             * Format: int32
-             * @description Number of revisions that completed successfully.
-             */
-            succeeded?: number;
-            /**
-             * failed
-             * Format: int32
-             * @description Number of revisions that failed.
-             */
-            failed?: number;
-            /**
-             * blocked
-             * Format: int32
-             * @description Number of revisions that are blocked by upstream failures.
-             */
-            blocked?: number;
-            /**
-             * running
-             * Format: int32
-             * @description Number of revisions currently running (planning or applying).
-             */
-            running?: number;
-            /**
-             * canceled
-             * Format: int32
-             * @description Number of revisions that were canceled.
-             */
-            canceled?: number;
-            /**
-             * pending
-             * Format: int32
-             * @description Number of revisions that have not started yet.
-             */
-            pending?: number;
-        };
-        /**
          * CreateEnvironmentRequest
          * @description CreateEnvironmentRequest contains the parameters for creating a new environment.
          */
@@ -4967,6 +4579,12 @@ export interface components {
              * @description The unique identifier of the environment to delete (UUID).
              */
             environment_id?: string;
+            /**
+             * force
+             * @description When true, bypass the children-exist check and cascade-delete all
+             *      deployment records (metadata only).
+             */
+            force?: boolean;
         };
         /**
          * DeleteEnvironmentResponse
@@ -5173,6 +4791,59 @@ export interface components {
              *      Defaults to the environment name if not specified at deploy time.
              */
             namespace?: string | null;
+        };
+        /**
+         * ListEnvironmentVariablesRequest
+         * @description ListEnvironmentVariablesRequest contains the environment ID, filters, and
+         *      pagination parameters.
+         */
+        "admiral.environment.v1.ListEnvironmentVariablesRequest": {
+            /**
+             * environment_id
+             * Format: uuid
+             * @description The environment whose variables should be listed (UUID).
+             */
+            environment_id?: string;
+            /**
+             * filter
+             * @description Filter expression to narrow results. Uses the Admiral filter DSL.
+             *
+             *      Filterable fields:
+             *        - `key` -- filter by variable key (supports prefix matching via ~=).
+             *        - `sensitive` -- filter by sensitivity flag.
+             *        - `type` -- filter by variable type (STRING, NUMBER, BOOLEAN, COMPLEX).
+             *        - `source` -- filter by source (USER, INFRASTRUCTURE).
+             *
+             *      Example: `field['source'] = 'USER' AND field['sensitive'] = false`
+             */
+            filter?: string;
+            /**
+             * page_size
+             * Format: int32
+             * @description Maximum number of variables to return per page.
+             */
+            page_size?: number;
+            /**
+             * page_token
+             * @description Opaque pagination token from a previous response.
+             */
+            page_token?: string;
+        };
+        /**
+         * ListEnvironmentVariablesResponse
+         * @description ListEnvironmentVariablesResponse contains a page of variables.
+         */
+        "admiral.environment.v1.ListEnvironmentVariablesResponse": {
+            /**
+             * variables
+             * @description The variables scoped to this environment. Sensitive values are masked.
+             */
+            variables?: components["schemas"]["admiral.variable.v1.Variable"][];
+            /**
+             * next_page_token
+             * @description Pagination token for the next page. Empty when there are no more results.
+             */
+            next_page_token?: string;
         };
         /**
          * ListEnvironmentsRequest
@@ -5630,6 +5301,665 @@ export interface components {
             module?: components["schemas"]["admiral.module.v1.Module"];
         };
         /**
+         * ApplyRunRequest
+         * @description ApplyRunRequest transitions a planned run to apply phase.
+         */
+        "admiral.run.v1.ApplyRunRequest": {
+            /**
+             * run_id
+             * Format: uuid
+             * @description Unique identifier of the run to apply (UUID).
+             */
+            run_id?: string;
+            /**
+             * message
+             * @description Optional message describing the apply (e.g., "Approved by @martin").
+             */
+            message?: string;
+        };
+        /**
+         * ApplyRunResponse
+         * @description ApplyRunResponse contains the run after apply jobs are dispatched.
+         */
+        "admiral.run.v1.ApplyRunResponse": {
+            /**
+             * run
+             * @description The run with status advanced to APPLYING. Revisions that were
+             *      AWAITING_APPROVAL are now APPLYING.
+             */
+            run?: components["schemas"]["admiral.run.v1.Run"];
+        };
+        /**
+         * CancelRunRequest
+         * @description CancelRunRequest cancels an in-progress run.
+         */
+        "admiral.run.v1.CancelRunRequest": {
+            /**
+             * run_id
+             * Format: uuid
+             * @description Unique identifier of the run to cancel (UUID).
+             */
+            run_id?: string;
+            /**
+             * reason
+             * @description Optional reason for cancellation.
+             */
+            reason?: string;
+        };
+        /**
+         * CancelRunResponse
+         * @description CancelRunResponse contains the updated run.
+         */
+        "admiral.run.v1.CancelRunResponse": {
+            /**
+             * run
+             * @description The canceled run.
+             */
+            run?: components["schemas"]["admiral.run.v1.Run"];
+        };
+        /**
+         * ChangeSummary
+         * @description ChangeSummary provides resource change counts from an infrastructure plan.
+         *      Engine-agnostic -- the "+N / ~N / -N" shape is universal across Terraform,
+         *      OpenTofu, and similar engines.
+         */
+        "admiral.run.v1.ChangeSummary": {
+            /**
+             * additions
+             * Format: int32
+             * @description Number of resources to be created.
+             */
+            additions?: number;
+            /**
+             * changes
+             * Format: int32
+             * @description Number of resources to be updated in place.
+             */
+            changes?: number;
+            /**
+             * destructions
+             * Format: int32
+             * @description Number of resources to be destroyed.
+             */
+            destructions?: number;
+        };
+        /**
+         * CreateRunRequest
+         * @description CreateRunRequest triggers a new run.
+         */
+        "admiral.run.v1.CreateRunRequest": {
+            /**
+             * application_id
+             * Format: uuid
+             * @description The application to run (UUID).
+             */
+            application_id?: string;
+            /**
+             * environment_id
+             * Format: uuid
+             * @description The target environment (UUID).
+             */
+            environment_id?: string;
+            /**
+             * message
+             * @description Optional message describing this run.
+             */
+            message?: string;
+            /**
+             * destroy
+             * @description Destroy all resources in the environment. Runs the engine's destroy
+             *      phase (`terraform destroy` / `tofu destroy`) for infra components and
+             *      deletes workload resources from the cluster, in reverse dependency
+             *      order. Required before deleting an environment that has active resources.
+             */
+            destroy?: boolean;
+            /**
+             * source_run_id
+             * @description Optional: run from a prior run's configuration snapshots instead of
+             *      from the current component HEAD. When set, each revision is seeded
+             *      from the source run's revision for the same component (module_id,
+             *      version, resolved_values, source_id, working_directory). This is the
+             *      rollback mechanism: re-plan and re-apply a known-good configuration
+             *      against the current infrastructure state.
+             */
+            source_run_id?: string;
+            /**
+             * change_set_id
+             * @description Optional: run the entries and variable changes captured in a change
+             *      set. When set, the component set and variable overlay are sourced from
+             *      the change set instead of the application's full component list. The
+             *      change set must be OPEN and target the same (application, environment).
+             */
+            change_set_id?: string;
+        };
+        /**
+         * CreateRunResponse
+         * @description CreateRunResponse contains the newly created run.
+         */
+        "admiral.run.v1.CreateRunResponse": {
+            /**
+             * run
+             * @description The created run. Status will be PENDING initially.
+             */
+            run?: components["schemas"]["admiral.run.v1.Run"];
+        };
+        /**
+         * GetRevisionRequest
+         * @description GetRevisionRequest identifies a revision within a run.
+         */
+        "admiral.run.v1.GetRevisionRequest": {
+            /**
+             * run_id
+             * Format: uuid
+             * @description The run (UUID).
+             */
+            run_id?: string;
+            /**
+             * revision_id
+             * Format: uuid
+             * @description The revision (UUID).
+             */
+            revision_id?: string;
+        };
+        /**
+         * GetRevisionResponse
+         * @description GetRevisionResponse contains the revision record.
+         */
+        "admiral.run.v1.GetRevisionResponse": {
+            /**
+             * revision
+             * @description The revision record with current status and artifacts.
+             */
+            revision?: components["schemas"]["admiral.run.v1.Revision"];
+        };
+        /**
+         * GetRunRequest
+         * @description GetRunRequest identifies a run to retrieve.
+         */
+        "admiral.run.v1.GetRunRequest": {
+            /**
+             * run_id
+             * Format: uuid
+             * @description Unique identifier of the run (UUID).
+             */
+            run_id?: string;
+        };
+        /**
+         * GetRunResponse
+         * @description GetRunResponse contains the run record.
+         */
+        "admiral.run.v1.GetRunResponse": {
+            /**
+             * run
+             * @description The run record with current status.
+             */
+            run?: components["schemas"]["admiral.run.v1.Run"];
+        };
+        /**
+         * ListRevisionsRequest
+         * @description ListRevisionsRequest lists all revisions for a run.
+         */
+        "admiral.run.v1.ListRevisionsRequest": {
+            /**
+             * run_id
+             * Format: uuid
+             * @description Unique identifier of the run to list revisions for (UUID).
+             */
+            run_id?: string;
+            /**
+             * page_size
+             * Format: int32
+             * @description Maximum number of revisions to return per page.
+             */
+            page_size?: number;
+            /**
+             * page_token
+             * @description Opaque pagination token from a previous response.
+             */
+            page_token?: string;
+        };
+        /**
+         * ListRevisionsResponse
+         * @description ListRevisionsResponse contains all revisions for a run.
+         */
+        "admiral.run.v1.ListRevisionsResponse": {
+            /**
+             * revisions
+             * @description The list of revisions, ordered by dependency graph (upstream first).
+             */
+            revisions?: components["schemas"]["admiral.run.v1.Revision"][];
+            /**
+             * next_page_token
+             * @description Pagination token for the next page. Empty when there are no more results.
+             */
+            next_page_token?: string;
+        };
+        /**
+         * ListRunsRequest
+         * @description ListRunsRequest contains pagination and filter parameters.
+         */
+        "admiral.run.v1.ListRunsRequest": {
+            /**
+             * filter
+             * @description Filter expression to narrow results. Uses the Admiral filter DSL.
+             *
+             *      Syntax: `field['name'] = 'value'` with AND/OR/NOT, comparison operators
+             *      (=, !=, <, >, <=, >=, ~=), and predicates (IN, BETWEEN, CONTAINS,
+             *      STARTS_WITH, ENDS_WITH, IS NULL, EXISTS).
+             *
+             *      Filterable fields:
+             *        - `application_id` -- runs for a specific application (UUID).
+             *        - `environment_id` -- runs to a specific environment (UUID).
+             *        - `status` -- filter by run status (PENDING, RUNNING, SUCCEEDED, ...).
+             *        - `trigger_type` -- filter by trigger type (MANUAL, CI, DESTROY).
+             *
+             *      Example: `field['environment_id'] = '<uuid>' AND field['status'] = 'SUCCEEDED'`
+             */
+            filter?: string;
+            /**
+             * page_size
+             * Format: int32
+             * @description Maximum number of runs to return per page.
+             */
+            page_size?: number;
+            /**
+             * page_token
+             * @description Opaque pagination token from a previous response.
+             */
+            page_token?: string;
+        };
+        /**
+         * ListRunsResponse
+         * @description ListRunsResponse contains a page of runs.
+         */
+        "admiral.run.v1.ListRunsResponse": {
+            /**
+             * runs
+             * @description The list of runs, ordered from newest to oldest.
+             */
+            runs?: components["schemas"]["admiral.run.v1.Run"][];
+            /**
+             * next_page_token
+             * @description Pagination token for the next page. Empty when there are no more results.
+             */
+            next_page_token?: string;
+        };
+        /**
+         * RetryRevisionRequest
+         * @description RetryRevisionRequest retries a failed revision.
+         */
+        "admiral.run.v1.RetryRevisionRequest": {
+            /**
+             * run_id
+             * Format: uuid
+             * @description The run (UUID).
+             */
+            run_id?: string;
+            /**
+             * revision_id
+             * Format: uuid
+             * @description The revision to retry (UUID). Must be in FAILED status.
+             */
+            revision_id?: string;
+        };
+        /**
+         * RetryRevisionResponse
+         * @description RetryRevisionResponse contains the updated revision.
+         */
+        "admiral.run.v1.RetryRevisionResponse": {
+            /**
+             * revision
+             * @description The retried revision. Status resets and retry_count is incremented.
+             *      Downstream revisions that were BLOCKED will automatically unblock
+             *      if this revision succeeds.
+             */
+            revision?: components["schemas"]["admiral.run.v1.Revision"];
+        };
+        /**
+         * Revision
+         * @description Revision represents an immutable, rendered artifact for a single component
+         *      within a run. Each revision tracks the full lifecycle from rendering
+         *      through execution, and stores references to the produced artifacts
+         *      (rendered manifests, binary plan files, etc.).
+         *
+         *      For infrastructure components (terraform-semantic engine -- Terraform or
+         *      OpenTofu):
+         *        - Rendering produces the infrastructure source tree (.tf files and
+         *          auto-loaded tfvars) with resolved variable values.
+         *        - The engine's plan and apply phases are executed by the assigned
+         *          runner (see JobBundle.engine for engine selection).
+         *        - The plan output is stored for visibility.
+         *        - Each component has its own state, stored via the configured backend.
+         *
+         *      For workload components (Helm, Kustomize, manifests):
+         *        - Rendering produces Kubernetes manifests (via helm template, kustomize
+         *          build, or raw file collection).
+         *        - Manifests are ordered (CRDs before resources, namespaces first).
+         *        - The rendered bundle is sent to the K8s agent for application.
+         */
+        "admiral.run.v1.Revision": {
+            /**
+             * id
+             * Format: uuid
+             * @description Unique identifier for the revision (UUID).
+             */
+            id?: string;
+            /**
+             * run_id
+             * Format: uuid
+             * @description The run this revision belongs to (UUID).
+             */
+            run_id?: string;
+            /**
+             * component_id
+             * Format: uuid
+             * @description The component this revision is for (UUID).
+             */
+            component_id?: string;
+            /**
+             * component_slug
+             * @description Component slug at the time of run (immutable semantic key).
+             */
+            component_slug?: string;
+            /**
+             * kind
+             * @description Component kind at the time of run (after override resolution).
+             */
+            kind?: components["schemas"]["admiral.run.v1.RevisionKind"];
+            /**
+             * status
+             * @description Lifecycle status of this revision.
+             */
+            status?: components["schemas"]["admiral.run.v1.RevisionStatus"];
+            /**
+             * change_type
+             * @description What type of change this revision represents relative to the previously
+             *      deployed state (CREATE, UPDATE, DESTROY, RECREATE, IMPORT, NO_CHANGE).
+             */
+            change_type?: string;
+            /**
+             * previous_revision_id
+             * @description The last succeeded revision for this (component, environment) at the
+             *      time this revision was created. Null for CREATE revisions.
+             */
+            previous_revision_id?: string;
+            /**
+             * source_id
+             * @description The source used for this revision (UUID, after override resolution).
+             */
+            source_id?: string;
+            /**
+             * version
+             * @description The version deployed (after override resolution).
+             */
+            version?: string;
+            /**
+             * resolved_values
+             * @description The resolved values template snapshot -- the values_template with all
+             *      variable references and component output references fully resolved.
+             *      Stored for audit: shows exactly what inputs were used. Sensitive
+             *      variable values are masked in API responses.
+             */
+            resolved_values?: string;
+            /**
+             * depends_on
+             * @description Component IDs that this revision depends on. Populated from the resolved
+             *      depends_on list plus implicit dependencies from template expressions.
+             */
+            depends_on?: string[];
+            /**
+             * blocked_by
+             * @description Component IDs that are blocking this revision. Only populated when
+             *      status is BLOCKED -- indicates which upstream components failed.
+             */
+            blocked_by?: string[];
+            /**
+             * artifact_checksum
+             * @description SHA-256 checksum of the rendered artifact bundle (tar.gz).
+             */
+            artifact_checksum?: string;
+            /**
+             * artifact_url
+             * @description Storage location of the rendered artifact bundle. Internal reference
+             *      used by agents/runners to fetch the bundle.
+             */
+            artifact_url?: string;
+            /**
+             * plan_summary
+             * @description (Infrastructure only) The number of resources the plan will add,
+             *      change, and destroy. Populated after planning completes. Engine-agnostic:
+             *      applies to Terraform, OpenTofu, or any future engine that models changes
+             *      as create/update/delete counts.
+             */
+            plan_summary?: components["schemas"]["admiral.run.v1.ChangeSummary"];
+            /**
+             * has_plan_output
+             * @description True when plan output is available in object storage. Fetch via
+             *      `GET /api/v1/runs/{run_id}/revisions/{revision_id}/plan`.
+             */
+            has_plan_output?: boolean;
+            /**
+             * error_message
+             * @description Error message if the revision failed. Empty on success.
+             */
+            error_message?: string;
+            /**
+             * retry_count
+             * Format: int32
+             * @description Number of retry attempts. Starts at 0 for the initial attempt.
+             */
+            retry_count?: number;
+            /**
+             * created_at
+             * @description When the revision was created (same as run created_at).
+             */
+            created_at?: components["schemas"]["google.protobuf.Timestamp"];
+            /**
+             * started_at
+             * @description When the revision started execution (transitioned from PENDING/QUEUED).
+             */
+            started_at?: components["schemas"]["google.protobuf.Timestamp"];
+            /**
+             * completed_at
+             * @description When the revision finished (succeeded, failed, or canceled).
+             */
+            completed_at?: components["schemas"]["google.protobuf.Timestamp"];
+            /**
+             * module_id
+             * @description The module used for this revision (UUID, after override resolution).
+             *      Captures which module produced the source_id and version, needed for
+             *      rollback (re-deploying from a prior revision's snapshot).
+             */
+            module_id?: string;
+            /**
+             * working_directory
+             * @description Subdirectory within the delivered archive where the executor runs.
+             *      Empty means the archive root. Populated from the module's path field
+             *      at snapshot time so that relative module references resolve correctly.
+             */
+            working_directory?: string;
+        };
+        /**
+         * RevisionKind
+         * @description RevisionKind mirrors ComponentKind but is stored on the revision to capture
+         *      the effective kind at run time (may differ from the component default
+         *      if an environment override changed the source type).
+         * @enum {string}
+         */
+        "admiral.run.v1.RevisionKind": "REVISION_KIND_UNSPECIFIED" | "REVISION_KIND_INFRASTRUCTURE" | "REVISION_KIND_WORKLOAD";
+        /**
+         * RevisionStatus
+         * @description RevisionStatus represents the lifecycle status of a single component
+         *      revision within a run.
+         * @enum {string}
+         */
+        "admiral.run.v1.RevisionStatus": "REVISION_STATUS_UNSPECIFIED" | "REVISION_STATUS_PENDING" | "REVISION_STATUS_QUEUED" | "REVISION_STATUS_PLANNING" | "REVISION_STATUS_AWAITING_APPROVAL" | "REVISION_STATUS_APPLYING" | "REVISION_STATUS_SUCCEEDED" | "REVISION_STATUS_FAILED" | "REVISION_STATUS_BLOCKED" | "REVISION_STATUS_CANCELED" | "REVISION_STATUS_SUPERSEDED";
+        /**
+         * RevisionSummary
+         * @description RevisionSummary provides aggregate counts of revision statuses within a
+         *      run, enabling quick status display without loading all revisions.
+         */
+        "admiral.run.v1.RevisionSummary": {
+            /**
+             * total
+             * Format: int32
+             * @description Total number of component revisions in this run.
+             */
+            total?: number;
+            /**
+             * succeeded
+             * Format: int32
+             * @description Number of revisions that completed successfully.
+             */
+            succeeded?: number;
+            /**
+             * failed
+             * Format: int32
+             * @description Number of revisions that failed.
+             */
+            failed?: number;
+            /**
+             * blocked
+             * Format: int32
+             * @description Number of revisions that are blocked by upstream failures.
+             */
+            blocked?: number;
+            /**
+             * running
+             * Format: int32
+             * @description Number of revisions currently running (planning or applying).
+             */
+            running?: number;
+            /**
+             * canceled
+             * Format: int32
+             * @description Number of revisions that were canceled.
+             */
+            canceled?: number;
+            /**
+             * pending
+             * Format: int32
+             * @description Number of revisions that have not started yet.
+             */
+            pending?: number;
+        };
+        /**
+         * Run
+         * @description Run represents a single execution against an application+environment.
+         *      Each run produces one Revision per component. The run tracks the composite
+         *      status across all revisions and provides the audit trail for what was
+         *      executed, when, and by whom.
+         *
+         *      Run records are immutable once created -- there is no UpdateRun RPC and no
+         *      `updated_at` field. The composite `status`, `revision_summary`, and
+         *      `completed_at` fields are server-maintained as revisions progress;
+         *      everything else is fixed at creation time. To change what is deployed,
+         *      create a new run.
+         * @example {
+         *       "id": "7e8f9a0b-1c2d-3e4f-5a6b-7c8d9e0f1a2b",
+         *       "application_id": "a1b2c3d4-5678-9abc-def0-1234567890ab",
+         *       "environment_id": "e5f6a7b8-9012-3cde-f456-789012345678",
+         *       "status": "RUN_STATUS_SUCCEEDED",
+         *       "version": "42",
+         *       "description": "Deploy v2.4.1 with updated ingress rules",
+         *       "created_by": "d290f1ee-6c54-4b01-90e6-d701748f0851",
+         *       "created_at": "2025-11-20T14:00:00Z",
+         *       "updated_at": "2025-11-20T14:12:00Z",
+         *       "completed_at": "2025-11-20T14:12:00Z"
+         *     }
+         */
+        "admiral.run.v1.Run": {
+            /**
+             * id
+             * Format: uuid
+             * @description Unique identifier for the run (UUID).
+             */
+            id?: string;
+            /**
+             * application_id
+             * Format: uuid
+             * @description The application being deployed (UUID).
+             */
+            application_id?: string;
+            /**
+             * environment_id
+             * Format: uuid
+             * @description The target environment (UUID).
+             */
+            environment_id?: string;
+            /**
+             * status
+             * @description Composite status derived from all component revisions.
+             */
+            status?: components["schemas"]["admiral.run.v1.RunStatus"];
+            /**
+             * trigger_type
+             * @description What triggered this run.
+             */
+            trigger_type?: components["schemas"]["admiral.run.v1.RunTriggerType"];
+            /**
+             * triggered_by
+             * @description The user or agent that triggered the run (server-populated from token).
+             */
+            triggered_by?: components["schemas"]["admiral.common.v1.ActorRef"];
+            /**
+             * message
+             * @description Optional message describing the run (e.g., "Deploying v2.1.0
+             *      with new caching layer" or "Rolling back to stable after API errors").
+             */
+            message?: string;
+            /**
+             * destroy
+             * @description Whether this is a destroy run. Destroy runs tear down all resources in
+             *      the environment: the engine's destroy phase for infra components
+             *      (`terraform destroy` / `tofu destroy`), resource deletion for workload
+             *      components. Executed in reverse dependency order. Required before an
+             *      environment with active resources can be deleted.
+             */
+            destroy?: boolean;
+            /**
+             * source_run_id
+             * @description If this run was created as a rollback from a prior run, this field
+             *      contains the source run's UUID. Empty for normal runs.
+             */
+            source_run_id?: string;
+            /**
+             * change_set_id
+             * @description The changeset that was deployed (UUID). Absent for pre-changeset runs
+             *      and reconcile (no-changeset) runs.
+             */
+            change_set_id?: string;
+            /**
+             * revision_summary
+             * @description Summary counts for quick status display.
+             */
+            revision_summary?: components["schemas"]["admiral.run.v1.RevisionSummary"];
+            /**
+             * created_at
+             * @description When the run was created.
+             */
+            created_at?: components["schemas"]["google.protobuf.Timestamp"];
+            /**
+             * completed_at
+             * @description When the run finished (all revisions completed, failed, or canceled).
+             *      Absent while the run is in progress.
+             */
+            completed_at?: components["schemas"]["google.protobuf.Timestamp"];
+        };
+        /**
+         * RunStatus
+         * @description RunStatus represents the composite status of a run, derived from the
+         *      statuses of all its component revisions.
+         * @enum {string}
+         */
+        "admiral.run.v1.RunStatus": "RUN_STATUS_UNSPECIFIED" | "RUN_STATUS_PENDING" | "RUN_STATUS_QUEUED" | "RUN_STATUS_PLANNING" | "RUN_STATUS_PLANNED" | "RUN_STATUS_APPLYING" | "RUN_STATUS_SUCCEEDED" | "RUN_STATUS_PARTIALLY_FAILED" | "RUN_STATUS_FAILED" | "RUN_STATUS_CANCELED" | "RUN_STATUS_SUPERSEDED";
+        /**
+         * RunTriggerType
+         * @description RunTriggerType indicates what initiated the run.
+         * @enum {string}
+         */
+        "admiral.run.v1.RunTriggerType": "RUN_TRIGGER_TYPE_UNSPECIFIED" | "RUN_TRIGGER_TYPE_MANUAL" | "RUN_TRIGGER_TYPE_CI" | "RUN_TRIGGER_TYPE_DESTROY";
+        /**
          * ActiveJobInfo
          * @description ActiveJobInfo summarizes a job currently being executed by a runner instance.
          *      Included in RunnerStatus to provide real-time job progress via heartbeat.
@@ -6076,7 +6406,7 @@ export interface components {
         /**
          * Job
          * @description Job represents an infrastructure execution job assigned to a runner.
-         *      Jobs bridge the Deployment/Revision system and the Runner execution plane.
+         *      Jobs bridge the Run/Revision system and the Runner execution plane.
          */
         "admiral.runner.v1.Job": {
             /**
@@ -6098,11 +6428,11 @@ export interface components {
              */
             revision_id?: string;
             /**
-             * deployment_id
+             * run_id
              * Format: uuid
-             * @description The deployment this job belongs to (UUID). Denormalized for convenience.
+             * @description The run this job belongs to (UUID). Denormalized for convenience.
              */
-            deployment_id?: string;
+            run_id?: string;
             /**
              * job_type
              * @description The type of infrastructure operation to execute.
@@ -6267,7 +6597,7 @@ export interface components {
              * plan_summary
              * @description (Plan jobs only) Summary of resource changes from the plan.
              */
-            plan_summary?: components["schemas"]["admiral.deployment.v1.ChangeSummary"];
+            plan_summary?: components["schemas"]["admiral.run.v1.ChangeSummary"];
             /**
              * error_message
              * @description Error message if the job failed. Empty on success.
@@ -6334,7 +6664,7 @@ export interface components {
              *      Filterable fields:
              *        - `status` -- filter by job status (PENDING, ASSIGNED, RUNNING, etc.).
              *        - `job_type` -- filter by job type (PLAN, APPLY, DESTROY_PLAN, DESTROY_APPLY).
-             *        - `deployment_id` -- jobs for a specific deployment (UUID).
+             *        - `run_id` -- jobs for a specific run (UUID).
              *
              *      Example: `field['status'] = 'RUNNING'`
              */
@@ -6525,7 +6855,7 @@ export interface components {
          * Runner
          * @description Runner represents a registered infrastructure execution runner within a
          *      tenant. Runners claim and execute infrastructure operations (plan, apply,
-         *      destroy) dispatched by the deployment engine, using the terraform-semantic
+         *      destroy) dispatched by the run engine, using the terraform-semantic
          *      engine selected per job (Terraform or OpenTofu).
          * @example {
          *       "id": "b2c3d4e5-6789-0abc-def1-234567890abc",
@@ -7984,212 +8314,16 @@ export interface components {
             updated_at?: components["schemas"]["google.protobuf.Timestamp"];
         };
         /**
-         * CreateVariableRequest
-         * @description CreateVariableRequest contains the parameters for creating a new variable.
-         *      The variable's scope is derived from the presence of application_id and
-         *      environment_id: neither means global, application_id only means app-scoped,
-         *      both means environment-scoped.
-         */
-        "admiral.variable.v1.CreateVariableRequest": {
-            /**
-             * key
-             * @description The variable name. Must be a valid environment variable identifier
-             *      (e.g., "DATABASE_URL", "API_KEY"). Unlike Variable.key, dots are not
-             *      permitted here: dot-namespaced keys (e.g., "vpc.vpc_id") are reserved
-             *      for system-managed INFRASTRUCTURE variables captured from engine output
-             *      and cannot be created through this RPC.
-             */
-            key?: string;
-            /**
-             * value
-             * @description The variable value. For COMPLEX type, must be valid JSON.
-             */
-            value?: string;
-            /**
-             * sensitive
-             * @description Whether the variable value should be encrypted at rest and masked in
-             *      API responses.
-             */
-            sensitive?: boolean;
-            /**
-             * type
-             * @description How the value should be interpreted. Defaults to STRING if not specified.
-             */
-            type?: components["schemas"]["admiral.variable.v1.VariableType"];
-            /**
-             * description
-             * @description Optional description of the variable's purpose.
-             */
-            description?: string;
-            /**
-             * application_id
-             * Format: uuid
-             * @description The application to scope this variable to (UUID). When set without
-             *      environment_id, the variable applies to all environments in the app.
-             */
-            application_id?: string | null;
-            /**
-             * environment_id
-             * Format: uuid
-             * @description The environment to scope this variable to (UUID). Requires application_id.
-             *      When set, the variable applies only to this specific environment.
-             */
-            environment_id?: string | null;
-        };
-        /**
-         * CreateVariableResponse
-         * @description CreateVariableResponse contains the newly created variable.
-         */
-        "admiral.variable.v1.CreateVariableResponse": {
-            /**
-             * variable
-             * @description The created variable.
-             */
-            variable?: components["schemas"]["admiral.variable.v1.Variable"];
-        };
-        /**
-         * DeleteVariableRequest
-         * @description DeleteVariableRequest identifies a variable to delete.
-         */
-        "admiral.variable.v1.DeleteVariableRequest": {
-            /**
-             * variable_id
-             * Format: uuid
-             * @description The unique identifier of the variable to delete (UUID).
-             */
-            variable_id?: string;
-        };
-        /**
-         * DeleteVariableResponse
-         * @description DeleteVariableResponse is empty on success.
-         */
-        "admiral.variable.v1.DeleteVariableResponse": Record<string, never>;
-        /**
-         * GetVariableRequest
-         * @description GetVariableRequest identifies a variable to retrieve.
-         */
-        "admiral.variable.v1.GetVariableRequest": {
-            /**
-             * variable_id
-             * Format: uuid
-             * @description The unique identifier of the variable (UUID).
-             */
-            variable_id?: string;
-        };
-        /**
-         * GetVariableResponse
-         * @description GetVariableResponse contains the variable record.
-         */
-        "admiral.variable.v1.GetVariableResponse": {
-            /**
-             * variable
-             * @description The variable record. Sensitive variable values are masked.
-             */
-            variable?: components["schemas"]["admiral.variable.v1.Variable"];
-        };
-        /**
-         * ListVariablesRequest
-         * @description ListVariablesRequest contains filters and pagination parameters.
-         *
-         *      The `application_id` / `environment_id` filter fields also control which
-         *      levels are included in the returned union:
-         *        - Neither present: global variables only.
-         *        - `application_id` present: global + app-level variables.
-         *        - `application_id` + `environment_id` present: global + app + environment.
-         *
-         *      The response returns all matching entries -- it does NOT apply precedence.
-         *      See the VariableAPI service docstring for the precedence order deployment
-         *      rendering applies (env > app > global).
-         */
-        "admiral.variable.v1.ListVariablesRequest": {
-            /**
-             * filter
-             * @description Filter expression to narrow results. Uses the Admiral filter DSL.
-             *
-             *      Syntax: `field['name'] = 'value'` with AND/OR/NOT, comparison operators
-             *      (=, !=, <, >, <=, >=, ~=), and predicates (IN, BETWEEN, CONTAINS,
-             *      STARTS_WITH, ENDS_WITH, IS NULL, EXISTS).
-             *
-             *      Filterable fields:
-             *        - `application_id` -- scope to an application (UUID; also expands the
-             *          returned union to include app-level variables).
-             *        - `environment_id` -- scope to an environment (UUID; requires
-             *          application_id; also expands the union to include environment-level
-             *          variables).
-             *        - `sensitive` -- filter by sensitivity flag.
-             *        - `type` -- filter by variable type (STRING, NUMBER, BOOLEAN, COMPLEX).
-             *        - `key` -- filter by variable key (supports prefix matching via ~=).
-             *
-             *      Example: `field['application_id'] = '<uuid>' AND field['sensitive'] = 'false'`
-             */
-            filter?: string;
-            /**
-             * page_size
-             * Format: int32
-             * @description Maximum number of variables to return per page.
-             */
-            page_size?: number;
-            /**
-             * page_token
-             * @description Opaque pagination token from a previous response.
-             */
-            page_token?: string;
-        };
-        /**
-         * ListVariablesResponse
-         * @description ListVariablesResponse contains a page of variables.
-         */
-        "admiral.variable.v1.ListVariablesResponse": {
-            /**
-             * variables
-             * @description The list of variables from all applicable levels.
-             */
-            variables?: components["schemas"]["admiral.variable.v1.Variable"][];
-            /**
-             * next_page_token
-             * @description Pagination token for the next page. Empty when there are no more results.
-             */
-            next_page_token?: string;
-        };
-        /**
-         * UpdateVariableRequest
-         * @description UpdateVariableRequest contains the variable fields to update.
-         */
-        "admiral.variable.v1.UpdateVariableRequest": {
-            /**
-             * variable
-             * @description The variable with updated fields.
-             *      Only fields specified in `update_mask` are updated.
-             */
-            variable: components["schemas"]["admiral.variable.v1.Variable"];
-            /**
-             * update_mask
-             * @description The set of fields to update. If unset, all mutable fields are updated.
-             *      Supported fields: `value`, `sensitive`, `type`, `description`.
-             */
-            update_mask?: components["schemas"]["google.protobuf.FieldMask"];
-        };
-        /**
-         * UpdateVariableResponse
-         * @description UpdateVariableResponse contains the updated variable.
-         */
-        "admiral.variable.v1.UpdateVariableResponse": {
-            /**
-             * variable
-             * @description The updated variable.
-             */
-            variable?: components["schemas"]["admiral.variable.v1.Variable"];
-        };
-        /**
          * Variable
-         * @description Variable represents a configuration key-value pair scoped to a tenant,
-         *      application, or application+environment. Variables are resolved at deployment
-         *      time into immutable deployment snapshots.
+         * @description Variable represents a configuration key-value pair scoped to a specific
+         *      environment within an application. Variables are user-managed configuration
+         *      values, distinct from infrastructure outputs which are system-managed values
+         *      produced by apply (e.g., Terraform outputs, namespaced as `<slug>.<name>`).
          *
-         *      Variables are user-managed configuration values, distinct from component
-         *      outputs which are system-managed values produced by apply (e.g., Terraform
-         *      outputs). Component outputs are resolved at render time and referenced via
-         *      a separate namespace ({{ .component.<name>.<output> }}).
+         *      Variables are mutated exclusively through change sets (ChangeSetAPI.SetVariable
+         *      / RemoveVariable). They are read via EnvironmentAPI.ListEnvironmentVariables.
+         *
+         *      Sensitive variables have their values masked in API responses.
          * @example {
          *       "id": "1a2b3c4d-5e6f-7890-abcd-ef0123456789",
          *       "key": "DATABASE_URL",
@@ -8250,18 +8384,15 @@ export interface components {
             /**
              * application_id
              * Format: uuid
-             * @description The application this variable is scoped to (UUID). When set, the variable
-             *      is scoped to this application. When both application_id and environment_id
-             *      are set, the variable is scoped to that specific environment.
-             *      Absent means the variable is global (tenant-wide).
+             * @description The application this variable belongs to (UUID). Always set; variables
+             *      are env-scoped and inherit their app from the environment.
              */
             application_id?: string | null;
             /**
              * environment_id
              * Format: uuid
-             * @description The environment this variable is scoped to (UUID). Requires application_id.
-             *      When set alongside application_id, the variable applies only to this
-             *      specific environment within the application.
+             * @description The environment this variable is scoped to (UUID). Always set; variables
+             *      are env-scoped.
              */
             environment_id?: string | null;
             /**
@@ -8281,9 +8412,9 @@ export interface components {
             updated_at?: components["schemas"]["google.protobuf.Timestamp"];
             /**
              * source
-             * @description How the variable was created. USER for variables created via the API/CLI,
+             * @description How the variable was created. USER for change-set-managed variables,
              *      INFRASTRUCTURE for variables produced by engine output capture (Terraform
-             *      or OpenTofu). Server-populated; not settable via CreateVariable.
+             *      or OpenTofu). Server-populated.
              */
             source?: components["schemas"]["admiral.variable.v1.VariableSource"];
         };
@@ -8883,7 +9014,13 @@ export interface operations {
     };
     ApplicationAPI_DeleteApplication: {
         parameters: {
-            query?: never;
+            query?: {
+                /**
+                 * @description When true, bypass the children-exist check and cascade-delete all
+                 *      environments and their deployments (metadata records only).
+                 */
+                force?: boolean;
+            };
             header?: never;
             path: {
                 /** @description The unique identifier of the application to delete (UUID). */
@@ -8900,6 +9037,392 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["admiral.application.v1.DeleteApplicationResponse"];
+                };
+            };
+        };
+    };
+    ChangeSetAPI_ListChangeSets: {
+        parameters: {
+            query?: {
+                /**
+                 * @description Filter expression to narrow results. Uses the Admiral filter DSL.
+                 *
+                 *      Syntax: `field['name'] = 'value'` with AND/OR/NOT, comparison operators
+                 *      (=, !=, <, >, <=, >=, ~=), and predicates (IN, BETWEEN, CONTAINS,
+                 *      STARTS_WITH, ENDS_WITH, IS NULL, EXISTS).
+                 *
+                 *      Filterable fields:
+                 *        - `application_id` -- change sets for a specific application (UUID).
+                 *        - `environment_id` -- change sets for a specific environment (UUID).
+                 *        - `status` -- filter by status (OPEN, DEPLOYED, DISCARDED).
+                 *
+                 *      Example: `field['environment_id'] = '<uuid>' AND field['status'] = 'OPEN'`
+                 */
+                filter?: string;
+                /** @description Maximum number of change sets to return per page. */
+                page_size?: number;
+                /** @description Opaque pagination token from a previous response. */
+                page_token?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["admiral.changeset.v1.ListChangeSetsResponse"];
+                };
+            };
+        };
+    };
+    ChangeSetAPI_CreateChangeSet: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["admiral.changeset.v1.CreateChangeSetRequest"];
+            };
+        };
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["admiral.changeset.v1.CreateChangeSetResponse"];
+                };
+            };
+        };
+    };
+    ChangeSetAPI_UpdateChangeSet: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Unique identifier for the change set (UUID). */
+                "change_set.id": string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /**
+                     * change_set
+                     * @description The change set with updated fields. Only fields listed in `update_mask`
+                     *      are applied.
+                     */
+                    change_set: components["schemas"]["admiral.changeset.v1.ChangeSet"];
+                    /**
+                     * update_mask
+                     * @description The set of fields to update. Supported fields: `title`, `description`.
+                     */
+                    update_mask?: components["schemas"]["google.protobuf.FieldMask"];
+                };
+            };
+        };
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["admiral.changeset.v1.UpdateChangeSetResponse"];
+                };
+            };
+        };
+    };
+    ChangeSetAPI_GetChangeSet: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Unique identifier of the change set (UUID). */
+                change_set_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["admiral.changeset.v1.GetChangeSetResponse"];
+                };
+            };
+        };
+    };
+    ChangeSetAPI_CopyChangeSet: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The source change set to copy (UUID). Can be in any status. */
+                change_set_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /**
+                     * change_set_id
+                     * Format: uuid
+                     * @description The source change set to copy (UUID). Can be in any status.
+                     */
+                    change_set_id?: string;
+                    /**
+                     * environment_id
+                     * Format: uuid
+                     * @description The target environment for the new change set (UUID). Must belong to
+                     *      the source change set's application.
+                     */
+                    environment_id?: string;
+                    /**
+                     * title
+                     * @description Optional title override. Defaults to the source's title when empty.
+                     */
+                    title?: string;
+                    /**
+                     * description
+                     * @description Optional description override. Defaults to the source's description
+                     *      when empty.
+                     */
+                    description?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["admiral.changeset.v1.CopyChangeSetResponse"];
+                };
+            };
+        };
+    };
+    ChangeSetAPI_DiscardChangeSet: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Unique identifier of the change set to discard (UUID). */
+                change_set_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /**
+                     * change_set_id
+                     * Format: uuid
+                     * @description Unique identifier of the change set to discard (UUID).
+                     */
+                    change_set_id?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["admiral.changeset.v1.DiscardChangeSetResponse"];
+                };
+            };
+        };
+    };
+    ChangeSetAPI_SetEntry: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The change set to add or replace the entry in (UUID). */
+                change_set_id: string;
+                /** @description Component slug (immutable semantic key). Required. */
+                component_slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /**
+                     * change_set_id
+                     * Format: uuid
+                     * @description The change set to add or replace the entry in (UUID).
+                     */
+                    change_set_id?: string;
+                    /**
+                     * component_slug
+                     * @description Component slug (immutable semantic key). Required.
+                     */
+                    component_slug?: string;
+                    /**
+                     * change_type
+                     * @description The change type: CREATE, UPDATE, DESTROY, or ORPHAN.
+                     */
+                    change_type?: string;
+                    /**
+                     * module_id
+                     * Format: uuid
+                     * @description The module to deploy (UUID). Required for CREATE; optional for UPDATE.
+                     *      Not allowed for DESTROY/ORPHAN.
+                     */
+                    module_id?: string | null;
+                    /**
+                     * version
+                     * @description Optional ref override.
+                     */
+                    version?: string | null;
+                    /**
+                     * values_template
+                     * @description Values template for module inputs.
+                     */
+                    values_template?: string | null;
+                    /**
+                     * depends_on
+                     * @description Explicit dependencies (component UUIDs). Empty list clears.
+                     */
+                    depends_on?: string[];
+                    /**
+                     * description
+                     * @description Optional description of the proposed change.
+                     */
+                    description?: string | null;
+                };
+            };
+        };
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["admiral.changeset.v1.SetEntryResponse"];
+                };
+            };
+        };
+    };
+    ChangeSetAPI_RemoveEntry: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The change set (UUID). */
+                change_set_id: string;
+                /** @description Component slug of the entry to remove. */
+                component_slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["admiral.changeset.v1.RemoveEntryResponse"];
+                };
+            };
+        };
+    };
+    ChangeSetAPI_SetVariable: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The change set (UUID). */
+                change_set_id: string;
+                /** @description The variable key. */
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /**
+                     * change_set_id
+                     * Format: uuid
+                     * @description The change set (UUID).
+                     */
+                    change_set_id?: string;
+                    /**
+                     * value
+                     * @description The value to set on apply. For COMPLEX type, must be valid JSON.
+                     */
+                    value?: string;
+                    /**
+                     * type
+                     * @description How the value should be interpreted. Defaults to STRING when unspecified.
+                     */
+                    type?: components["schemas"]["admiral.variable.v1.VariableType"];
+                    /**
+                     * sensitive
+                     * @description When true, the value is encrypted at rest and masked in API responses.
+                     */
+                    sensitive?: boolean;
+                };
+            };
+        };
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["admiral.changeset.v1.SetVariableResponse"];
+                };
+            };
+        };
+    };
+    ChangeSetAPI_RemoveVariable: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The change set (UUID). */
+                change_set_id: string;
+                /** @description The variable key to remove on apply. */
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["admiral.changeset.v1.RemoveVariableResponse"];
                 };
             };
         };
@@ -9315,316 +9838,6 @@ export interface operations {
             };
         };
     };
-    ComponentAPI_ListComponents: {
-        parameters: {
-            query?: {
-                /**
-                 * @description Scope listing to a specific application (UUID). Required for meaningful
-                 *      results since components always belong to an application.
-                 */
-                application_id?: string;
-                /**
-                 * @description When set alongside `application_id`, returns the resolved view with
-                 *      environment overrides applied (UUID). Optional.
-                 */
-                environment_id?: string;
-                /**
-                 * @description Filter expression using the PEG filter DSL. Filterable fields:
-                 *        - `kind` -- filter by component kind (INFRASTRUCTURE, WORKLOAD).
-                 *        - `name` -- filter by component name.
-                 *        - `module_id` -- filter by module reference.
-                 */
-                filter?: string;
-                /** @description Maximum number of components to return per page. */
-                page_size?: number;
-                /** @description Opaque pagination token from a previous response. */
-                page_token?: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Success */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["admiral.component.v1.ListComponentsResponse"];
-                };
-            };
-        };
-    };
-    ComponentAPI_CreateComponent: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["admiral.component.v1.CreateComponentRequest"];
-            };
-        };
-        responses: {
-            /** @description Success */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["admiral.component.v1.CreateComponentResponse"];
-                };
-            };
-        };
-    };
-    ComponentAPI_UpdateComponent: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Unique identifier for the component (UUID). */
-                "component.id": string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    /**
-                     * component
-                     * @description The component with updated fields. Only fields specified in
-                     *      `update_mask` are updated.
-                     */
-                    component: components["schemas"]["admiral.component.v1.Component"];
-                    /**
-                     * update_mask
-                     * @description The set of fields to update. If unset, all mutable fields are updated.
-                     *      Supported fields: `name`, `description`, `module_id`, `version`,
-                     *      `values_template`, `depends_on`, `outputs`.
-                     */
-                    update_mask?: components["schemas"]["google.protobuf.FieldMask"];
-                };
-            };
-        };
-        responses: {
-            /** @description Success */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["admiral.component.v1.UpdateComponentResponse"];
-                };
-            };
-        };
-    };
-    ComponentAPI_GetComponent: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Unique identifier of the component (UUID). */
-                component_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Success */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["admiral.component.v1.GetComponentResponse"];
-                };
-            };
-        };
-    };
-    ComponentAPI_DeleteComponent: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /**
-                 * @description Unique identifier of the component to delete (UUID).
-                 *      Fails if other components depend on this component (via depends_on
-                 *      or output references in values_template).
-                 */
-                component_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Success */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["admiral.component.v1.DeleteComponentResponse"];
-                };
-            };
-        };
-    };
-    ComponentAPI_ListComponentOverrides: {
-        parameters: {
-            query?: {
-                /** @description Maximum number of overrides to return per page. */
-                page_size?: number;
-                /** @description Opaque pagination token from a previous response. */
-                page_token?: string;
-            };
-            header?: never;
-            path: {
-                /** @description Unique identifier of the component to list overrides for (UUID). */
-                component_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Success */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["admiral.component.v1.ListComponentOverridesResponse"];
-                };
-            };
-        };
-    };
-    ComponentAPI_GetComponentOverride: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description The component (UUID). */
-                component_id: string;
-                /** @description The environment (UUID). */
-                environment_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Success */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["admiral.component.v1.GetComponentOverrideResponse"];
-                };
-            };
-        };
-    };
-    ComponentAPI_SetComponentOverride: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description The component to override (UUID). */
-                component_id: string;
-                /** @description The environment this override applies to (UUID). */
-                environment_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    /**
-                     * component_id
-                     * Format: uuid
-                     * @description The component to override (UUID).
-                     */
-                    component_id?: string;
-                    /**
-                     * environment_id
-                     * Format: uuid
-                     * @description The environment this override applies to (UUID).
-                     */
-                    environment_id?: string;
-                    /**
-                     * disabled
-                     * @description When true, the component is not deployed in this environment.
-                     */
-                    disabled?: boolean;
-                    /**
-                     * module_id
-                     * Format: uuid
-                     * @description Override module (UUID). When set, replaces the component's default module.
-                     */
-                    module_id?: string | null;
-                    /**
-                     * version
-                     * @description Override version. When set, replaces the component's default version.
-                     */
-                    version?: string | null;
-                    /**
-                     * values_template
-                     * @description Override values template. When set, completely replaces the component's
-                     *      default values template (no merge).
-                     */
-                    values_template?: string | null;
-                    /**
-                     * depends_on
-                     * @description Override depends_on (component UUIDs). When set, replaces the component's
-                     *      default depends_on.
-                     */
-                    depends_on?: string[];
-                    /**
-                     * outputs
-                     * @description Override outputs. When set, replaces the component's declared outputs.
-                     */
-                    outputs?: components["schemas"]["admiral.component.v1.ComponentOutput"][];
-                };
-            };
-        };
-        responses: {
-            /** @description Success */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["admiral.component.v1.SetComponentOverrideResponse"];
-                };
-            };
-        };
-    };
-    ComponentAPI_DeleteComponentOverride: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description The component (UUID). */
-                component_id: string;
-                /** @description The environment (UUID). */
-                environment_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Success */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["admiral.component.v1.DeleteComponentOverrideResponse"];
-                };
-            };
-        };
-    };
     CredentialAPI_ListCredentials: {
         parameters: {
             query?: {
@@ -9777,267 +9990,6 @@ export interface operations {
             };
         };
     };
-    DeploymentAPI_ListDeployments: {
-        parameters: {
-            query?: {
-                /**
-                 * @description Filter expression to narrow results. Uses the Admiral filter DSL.
-                 *
-                 *      Syntax: `field['name'] = 'value'` with AND/OR/NOT, comparison operators
-                 *      (=, !=, <, >, <=, >=, ~=), and predicates (IN, BETWEEN, CONTAINS,
-                 *      STARTS_WITH, ENDS_WITH, IS NULL, EXISTS).
-                 *
-                 *      Filterable fields:
-                 *        - `application_id` -- deployments for a specific application (UUID).
-                 *        - `environment_id` -- deployments to a specific environment (UUID).
-                 *        - `status` -- filter by deployment status (PENDING, RUNNING, SUCCEEDED, ...).
-                 *        - `trigger_type` -- filter by trigger type (MANUAL, CI, DESTROY).
-                 *
-                 *      Example: `field['environment_id'] = '<uuid>' AND field['status'] = 'SUCCEEDED'`
-                 */
-                filter?: string;
-                /** @description Maximum number of deployments to return per page. */
-                page_size?: number;
-                /** @description Opaque pagination token from a previous response. */
-                page_token?: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Success */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["admiral.deployment.v1.ListDeploymentsResponse"];
-                };
-            };
-        };
-    };
-    DeploymentAPI_CreateDeployment: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["admiral.deployment.v1.CreateDeploymentRequest"];
-            };
-        };
-        responses: {
-            /** @description Success */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["admiral.deployment.v1.CreateDeploymentResponse"];
-                };
-            };
-        };
-    };
-    DeploymentAPI_GetDeployment: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Unique identifier of the deployment (UUID). */
-                deployment_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Success */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["admiral.deployment.v1.GetDeploymentResponse"];
-                };
-            };
-        };
-    };
-    DeploymentAPI_ApplyDeployment: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Unique identifier of the deployment to apply (UUID). */
-                deployment_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    /**
-                     * deployment_id
-                     * Format: uuid
-                     * @description Unique identifier of the deployment to apply (UUID).
-                     */
-                    deployment_id?: string;
-                    /**
-                     * message
-                     * @description Optional message describing the apply (e.g., "Approved by @martin").
-                     */
-                    message?: string;
-                };
-            };
-        };
-        responses: {
-            /** @description Success */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["admiral.deployment.v1.ApplyDeploymentResponse"];
-                };
-            };
-        };
-    };
-    DeploymentAPI_CancelDeployment: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Unique identifier of the deployment to cancel (UUID). */
-                deployment_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    /**
-                     * deployment_id
-                     * Format: uuid
-                     * @description Unique identifier of the deployment to cancel (UUID).
-                     */
-                    deployment_id?: string;
-                    /**
-                     * reason
-                     * @description Optional reason for cancellation.
-                     */
-                    reason?: string;
-                };
-            };
-        };
-        responses: {
-            /** @description Success */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["admiral.deployment.v1.CancelDeploymentResponse"];
-                };
-            };
-        };
-    };
-    DeploymentAPI_ListRevisions: {
-        parameters: {
-            query?: {
-                /** @description Maximum number of revisions to return per page. */
-                page_size?: number;
-                /** @description Opaque pagination token from a previous response. */
-                page_token?: string;
-            };
-            header?: never;
-            path: {
-                /** @description Unique identifier of the deployment to list revisions for (UUID). */
-                deployment_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Success */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["admiral.deployment.v1.ListRevisionsResponse"];
-                };
-            };
-        };
-    };
-    DeploymentAPI_GetRevision: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description The deployment (UUID). */
-                deployment_id: string;
-                /** @description The revision (UUID). */
-                revision_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Success */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["admiral.deployment.v1.GetRevisionResponse"];
-                };
-            };
-        };
-    };
-    DeploymentAPI_RetryRevision: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description The deployment (UUID). */
-                deployment_id: string;
-                /** @description The revision to retry (UUID). Must be in FAILED status. */
-                revision_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    /**
-                     * deployment_id
-                     * Format: uuid
-                     * @description The deployment (UUID).
-                     */
-                    deployment_id?: string;
-                    /**
-                     * revision_id
-                     * Format: uuid
-                     * @description The revision to retry (UUID). Must be in FAILED status.
-                     */
-                    revision_id?: string;
-                };
-            };
-        };
-        responses: {
-            /** @description Success */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["admiral.deployment.v1.RetryRevisionResponse"];
-                };
-            };
-        };
-    };
     EnvironmentAPI_ListEnvironments: {
         parameters: {
             query?: {
@@ -10173,7 +10125,13 @@ export interface operations {
     };
     EnvironmentAPI_DeleteEnvironment: {
         parameters: {
-            query?: never;
+            query?: {
+                /**
+                 * @description When true, bypass the children-exist check and cascade-delete all
+                 *      deployment records (metadata only).
+                 */
+                force?: boolean;
+            };
             header?: never;
             path: {
                 /** @description The unique identifier of the environment to delete (UUID). */
@@ -10190,6 +10148,46 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["admiral.environment.v1.DeleteEnvironmentResponse"];
+                };
+            };
+        };
+    };
+    EnvironmentAPI_ListEnvironmentVariables: {
+        parameters: {
+            query?: {
+                /**
+                 * @description Filter expression to narrow results. Uses the Admiral filter DSL.
+                 *
+                 *      Filterable fields:
+                 *        - `key` -- filter by variable key (supports prefix matching via ~=).
+                 *        - `sensitive` -- filter by sensitivity flag.
+                 *        - `type` -- filter by variable type (STRING, NUMBER, BOOLEAN, COMPLEX).
+                 *        - `source` -- filter by source (USER, INFRASTRUCTURE).
+                 *
+                 *      Example: `field['source'] = 'USER' AND field['sensitive'] = false`
+                 */
+                filter?: string;
+                /** @description Maximum number of variables to return per page. */
+                page_size?: number;
+                /** @description Opaque pagination token from a previous response. */
+                page_token?: string;
+            };
+            header?: never;
+            path: {
+                /** @description The environment whose variables should be listed (UUID). */
+                environment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["admiral.environment.v1.ListEnvironmentVariablesResponse"];
                 };
             };
         };
@@ -10914,7 +10912,7 @@ export interface operations {
                  *      Filterable fields:
                  *        - `status` -- filter by job status (PENDING, ASSIGNED, RUNNING, etc.).
                  *        - `job_type` -- filter by job type (PLAN, APPLY, DESTROY_PLAN, DESTROY_APPLY).
-                 *        - `deployment_id` -- jobs for a specific deployment (UUID).
+                 *        - `run_id` -- jobs for a specific run (UUID).
                  *
                  *      Example: `field['status'] = 'RUNNING'`
                  */
@@ -11047,6 +11045,267 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["admiral.runner.v1.CreateRunnerTokenResponse"];
+                };
+            };
+        };
+    };
+    RunAPI_ListRuns: {
+        parameters: {
+            query?: {
+                /**
+                 * @description Filter expression to narrow results. Uses the Admiral filter DSL.
+                 *
+                 *      Syntax: `field['name'] = 'value'` with AND/OR/NOT, comparison operators
+                 *      (=, !=, <, >, <=, >=, ~=), and predicates (IN, BETWEEN, CONTAINS,
+                 *      STARTS_WITH, ENDS_WITH, IS NULL, EXISTS).
+                 *
+                 *      Filterable fields:
+                 *        - `application_id` -- runs for a specific application (UUID).
+                 *        - `environment_id` -- runs to a specific environment (UUID).
+                 *        - `status` -- filter by run status (PENDING, RUNNING, SUCCEEDED, ...).
+                 *        - `trigger_type` -- filter by trigger type (MANUAL, CI, DESTROY).
+                 *
+                 *      Example: `field['environment_id'] = '<uuid>' AND field['status'] = 'SUCCEEDED'`
+                 */
+                filter?: string;
+                /** @description Maximum number of runs to return per page. */
+                page_size?: number;
+                /** @description Opaque pagination token from a previous response. */
+                page_token?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["admiral.run.v1.ListRunsResponse"];
+                };
+            };
+        };
+    };
+    RunAPI_CreateRun: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["admiral.run.v1.CreateRunRequest"];
+            };
+        };
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["admiral.run.v1.CreateRunResponse"];
+                };
+            };
+        };
+    };
+    RunAPI_GetRun: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Unique identifier of the run (UUID). */
+                run_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["admiral.run.v1.GetRunResponse"];
+                };
+            };
+        };
+    };
+    RunAPI_ApplyRun: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Unique identifier of the run to apply (UUID). */
+                run_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /**
+                     * run_id
+                     * Format: uuid
+                     * @description Unique identifier of the run to apply (UUID).
+                     */
+                    run_id?: string;
+                    /**
+                     * message
+                     * @description Optional message describing the apply (e.g., "Approved by @martin").
+                     */
+                    message?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["admiral.run.v1.ApplyRunResponse"];
+                };
+            };
+        };
+    };
+    RunAPI_CancelRun: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Unique identifier of the run to cancel (UUID). */
+                run_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /**
+                     * run_id
+                     * Format: uuid
+                     * @description Unique identifier of the run to cancel (UUID).
+                     */
+                    run_id?: string;
+                    /**
+                     * reason
+                     * @description Optional reason for cancellation.
+                     */
+                    reason?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["admiral.run.v1.CancelRunResponse"];
+                };
+            };
+        };
+    };
+    RunAPI_ListRevisions: {
+        parameters: {
+            query?: {
+                /** @description Maximum number of revisions to return per page. */
+                page_size?: number;
+                /** @description Opaque pagination token from a previous response. */
+                page_token?: string;
+            };
+            header?: never;
+            path: {
+                /** @description Unique identifier of the run to list revisions for (UUID). */
+                run_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["admiral.run.v1.ListRevisionsResponse"];
+                };
+            };
+        };
+    };
+    RunAPI_GetRevision: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The run (UUID). */
+                run_id: string;
+                /** @description The revision (UUID). */
+                revision_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["admiral.run.v1.GetRevisionResponse"];
+                };
+            };
+        };
+    };
+    RunAPI_RetryRevision: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The run (UUID). */
+                run_id: string;
+                /** @description The revision to retry (UUID). Must be in FAILED status. */
+                revision_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /**
+                     * run_id
+                     * Format: uuid
+                     * @description The run (UUID).
+                     */
+                    run_id?: string;
+                    /**
+                     * revision_id
+                     * Format: uuid
+                     * @description The revision to retry (UUID). Must be in FAILED status.
+                     */
+                    revision_id?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["admiral.run.v1.RetryRevisionResponse"];
                 };
             };
         };
@@ -11650,161 +11909,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["admiral.user.v1.GetUserResponse"];
-                };
-            };
-        };
-    };
-    VariableAPI_ListVariables: {
-        parameters: {
-            query?: {
-                /**
-                 * @description Filter expression to narrow results. Uses the Admiral filter DSL.
-                 *
-                 *      Syntax: `field['name'] = 'value'` with AND/OR/NOT, comparison operators
-                 *      (=, !=, <, >, <=, >=, ~=), and predicates (IN, BETWEEN, CONTAINS,
-                 *      STARTS_WITH, ENDS_WITH, IS NULL, EXISTS).
-                 *
-                 *      Filterable fields:
-                 *        - `application_id` -- scope to an application (UUID; also expands the
-                 *          returned union to include app-level variables).
-                 *        - `environment_id` -- scope to an environment (UUID; requires
-                 *          application_id; also expands the union to include environment-level
-                 *          variables).
-                 *        - `sensitive` -- filter by sensitivity flag.
-                 *        - `type` -- filter by variable type (STRING, NUMBER, BOOLEAN, COMPLEX).
-                 *        - `key` -- filter by variable key (supports prefix matching via ~=).
-                 *
-                 *      Example: `field['application_id'] = '<uuid>' AND field['sensitive'] = 'false'`
-                 */
-                filter?: string;
-                /** @description Maximum number of variables to return per page. */
-                page_size?: number;
-                /** @description Opaque pagination token from a previous response. */
-                page_token?: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Success */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["admiral.variable.v1.ListVariablesResponse"];
-                };
-            };
-        };
-    };
-    VariableAPI_CreateVariable: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["admiral.variable.v1.CreateVariableRequest"];
-            };
-        };
-        responses: {
-            /** @description Success */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["admiral.variable.v1.CreateVariableResponse"];
-                };
-            };
-        };
-    };
-    VariableAPI_UpdateVariable: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Unique identifier for the variable (UUID). */
-                "variable.id": string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    /**
-                     * variable
-                     * @description The variable with updated fields.
-                     *      Only fields specified in `update_mask` are updated.
-                     */
-                    variable: components["schemas"]["admiral.variable.v1.Variable"];
-                    /**
-                     * update_mask
-                     * @description The set of fields to update. If unset, all mutable fields are updated.
-                     *      Supported fields: `value`, `sensitive`, `type`, `description`.
-                     */
-                    update_mask?: components["schemas"]["google.protobuf.FieldMask"];
-                };
-            };
-        };
-        responses: {
-            /** @description Success */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["admiral.variable.v1.UpdateVariableResponse"];
-                };
-            };
-        };
-    };
-    VariableAPI_GetVariable: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description The unique identifier of the variable (UUID). */
-                variable_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Success */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["admiral.variable.v1.GetVariableResponse"];
-                };
-            };
-        };
-    };
-    VariableAPI_DeleteVariable: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description The unique identifier of the variable to delete (UUID). */
-                variable_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Success */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["admiral.variable.v1.DeleteVariableResponse"];
                 };
             };
         };

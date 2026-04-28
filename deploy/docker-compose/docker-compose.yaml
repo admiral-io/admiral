@@ -82,6 +82,23 @@ services:
     entrypoint: ["/bin/sh", "/init-ssl-fix.sh"]
     restart: "no"
 
+  redis:
+    container_name: redis
+    image: redis:7-alpine
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - admiral-network
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis:/data
+    restart: unless-stopped
+
   minio:
     container_name: minio
     image: minio/minio:latest
@@ -164,6 +181,8 @@ services:
 
 volumes:
   db:
+    driver: local
+  redis:
     driver: local
   minio:
     driver: local

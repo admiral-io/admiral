@@ -109,9 +109,9 @@ func urlPath(raw string) (string, error) {
 }
 
 // replace wraps strings.ReplaceAll with argument order suitable for pipelines:
-// {{ .var.x | replace "old" "new" }}
-func replace(old, new, s string) string {
-	return strings.ReplaceAll(s, old, new)
+// {{ .var.x | replace "old" "new" }}.
+func replace(old, repl, s string) string {
+	return strings.ReplaceAll(s, old, repl)
 }
 
 // join converts a slice to a delimited string. Handles []any (common from
@@ -134,7 +134,7 @@ func join(sep string, v any) (string, error) {
 // safeIndex performs deep key lookup on a map. Returns nil for missing keys
 // rather than panicking, so templates can chain with `default`.
 //
-//	{{ index .component.vpc "subnet_ids" }}
+//	{{ index .output.vpc "subnet_ids" }}
 func safeIndex(v any, keys ...string) any {
 	cur := v
 	for _, k := range keys {

@@ -1,6 +1,6 @@
 CREATE TABLE IF NOT EXISTS modules (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    name TEXT NOT NULL CHECK (length(name) > 0 AND name ~ '^[a-z]([a-z0-9-]{0,61}[a-z0-9])?$'),
+    name TEXT NOT NULL CHECK (length(name) > 0 AND name ~ '^[a-z][a-z0-9-]*(/[a-z][a-z0-9-]*)*$'),
     description TEXT NOT NULL DEFAULT '',
     type TEXT NOT NULL CHECK (type IN ('TERRAFORM', 'HELM', 'KUSTOMIZE', 'MANIFEST')),
     source_id UUID NOT NULL REFERENCES sources(id) ON DELETE RESTRICT,
