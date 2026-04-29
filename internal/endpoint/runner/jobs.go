@@ -14,13 +14,6 @@ import (
 	runnerv1 "go.admiral.io/sdk/proto/admiral/runner/v1"
 )
 
-const (
-	artifactRoutePattern = "/api/v1/runner/jobs/{id}/artifact"
-	planFileRoutePattern = "/api/v1/runner/jobs/{id}/plan"
-	planFileContentType  = "application/octet-stream"
-	maxPlanFileSize      = 256 << 20 // 256 MiB
-)
-
 func (a *api) ClaimJob(ctx context.Context, _ *runnerv1.ClaimJobRequest) (*runnerv1.ClaimJobResponse, error) {
 	runnerID, err := runnerIDFromClaims(ctx)
 	if err != nil {
@@ -73,16 +66,16 @@ func (a *api) GetJobBundle(ctx context.Context, req *runnerv1.GetJobBundleReques
 		return nil, status.Errorf(codes.Internal, "failed to parse resolved values: %v", err)
 	}
 
-	dep, err := a.deploymentStore.Get(ctx, rev.DeploymentId)
+	run, err := a.runStore.Get(ctx, rev.RunId)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to load deployment: %v", err)
+		return nil, status.Errorf(codes.Internal, "failed to load run: %v", err)
 	}
 
 	bundle := &runnerv1.JobBundle{
 		ArtifactUrl:      artifactURLForJob(jobID),
 		Variables:        vars,
 		WorkingDirectory: rev.WorkingDirectory,
-		BackendConfig:    a.orchestration.BuildBackendConfig(rev.ComponentId, dep.EnvironmentId),
+		BackendConfig:    a.orchestration.BuildBackendConfig(rev.ComponentId, run.EnvironmentId),
 	}
 
 	// For apply jobs, include the URL to download the binary plan file
@@ -161,12 +154,4 @@ func (a *api) ListRunnerJobs(ctx context.Context, req *runnerv1.ListRunnerJobsRe
 		resp.NextPageToken = base64.RawURLEncoding.EncodeToString([]byte(token))
 	}
 	return resp, nil
-}
-
-func artifactURLForJob(jobID uuid.UUID) string {
-	return fmt.Sprintf("/api/v1/runner/jobs/%s/artifact", jobID)
-}
-
-func planFileURLForJob(jobID uuid.UUID) string {
-	return fmt.Sprintf("/api/v1/runner/jobs/%s/plan", jobID)
 }

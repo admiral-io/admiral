@@ -8,15 +8,28 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 
 	"go.admiral.io/admiral/internal/backend"
 	"go.admiral.io/admiral/internal/model"
-	"go.admiral.io/admiral/internal/service/authn"
 )
+
+const (
+	artifactRoutePattern = "/api/v1/runner/jobs/{id}/artifact"
+	planFileRoutePattern = "/api/v1/runner/jobs/{id}/plan"
+	planFileContentType  = "application/octet-stream"
+	maxPlanFileSize      = 256 << 20 // 256 MiB
+)
+
+func artifactURLForJob(jobID uuid.UUID) string {
+	return fmt.Sprintf("/api/v1/runner/jobs/%s/artifact", jobID)
+}
+
+func planFileURLForJob(jobID uuid.UUID) string {
+	return fmt.Sprintf("/api/v1/runner/jobs/%s/plan", jobID)
+}
 
 func (a *api) serveArtifact(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
@@ -242,33 +255,11 @@ func (a *api) downloadPlanFile(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", planFileContentType)
 	w.Header().Set("Content-Disposition",
 		fmt.Sprintf(`attachment; filename="%s.tfplan"`, rev.Id))
-	w.Write(data)
-}
-
-func (a *api) authenticateRunner(r *http.Request) (uuid.UUID, error) {
-	token, err := extractBearer(r.Header.Get("Authorization"))
-	if err != nil {
-		return uuid.Nil, err
+	if _, err := w.Write(data); err != nil {
+		a.logger.Warn("failed to write plan file response",
+			zap.String("revision_id", rev.Id.String()),
+			zap.Error(err))
 	}
-	claims, err := a.sessionProvider.Verify(r.Context(), token)
-	if err != nil {
-		return uuid.Nil, fmt.Errorf("invalid token")
-	}
-	if claims.Kind != string(authn.TokenKindSAT) {
-		return uuid.Nil, fmt.Errorf("runner SAT required")
-	}
-	return uuid.Parse(claims.Subject)
-}
-
-func extractBearer(header string) (string, error) {
-	fields := strings.Fields(header)
-	if len(fields) != 2 || !strings.EqualFold(fields[0], "Bearer") {
-		return "", fmt.Errorf("missing or malformed Authorization header")
-	}
-	if fields[1] == "" {
-		return "", fmt.Errorf("empty bearer token")
-	}
-	return fields[1], nil
 }
 
 func firstNonEmpty(vals ...string) string {
