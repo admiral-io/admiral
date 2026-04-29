@@ -6,10 +6,11 @@ import (
 	"time"
 
 	"github.com/lib/pq"
-	commonv1 "go.admiral.io/sdk/proto/admiral/common/v1"
 	"golang.org/x/oauth2"
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"gorm.io/gorm"
+
+	commonv1 "go.admiral.io/sdk/proto/admiral/common/v1"
 )
 
 type AccessTokenKind string
