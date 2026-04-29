@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
+	"net/http"
 	"time"
 
 	"github.com/google/uuid"
@@ -15,6 +16,7 @@ import (
 
 	"go.admiral.io/admiral/internal/config"
 	"go.admiral.io/admiral/internal/endpoint"
+	"go.admiral.io/admiral/internal/middleware/httpauth"
 	"go.admiral.io/admiral/internal/model"
 	"go.admiral.io/admiral/internal/querybuilder"
 	"go.admiral.io/admiral/internal/service"
@@ -153,9 +155,15 @@ func (a *api) Register(r endpoint.Registrar) error {
 	if err := r.RegisterJSONGateway(runnerv1.RegisterRunnerAPIHandler); err != nil {
 		return err
 	}
-	r.HTTPMux().HandleFunc("GET "+artifactRoutePattern, a.serveArtifact)
-	r.HTTPMux().HandleFunc("POST "+planFileRoutePattern, a.uploadPlanFile)
-	r.HTTPMux().HandleFunc("GET "+planFileRoutePattern, a.downloadPlanFile)
+
+	withAuth := httpauth.Middleware(httpauth.Config{
+		SessionProvider: a.sessionProvider,
+		RequiredKind:    new(authn.TokenKindSAT),
+	})
+	mux := r.HTTPMux()
+	mux.Handle("GET "+artifactRoutePattern, withAuth(http.HandlerFunc(a.serveArtifact)))
+	mux.Handle("POST "+planFileRoutePattern, withAuth(http.HandlerFunc(a.uploadPlanFile)))
+	mux.Handle("GET "+planFileRoutePattern, withAuth(http.HandlerFunc(a.downloadPlanFile)))
 	return nil
 }
 

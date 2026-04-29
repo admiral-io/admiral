@@ -2,7 +2,11 @@ package state
 
 import (
 	"context"
+	"crypto/md5" //nolint:gosec // MD5 used for content fingerprint, not security
+	"encoding/hex"
+	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 
 	"github.com/google/uuid"
@@ -11,6 +15,7 @@ import (
 
 	"go.admiral.io/admiral/internal/config"
 	"go.admiral.io/admiral/internal/endpoint"
+	"go.admiral.io/admiral/internal/middleware/httpauth"
 	"go.admiral.io/admiral/internal/model"
 	"go.admiral.io/admiral/internal/service"
 	"go.admiral.io/admiral/internal/service/authn"
@@ -22,11 +27,20 @@ import (
 const (
 	Name = "endpoint.state"
 
+	stateReadScope  = "state:read"
+	stateWriteScope = "state:write"
+
 	stateRoutePattern = "/api/v1/state/{component_id}/env/{environment_id}"
 	lockRoutePattern  = "/api/v1/state/{component_id}/env/{environment_id}/lock"
 )
 
-// stateStore defines the state persistence operations needed by this endpoint.
+func scopeForStateMethod(method string) string {
+	if method == http.MethodGet {
+		return stateReadScope
+	}
+	return stateWriteScope
+}
+
 type stateStore interface {
 	GetLatest(ctx context.Context, componentID, environmentID uuid.UUID) (*model.TerraformState, error)
 	Create(ctx context.Context, st *model.TerraformState) (*model.TerraformState, error)
@@ -36,12 +50,10 @@ type stateStore interface {
 	ReleaseLock(ctx context.Context, componentID, environmentID uuid.UUID, lockID string) error
 }
 
-// componentGetter looks up a component by ID.
 type componentGetter interface {
 	Get(ctx context.Context, id uuid.UUID) (*model.Component, error)
 }
 
-// environmentGetter looks up an environment by ID.
 type environmentGetter interface {
 	Get(ctx context.Context, id uuid.UUID) (*model.Environment, error)
 }
@@ -100,15 +112,19 @@ func New(cfg *config.Config, log *zap.Logger, scope tally.Scope) (endpoint.Endpo
 }
 
 func (a *api) Register(r endpoint.Registrar) error {
+	withAuth := httpauth.Middleware(httpauth.Config{
+		SessionProvider: a.sessionProvider,
+		ScopeForMethod:  scopeForStateMethod,
+		AllowBasicAuth:  true,
+	})
 	mux := r.HTTPMux()
-	mux.HandleFunc("GET "+stateRoutePattern, a.withAuth(a.handleGetState))
-	mux.HandleFunc("POST "+stateRoutePattern, a.withAuth(a.handlePostState))
-	mux.HandleFunc("LOCK "+lockRoutePattern, a.withAuth(a.handleLock))
-	mux.HandleFunc("UNLOCK "+lockRoutePattern, a.withAuth(a.handleUnlock))
+	mux.Handle("GET "+stateRoutePattern, withAuth(http.HandlerFunc(a.handleGetState)))
+	mux.Handle("POST "+stateRoutePattern, withAuth(http.HandlerFunc(a.handlePostState)))
+	mux.Handle("LOCK "+lockRoutePattern, withAuth(http.HandlerFunc(a.handleLock)))
+	mux.Handle("UNLOCK "+lockRoutePattern, withAuth(http.HandlerFunc(a.handleUnlock)))
 	return nil
 }
 
-// requestContext bundles the validated path params for a state request.
 type requestContext struct {
 	claims        *authn.Claims
 	componentID   uuid.UUID
@@ -119,7 +135,11 @@ type requestContext struct {
 // environment exist and belong to the same application.
 // On failure it writes the HTTP error and returns nil.
 func (a *api) resolveRequest(w http.ResponseWriter, r *http.Request) *requestContext {
-	claims := claimsFromContext(r.Context())
+	claims, err := authn.ClaimsFromContext(r.Context())
+	if err != nil {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return nil
+	}
 
 	componentID, err := uuid.Parse(r.PathValue("component_id"))
 	if err != nil {
@@ -155,7 +175,120 @@ func (a *api) resolveRequest(w http.ResponseWriter, r *http.Request) *requestCon
 	}
 }
 
-// storagePath returns the object storage key for a state blob.
 func storagePath(componentID, environmentID uuid.UUID, stateID uuid.UUID) string {
 	return fmt.Sprintf("state/%s/%s/%s.tfstate", componentID, environmentID, stateID)
+}
+
+// handleGetState implements GET -- returns the current state.
+// Terraform expects 200 with the state body, or 204/404 if no state exists.
+func (a *api) handleGetState(w http.ResponseWriter, r *http.Request) {
+	rc := a.resolveRequest(w, r)
+	if rc == nil {
+		return
+	}
+
+	ctx := r.Context()
+	st, err := a.stateStore.GetLatest(ctx, rc.componentID, rc.environmentID)
+	if err != nil {
+		a.logger.Error("get state failed", zap.Error(err))
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
+	if st == nil {
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
+
+	data, err := a.objStore.GetObject(ctx, a.objBucket, st.StoragePath)
+	if err != nil {
+		a.logger.Error("get state blob failed",
+			zap.String("path", st.StoragePath), zap.Error(err))
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write(data)
+}
+
+// handlePostState implements POST -- writes a new state version.
+// Terraform sends the full state JSON as the request body.
+// If the state is locked, the request must include a matching lock ID.
+func (a *api) handlePostState(w http.ResponseWriter, r *http.Request) {
+	rc := a.resolveRequest(w, r)
+	if rc == nil {
+		return
+	}
+
+	ctx := r.Context()
+
+	body, err := io.ReadAll(io.LimitReader(r.Body, objectstorage.MaxObjectSize+1))
+	if err != nil {
+		http.Error(w, "failed to read request body", http.StatusBadRequest)
+		return
+	}
+	if int64(len(body)) > objectstorage.MaxObjectSize {
+		http.Error(w, "state too large", http.StatusRequestEntityTooLarge)
+		return
+	}
+
+	var stateDoc struct {
+		Serial  int64  `json:"serial"`
+		Lineage string `json:"lineage"`
+	}
+	if err := json.Unmarshal(body, &stateDoc); err != nil {
+		http.Error(w, "invalid state JSON", http.StatusBadRequest)
+		return
+	}
+
+	// If locked, verify the caller holds the lock.
+	lockID := r.URL.Query().Get("ID")
+	lock, err := a.stateStore.GetLock(ctx, rc.componentID, rc.environmentID)
+	if err != nil {
+		a.logger.Error("check lock failed", zap.Error(err))
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
+	if lock != nil && lock.LockId != lockID {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusLocked)
+		_ = json.NewEncoder(w).Encode(lockToJSON(lock))
+		return
+	}
+
+	hash := md5.Sum(body) //nolint:gosec
+	md5Hex := hex.EncodeToString(hash[:])
+
+	st := &model.TerraformState{
+		ComponentId:   rc.componentID,
+		EnvironmentId: rc.environmentID,
+		Serial:        stateDoc.Serial,
+		Lineage:       stateDoc.Lineage,
+		ContentLength: int64(len(body)),
+		ContentMD5:    md5Hex,
+		LockId:        lockID,
+		CreatedBy:     rc.claims.Subject,
+	}
+	st, err = a.stateStore.Create(ctx, st)
+	if err != nil {
+		a.logger.Error("create state record failed", zap.Error(err))
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
+
+	path := storagePath(rc.componentID, rc.environmentID, st.Id)
+	if err := a.objStore.PutObject(ctx, a.objBucket, path, body); err != nil {
+		a.logger.Error("put state blob failed", zap.Error(err))
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
+
+	if err := a.stateStore.SetStoragePath(ctx, st.Id, path); err != nil {
+		a.logger.Error("update storage path failed", zap.Error(err))
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
 }

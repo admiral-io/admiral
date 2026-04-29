@@ -24,6 +24,7 @@ import (
 	databasesvc "go.admiral.io/admiral/internal/service/database"
 	encryptionsvc "go.admiral.io/admiral/internal/service/encryption"
 	objstoresvc "go.admiral.io/admiral/internal/service/objectstorage"
+	orchestrationsvc "go.admiral.io/admiral/internal/service/orchestration"
 	sessionsvc "go.admiral.io/admiral/internal/service/session"
 )
 
@@ -33,6 +34,7 @@ var Services = service.Factory{
 	{Name: authnsvc.Name, Factory: authnsvc.New},
 	{Name: encryptionsvc.Name, Factory: encryptionsvc.New},
 	{Name: objstoresvc.Name, Factory: objstoresvc.New},
+	{Name: orchestrationsvc.Name, Factory: orchestrationsvc.New},
 }
 
 var Middleware = middleware.Factory{

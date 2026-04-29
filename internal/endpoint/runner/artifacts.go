@@ -34,9 +34,9 @@ func planFileURLForJob(jobID uuid.UUID) string {
 func (a *api) serveArtifact(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	runnerID, err := a.authenticateRunner(r)
+	runnerID, err := runnerIDFromRequest(r)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusUnauthorized)
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
 		return
 	}
 
@@ -140,9 +140,9 @@ func (a *api) serveArtifact(w http.ResponseWriter, r *http.Request) {
 func (a *api) uploadPlanFile(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	runnerID, err := a.authenticateRunner(r)
+	runnerID, err := runnerIDFromRequest(r)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusUnauthorized)
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
 		return
 	}
 
@@ -210,9 +210,9 @@ func (a *api) uploadPlanFile(w http.ResponseWriter, r *http.Request) {
 func (a *api) downloadPlanFile(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	runnerID, err := a.authenticateRunner(r)
+	runnerID, err := runnerIDFromRequest(r)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusUnauthorized)
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
 		return
 	}
 

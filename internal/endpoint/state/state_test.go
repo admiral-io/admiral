@@ -24,12 +24,12 @@ func validClaims() *authn.Claims {
 	return &authn.Claims{
 		Subject: uuid.New().String(),
 		Kind:    "sat",
-		Scopes:  []string{"state:rw"},
+		Scopes:  []string{"state:read", "state:write"},
 	}
 }
 
 func withClaims(req *http.Request) *http.Request {
-	return req.WithContext(context.WithValue(req.Context(), claimsKey{}, validClaims()))
+	return req.WithContext(authn.ContextWithClaims(req.Context(), validClaims()))
 }
 
 func testIDs() (compID, envID, appID uuid.UUID) {
@@ -50,54 +50,6 @@ func defaultEnvironmentStore(envID, appID uuid.UUID) *mockEnvironmentStore {
 			return &model.Environment{Id: envID, ApplicationId: appID}, nil
 		},
 	}
-}
-
-func TestExtractBearer(t *testing.T) {
-	tests := []struct {
-		name    string
-		header  string
-		want    string
-		wantErr bool
-	}{
-		{name: "valid bearer", header: "Bearer adms_abc123", want: "adms_abc123"},
-		{name: "case insensitive", header: "bearer adms_abc123", want: "adms_abc123"},
-		{name: "empty header", header: "", wantErr: true},
-		{name: "missing token", header: "Bearer", wantErr: true},
-		{name: "wrong scheme", header: "Basic dXNlcjpwYXNz", wantErr: true},
-		{name: "too many parts", header: "Bearer token extra", wantErr: true},
-	}
-
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			got, err := extractBearer(tc.header)
-			if tc.wantErr {
-				assert.Error(t, err)
-				assert.Empty(t, got)
-			} else {
-				assert.NoError(t, err)
-				assert.Equal(t, tc.want, got)
-			}
-		})
-	}
-}
-
-func TestClaimsFromContext(t *testing.T) {
-	t.Run("present", func(t *testing.T) {
-		claims := &authn.Claims{Subject: "user-1", Scopes: []string{"state:rw"}}
-		ctx := context.WithValue(context.Background(), claimsKey{}, claims)
-		got := claimsFromContext(ctx)
-		require.NotNil(t, got)
-		assert.Equal(t, "user-1", got.Subject)
-	})
-
-	t.Run("missing", func(t *testing.T) {
-		assert.Nil(t, claimsFromContext(context.Background()))
-	})
-
-	t.Run("wrong type", func(t *testing.T) {
-		ctx := context.WithValue(context.Background(), claimsKey{}, "not-claims")
-		assert.Nil(t, claimsFromContext(ctx))
-	})
 }
 
 func TestStoragePath(t *testing.T) {
@@ -127,102 +79,6 @@ func TestLockToJSON(t *testing.T) {
 	assert.Equal(t, "user@host", got.Who)
 	assert.Equal(t, "1.9.0", got.Version)
 	assert.Equal(t, "2026-04-26T14:30:00Z", got.Created)
-}
-
-func TestWithAuth(t *testing.T) {
-	t.Run("no auth header", func(t *testing.T) {
-		a := &api{sessionProvider: &mockSessionProvider{
-			verifyFunc: func(ctx context.Context, cred string) (*authn.Claims, error) {
-				t.Fatal("verify should not be called")
-				return nil, nil
-			},
-		}}
-
-		handler := a.withAuth(func(w http.ResponseWriter, r *http.Request) {
-			t.Fatal("handler should not be called")
-		})
-
-		rec := httptest.NewRecorder()
-		handler(rec, httptest.NewRequest(http.MethodGet, "/", nil))
-		assert.Equal(t, http.StatusUnauthorized, rec.Code)
-	})
-
-	t.Run("invalid token", func(t *testing.T) {
-		a := &api{sessionProvider: &mockSessionProvider{
-			verifyFunc: func(ctx context.Context, cred string) (*authn.Claims, error) {
-				return nil, fmt.Errorf("invalid token")
-			},
-		}}
-
-		handler := a.withAuth(func(w http.ResponseWriter, r *http.Request) {
-			t.Fatal("handler should not be called")
-		})
-
-		req := httptest.NewRequest(http.MethodGet, "/", nil)
-		req.Header.Set("Authorization", "Bearer bad")
-		rec := httptest.NewRecorder()
-		handler(rec, req)
-		assert.Equal(t, http.StatusUnauthorized, rec.Code)
-	})
-
-	t.Run("missing scope", func(t *testing.T) {
-		a := &api{sessionProvider: &mockSessionProvider{
-			verifyFunc: func(ctx context.Context, cred string) (*authn.Claims, error) {
-				return &authn.Claims{Subject: "u", Scopes: []string{"runner:exec"}}, nil
-			},
-		}}
-
-		handler := a.withAuth(func(w http.ResponseWriter, r *http.Request) {
-			t.Fatal("handler should not be called")
-		})
-
-		req := httptest.NewRequest(http.MethodGet, "/", nil)
-		req.Header.Set("Authorization", "Bearer valid")
-		rec := httptest.NewRecorder()
-		handler(rec, req)
-		assert.Equal(t, http.StatusUnauthorized, rec.Code)
-	})
-
-	t.Run("bearer success", func(t *testing.T) {
-		a := &api{sessionProvider: &mockSessionProvider{
-			verifyFunc: func(ctx context.Context, cred string) (*authn.Claims, error) {
-				assert.Equal(t, "adms_tok", cred)
-				return validClaims(), nil
-			},
-		}}
-
-		var called bool
-		handler := a.withAuth(func(w http.ResponseWriter, r *http.Request) {
-			called = true
-			require.NotNil(t, claimsFromContext(r.Context()))
-		})
-
-		req := httptest.NewRequest(http.MethodGet, "/", nil)
-		req.Header.Set("Authorization", "Bearer adms_tok")
-		rec := httptest.NewRecorder()
-		handler(rec, req)
-		assert.True(t, called)
-	})
-
-	t.Run("basic auth success", func(t *testing.T) {
-		a := &api{sessionProvider: &mockSessionProvider{
-			verifyFunc: func(ctx context.Context, cred string) (*authn.Claims, error) {
-				assert.Equal(t, "adms_tok", cred)
-				return validClaims(), nil
-			},
-		}}
-
-		var called bool
-		handler := a.withAuth(func(w http.ResponseWriter, r *http.Request) {
-			called = true
-		})
-
-		req := httptest.NewRequest(http.MethodGet, "/", nil)
-		req.SetBasicAuth("", "adms_tok")
-		rec := httptest.NewRecorder()
-		handler(rec, req)
-		assert.True(t, called)
-	})
 }
 
 func TestResolveRequest(t *testing.T) {
