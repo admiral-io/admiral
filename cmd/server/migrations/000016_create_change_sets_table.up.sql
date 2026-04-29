@@ -1,5 +1,6 @@
 CREATE TABLE IF NOT EXISTS change_sets (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    display_id TEXT NOT NULL UNIQUE CHECK (display_id ~ '^cs-[0-9a-z]{12}$'),
     application_id UUID NOT NULL REFERENCES applications(id) ON DELETE CASCADE,
     environment_id UUID NOT NULL REFERENCES environments(id) ON DELETE RESTRICT,
     status TEXT NOT NULL DEFAULT 'OPEN' CHECK (status IN ('OPEN', 'DEPLOYED', 'DISCARDED')),

@@ -7,7 +7,6 @@ CREATE TABLE IF NOT EXISTS runs (
         'SUCCEEDED', 'PARTIALLY_FAILED', 'FAILED',
         'CANCELED', 'SUPERSEDED'
     )),
-    trigger_type TEXT NOT NULL CHECK (trigger_type IN ('MANUAL', 'CI', 'DESTROY')),
     triggered_by TEXT NOT NULL,
     message TEXT NOT NULL DEFAULT '',
     destroy BOOLEAN NOT NULL DEFAULT FALSE,
