@@ -88,7 +88,7 @@ func (a *api) CreateCredential(ctx context.Context, req *credentialv1.CreateCred
 
 	cred, err = a.store.Create(ctx, cred)
 	if err != nil {
-		if errors.Is(err, store.ErrInvalidAuthConfig) {
+		if errors.Is(err, store.ErrInvalidCredential) {
 			return nil, status.Errorf(codes.InvalidArgument, "%v", err)
 		}
 		return nil, status.Errorf(codes.Internal, "failed to create credential: %v", err)
@@ -189,7 +189,7 @@ func (a *api) UpdateCredential(ctx context.Context, req *credentialv1.UpdateCred
 
 	cred, err = a.store.Update(ctx, cred, fields)
 	if err != nil {
-		if errors.Is(err, store.ErrInvalidAuthConfig) {
+		if errors.Is(err, store.ErrInvalidCredential) {
 			return nil, status.Errorf(codes.InvalidArgument, "%v", err)
 		}
 		return nil, status.Errorf(codes.Internal, "failed to update credential: %v", err)

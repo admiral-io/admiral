@@ -12,15 +12,35 @@ import (
 )
 
 type EnvironmentStore struct {
-	db *gorm.DB
+	db             *gorm.DB
+	runStore       *RunStore
+	componentStore *ComponentStore
+	tfStateStore   *TerraformStateStore
 }
 
 func NewEnvironmentStore(db *gorm.DB) (*EnvironmentStore, error) {
 	if db == nil {
 		return nil, errors.New("database is required")
 	}
+	runStore, err := NewRunStore(db)
+	if err != nil {
+		return nil, err
+	}
+	componentStore, err := NewComponentStore(db)
+	if err != nil {
+		return nil, err
+	}
+	tfStateStore, err := NewTerraformStateStore(db)
+	if err != nil {
+		return nil, err
+	}
 
-	return &EnvironmentStore{db: db}, nil
+	return &EnvironmentStore{
+		db:             db,
+		runStore:       runStore,
+		componentStore: componentStore,
+		tfStateStore:   tfStateStore,
+	}, nil
 }
 
 func (s *EnvironmentStore) DB() *gorm.DB {
@@ -28,6 +48,9 @@ func (s *EnvironmentStore) DB() *gorm.DB {
 }
 
 func (s *EnvironmentStore) Create(ctx context.Context, env *model.Environment) (*model.Environment, error) {
+	if err := env.Validate(); err != nil {
+		return nil, fmt.Errorf("invalid environment: %w", err)
+	}
 	if err := s.db.WithContext(ctx).Create(env).Error; err != nil {
 		return nil, fmt.Errorf("failed to create environment: %w", err)
 	}
@@ -74,107 +97,82 @@ func (s *EnvironmentStore) Update(ctx context.Context, env *model.Environment, f
 	return s.Get(ctx, env.Id)
 }
 
-func (s *EnvironmentStore) CountByApplicationID(ctx context.Context, appID uuid.UUID) (int64, error) {
-	var count int64
-	err := s.db.WithContext(ctx).
-		Model(&model.Environment{}).
-		Where("application_id = ?", appID).
-		Count(&count).Error
-	if err != nil {
-		return 0, fmt.Errorf("failed to count environments for application: %w", err)
-	}
-	return count, nil
-}
-
-func (s *EnvironmentStore) NamesByApplicationID(ctx context.Context, appID uuid.UUID, limit int) ([]string, error) {
-	var names []string
-	err := s.db.WithContext(ctx).
-		Model(&model.Environment{}).
-		Where("application_id = ?", appID).
-		Order("name").
-		Limit(limit).
-		Pluck("name", &names).Error
-	if err != nil {
-		return nil, fmt.Errorf("failed to list environment names for application: %w", err)
-	}
-	return names, nil
-}
-
-func (s *EnvironmentStore) Delete(ctx context.Context, id uuid.UUID) error {
-	result := s.db.WithContext(ctx).Where("id = ?", id).Delete(&model.Environment{})
-	if result.Error != nil {
-		return fmt.Errorf("failed to delete environment: %w", result.Error)
-	}
-
-	if result.RowsAffected == 0 {
-		return fmt.Errorf("environment not found: %s", id)
-	}
-
-	return nil
-}
-
-func (s *EnvironmentStore) DeleteByApplicationID(ctx context.Context, tx *gorm.DB, appID uuid.UUID) (int64, error) {
-	result := tx.WithContext(ctx).Where("application_id = ?", appID).Delete(&model.Environment{})
-	if result.Error != nil {
-		return 0, fmt.Errorf("failed to delete environments for application: %w", result.Error)
-	}
-	return result.RowsAffected, nil
-}
-
-// DeleteCascade deletes an environment and its dependents. If force is false
-// and deployments exist, returns a HasDependentsError.
-func (s *EnvironmentStore) DeleteCascade(ctx context.Context, id uuid.UUID, force bool) (int64, error) {
+// Delete deletes an environment. Blockers (returned as DependentsError):
+//   - In-flight runs (PENDING/QUEUED/PLANNING/PLANNED/APPLYING): hard block.
+//   - Components with DeletionProtection=true: hard block.
+//   - Components with stored terraform state: soft block; `force` bypasses
+//     (operator accepts the cloud-resource leak).
+//
+// Run history is cascaded inline; components and terraform_states cascade
+// via FK. Returns DeleteResult.Runs only -- the Environments field is left
+// zero so the signature matches ApplicationStore.Delete.
+func (s *EnvironmentStore) Delete(ctx context.Context, id uuid.UUID, force bool) (*DeleteResult, error) {
 	env, err := s.Get(ctx, id)
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
 
-	var deployCount int64
-	if err := s.db.WithContext(ctx).
-		Model(&model.Deployment{}).
-		Where("environment_id = ?", id).
-		Count(&deployCount).Error; err != nil {
-		return 0, fmt.Errorf("failed to count deployments: %w", err)
-	}
-
-	if deployCount > 0 && !force {
-		return 0, &HasDependentsError{
+	if hasInFlight, err := s.runStore.HasInFlightForEnv(ctx, id); err != nil {
+		return nil, err
+	} else if hasInFlight {
+		return nil, &DependentsError{
 			Resource: "environment",
 			Name:     env.Name,
-			Count:    deployCount,
-			Children: []string{"deployments"},
+			Children: []string{"in-flight runs"},
 		}
 	}
 
-	var deploymentsDeleted int64
-	if err := s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		if deployCount > 0 {
-			dep := tx.Where("environment_id = ?", id).Delete(&model.Deployment{})
-			if dep.Error != nil {
-				return fmt.Errorf("failed to delete deployments: %w", dep.Error)
-			}
-			deploymentsDeleted = dep.RowsAffected
+	if hasProtected, err := s.componentStore.HasProtectedForEnv(ctx, env.ApplicationId, id); err != nil {
+		return nil, err
+	} else if hasProtected {
+		return nil, &DependentsError{
+			Resource: "environment",
+			Name:     env.Name,
+			Children: []string{"components with deletion_protection=true"},
 		}
+	}
 
-		result := tx.Where("id = ?", id).Delete(&model.Environment{})
-		if result.Error != nil {
-			return fmt.Errorf("failed to delete environment: %w", result.Error)
+	if !force {
+		if hasState, err := s.tfStateStore.HasStateForEnv(ctx, id); err != nil {
+			return nil, err
+		} else if hasState {
+			return nil, &DependentsError{
+				Resource: "environment",
+				Name:     env.Name,
+				Children: []string{"components with deployed terraform state (use force to delete; cloud resources will leak)"},
+			}
+		}
+	}
+
+	result := &DeleteResult{}
+	if err := s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		// Runs FK is ON DELETE RESTRICT, so manual delete before the env
+		// row can go. Components/terraform_states cascade via their FKs.
+		r := tx.Where("environment_id = ?", id).Delete(&model.Run{})
+		if r.Error != nil {
+			return fmt.Errorf("failed to delete runs: %w", r.Error)
+		}
+		result.Runs = r.RowsAffected
+
+		envResult := tx.Where("id = ?", id).Delete(&model.Environment{})
+		if envResult.Error != nil {
+			return fmt.Errorf("failed to delete environment: %w", envResult.Error)
 		}
 		return nil
 	}); err != nil {
-		return 0, err
+		return nil, err
 	}
 
-	return deploymentsDeleted, nil
+	return result, nil
 }
 
-// HasPendingChanges returns true if any component in the application has
-// configuration that differs from its last successfully deployed revision in
-// this environment.
+// HasPendingChanges reports whether any ACTIVE infrastructure component in
+// (app, env) has configuration that differs from its last successful
+// revision. Non-ACTIVE components (ORPHAN/DESTROY/DESTROYED) are excluded.
 func (s *EnvironmentStore) HasPendingChanges(ctx context.Context, applicationID, environmentID uuid.UUID) (bool, error) {
 	var components []model.Component
 	if err := s.db.WithContext(ctx).
-		Where("application_id = ?", applicationID).
+		Where("application_id = ? AND environment_id = ?", applicationID, environmentID).
 		Find(&components).Error; err != nil {
 		return false, fmt.Errorf("failed to list components: %w", err)
 	}
@@ -182,26 +180,14 @@ func (s *EnvironmentStore) HasPendingChanges(ctx context.Context, applicationID,
 		return false, nil
 	}
 
-	var overrides []model.ComponentOverride
-	if err := s.db.WithContext(ctx).
-		Joins("JOIN components ON components.id = component_overrides.component_id").
-		Where("components.application_id = ? AND component_overrides.environment_id = ? AND components.deleted_at IS NULL", applicationID, environmentID).
-		Find(&overrides).Error; err != nil {
-		return false, fmt.Errorf("failed to list overrides: %w", err)
-	}
-	overrideMap := make(map[uuid.UUID]*model.ComponentOverride, len(overrides))
-	for i := range overrides {
-		overrideMap[overrides[i].ComponentId] = &overrides[i]
-	}
-
 	var revisions []model.Revision
 	if err := s.db.WithContext(ctx).
 		Raw(`
 			SELECT DISTINCT ON (r.component_id) r.*
 			FROM revisions r
-			JOIN deployments d ON d.id = r.deployment_id
-			WHERE d.application_id = ?
-			  AND d.environment_id = ?
+			JOIN runs ru ON ru.id = r.run_id
+			WHERE ru.application_id = ?
+			  AND ru.environment_id = ?
 			  AND r.status = ?
 			ORDER BY r.component_id, r.completed_at DESC
 		`, applicationID, environmentID, model.RevisionStatusSucceeded).
@@ -213,23 +199,13 @@ func (s *EnvironmentStore) HasPendingChanges(ctx context.Context, applicationID,
 		lastDeployed[revisions[i].ComponentId] = &revisions[i]
 	}
 
-	if len(lastDeployed) == 0 && len(components) > 0 {
-		return true, nil
-	}
-
 	for i := range components {
 		comp := components[i]
 		if comp.Kind != model.ComponentKindInfrastructure {
 			continue
 		}
-
-		if o, ok := overrideMap[comp.Id]; ok {
-			if o.ApplyToModel(&comp) {
-				if _, wasDeployed := lastDeployed[comp.Id]; wasDeployed {
-					return true, nil
-				}
-				continue
-			}
+		if comp.DesiredState != model.ComponentDesiredStateActive {
+			continue
 		}
 
 		rev, ok := lastDeployed[comp.Id]

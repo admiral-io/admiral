@@ -14,10 +14,10 @@ import (
 	"go.admiral.io/admiral/internal/service/encryption"
 )
 
-// ErrInvalidAuthConfig indicates the credential's AuthConfig does not match
-// its declared type or is missing required fields. Callers should map this to
-// a client-facing validation error (e.g. gRPC InvalidArgument).
-var ErrInvalidAuthConfig = errors.New("invalid auth config")
+// ErrInvalidCredential indicates that a credential failed validation
+// (name, type, AuthConfig shape, or required fields). Callers should map
+// this to a client-facing validation error (e.g. gRPC InvalidArgument).
+var ErrInvalidCredential = errors.New("invalid credential")
 
 type CredentialStore struct {
 	db  *gorm.DB
@@ -40,8 +40,8 @@ func (s *CredentialStore) DB() *gorm.DB {
 }
 
 func (s *CredentialStore) Create(ctx context.Context, cred *model.Credential) (*model.Credential, error) {
-	if err := cred.AuthConfig.Validate(cred.Type); err != nil {
-		return nil, fmt.Errorf("%w: %v", ErrInvalidAuthConfig, err)
+	if err := cred.Validate(); err != nil {
+		return nil, fmt.Errorf("%w: %v", ErrInvalidCredential, err)
 	}
 
 	if err := s.encryptAuthConfig(cred); err != nil {
@@ -99,10 +99,10 @@ func (s *CredentialStore) Update(ctx context.Context, cred *model.Credential, fi
 	if ac, ok := fields["auth_config"]; ok {
 		auth, ok := ac.(model.AuthConfig)
 		if !ok {
-			return nil, fmt.Errorf("%w: auth_config must be model.AuthConfig, got %T", ErrInvalidAuthConfig, ac)
+			return nil, fmt.Errorf("%w: auth_config must be model.AuthConfig, got %T", ErrInvalidCredential, ac)
 		}
 		if err := auth.Validate(cred.Type); err != nil {
-			return nil, fmt.Errorf("%w: %v", ErrInvalidAuthConfig, err)
+			return nil, fmt.Errorf("%w: %v", ErrInvalidCredential, err)
 		}
 		encrypted, err := s.encryptAuthConfigValue(auth)
 		if err != nil {
@@ -121,6 +121,19 @@ func (s *CredentialStore) Update(ctx context.Context, cred *model.Credential, fi
 	}
 
 	return s.Get(ctx, cred.Id)
+}
+
+func (s *CredentialStore) Delete(ctx context.Context, id uuid.UUID) error {
+	result := s.db.WithContext(ctx).Where("id = ?", id).Delete(&model.Credential{})
+	if result.Error != nil {
+		return fmt.Errorf("failed to delete credential: %w", result.Error)
+	}
+
+	if result.RowsAffected == 0 {
+		return fmt.Errorf("credential not found: %s", id)
+	}
+
+	return nil
 }
 
 // encryptAuthConfig encrypts the AuthConfig on a credential in-place before
@@ -183,17 +196,4 @@ func (s *CredentialStore) decryptAuthConfig(cred *model.Credential) error {
 	}
 
 	return json.Unmarshal(plaintext, &cred.AuthConfig)
-}
-
-func (s *CredentialStore) Delete(ctx context.Context, id uuid.UUID) error {
-	result := s.db.WithContext(ctx).Where("id = ?", id).Delete(&model.Credential{})
-	if result.Error != nil {
-		return fmt.Errorf("failed to delete credential: %w", result.Error)
-	}
-
-	if result.RowsAffected == 0 {
-		return fmt.Errorf("credential not found: %s", id)
-	}
-
-	return nil
 }
