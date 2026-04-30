@@ -16,9 +16,9 @@ import (
 type AccessTokenKind string
 
 const (
-	AccessTokenKindPAT     AccessTokenKind = "pat"
-	AccessTokenKindSAT     AccessTokenKind = "sat"
-	AccessTokenKindSession AccessTokenKind = "session"
+	AccessTokenKindPAT     AccessTokenKind = "PAT"
+	AccessTokenKindSAT     AccessTokenKind = "SAT"
+	AccessTokenKindSession AccessTokenKind = "SESSION"
 )
 
 func (k *AccessTokenKind) Value() (driver.Value, error) {
@@ -60,8 +60,8 @@ func (k *AccessTokenKind) String() string {
 type AccessTokenStatus string
 
 const (
-	AccessTokenStatusActive  AccessTokenStatus = "active"
-	AccessTokenStatusRevoked AccessTokenStatus = "revoked"
+	AccessTokenStatusActive  AccessTokenStatus = "ACTIVE"
+	AccessTokenStatusRevoked AccessTokenStatus = "REVOKED"
 )
 
 func (s *AccessTokenStatus) Value() (driver.Value, error) {
@@ -103,9 +103,9 @@ func (s *AccessTokenStatus) String() string {
 type AccessTokenBindingType string
 
 const (
-	AccessTokenBindingTypeUser    AccessTokenBindingType = "user"
-	AccessTokenBindingTypeCluster AccessTokenBindingType = "cluster"
-	AccessTokenBindingTypeRunner  AccessTokenBindingType = "runner"
+	AccessTokenBindingTypeUser    AccessTokenBindingType = "USER"
+	AccessTokenBindingTypeCluster AccessTokenBindingType = "CLUSTER"
+	AccessTokenBindingTypeRunner  AccessTokenBindingType = "RUNNER"
 )
 
 func (b *AccessTokenBindingType) Value() (driver.Value, error) {

@@ -14,6 +14,11 @@ import (
 	environmentv1 "go.admiral.io/sdk/proto/admiral/environment/v1"
 )
 
+const (
+	WorkloadTargetTypeKubernetes      = "KUBERNETES"
+	InfrastructureTargetTypeTerraform = "TERRAFORM"
+)
+
 type WorkloadTarget struct {
 	Type      string  `json:"type"`
 	ClusterId string  `json:"cluster_id,omitempty"`
@@ -93,55 +98,49 @@ type Environment struct {
 	WorkloadTargets       WorkloadTargets       `gorm:"type:jsonb;default:'[]'"`
 	InfrastructureTargets InfrastructureTargets `gorm:"type:jsonb;default:'[]'"`
 	Labels                Labels                `gorm:"type:jsonb;default:'{}'"`
-	HasPendingChanges     bool                  `gorm:"not null;default:false"`
-	LastDeployedAt        *time.Time            `gorm:"type:timestamptz"`
 	CreatedBy             string                `gorm:"not null"`
 	CreatedAt             time.Time
 	UpdatedAt             time.Time
 	DeletedAt             gorm.DeletedAt `gorm:"index"`
-	CreatedByName         string                `gorm:"->;column:created_by_name"`
-	CreatedByEmail        string                `gorm:"->;column:created_by_email"`
+	CreatedByName         string         `gorm:"->;column:created_by_name"`
+	CreatedByEmail        string         `gorm:"->;column:created_by_email"`
 }
 
-func (env *Environment) ToProto() *environmentv1.Environment {
+func (env *Environment) ToProto(pendingChanges bool) *environmentv1.Environment {
 	e := &environmentv1.Environment{
 		Id:                env.Id.String(),
 		ApplicationId:     env.ApplicationId.String(),
 		Name:              env.Name,
 		Description:       env.Description,
 		Labels:            map[string]string(env.Labels),
-		HasPendingChanges: env.HasPendingChanges,
+		HasPendingChanges: pendingChanges,
 		CreatedBy:         &commonv1.ActorRef{Id: env.CreatedBy, DisplayName: env.CreatedByName, Email: env.CreatedByEmail},
 		CreatedAt:         timestamppb.New(env.CreatedAt),
 		UpdatedAt:         timestamppb.New(env.UpdatedAt),
 	}
 
 	for _, wt := range env.WorkloadTargets {
-		target := &environmentv1.WorkloadTarget{}
 		switch wt.Type {
-		case "kubernetes":
+		case WorkloadTargetTypeKubernetes:
 			k := &environmentv1.KubernetesConfig{ClusterId: wt.ClusterId}
 			if wt.Namespace != nil {
 				k.Namespace = wt.Namespace
 			}
-			target.Config = &environmentv1.WorkloadTarget_Kubernetes{Kubernetes: k}
+			e.WorkloadTargets = append(e.WorkloadTargets, &environmentv1.WorkloadTarget{
+				Config: &environmentv1.WorkloadTarget_Kubernetes{Kubernetes: k},
+			})
 		}
-		e.WorkloadTargets = append(e.WorkloadTargets, target)
 	}
 
 	for _, it := range env.InfrastructureTargets {
-		target := &environmentv1.InfrastructureTarget{}
 		switch it.Type {
-		case "terraform":
-			target.Config = &environmentv1.InfrastructureTarget_Terraform{
-				Terraform: &environmentv1.TerraformConfig{RunnerId: it.RunnerId},
-			}
+		case InfrastructureTargetTypeTerraform:
+			e.InfrastructureTargets = append(e.InfrastructureTargets, &environmentv1.InfrastructureTarget{
+				Config: &environmentv1.InfrastructureTarget_Terraform{
+					Terraform: &environmentv1.TerraformConfig{RunnerId: it.RunnerId},
+				},
+			})
 		}
-		e.InfrastructureTargets = append(e.InfrastructureTargets, target)
-	}
-
-	if env.LastDeployedAt != nil {
-		e.LastDeployedAt = timestamppb.New(*env.LastDeployedAt)
 	}
 
 	return e
@@ -149,7 +148,7 @@ func (env *Environment) ToProto() *environmentv1.Environment {
 
 func (e *Environment) TerraformRunnerID() (uuid.UUID, error) {
 	for _, t := range e.InfrastructureTargets {
-		if t.Type != "terraform" || t.RunnerId == "" {
+		if t.Type != InfrastructureTargetTypeTerraform || t.RunnerId == "" {
 			continue
 		}
 		id, err := uuid.Parse(t.RunnerId)
@@ -169,7 +168,7 @@ func WorkloadTargetsFromProto(targets []*environmentv1.WorkloadTarget) WorkloadT
 	for _, t := range targets {
 		if k := t.GetKubernetes(); k != nil {
 			result = append(result, WorkloadTarget{
-				Type:      "kubernetes",
+				Type:      WorkloadTargetTypeKubernetes,
 				ClusterId: k.ClusterId,
 				Namespace: k.Namespace,
 			})
@@ -186,7 +185,7 @@ func InfrastructureTargetsFromProto(targets []*environmentv1.InfrastructureTarge
 	for _, t := range targets {
 		if tf := t.GetTerraform(); tf != nil {
 			result = append(result, InfrastructureTarget{
-				Type:     "terraform",
+				Type:     InfrastructureTargetTypeTerraform,
 				RunnerId: tf.RunnerId,
 			})
 		}

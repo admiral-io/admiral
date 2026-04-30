@@ -97,15 +97,15 @@ func TestClaims_Validate(t *testing.T) {
 	}{
 		{
 			name:   "valid session claims",
-			claims: Claims{Subject: validUUID, Kind: "session"},
+			claims: Claims{Subject: validUUID, Kind: "SESSION"},
 		},
 		{
 			name:   "valid pat claims",
-			claims: Claims{Subject: validUUID, Kind: "pat"},
+			claims: Claims{Subject: validUUID, Kind: "PAT"},
 		},
 		{
 			name:   "valid sat claims",
-			claims: Claims{Subject: validUUID, Kind: "sat"},
+			claims: Claims{Subject: validUUID, Kind: "SAT"},
 		},
 		{
 			name:   "empty kind allowed",
@@ -113,16 +113,16 @@ func TestClaims_Validate(t *testing.T) {
 		},
 		{
 			name:   "claims with scopes",
-			claims: Claims{Subject: validUUID, Kind: "pat", Scopes: []string{"app:read"}},
+			claims: Claims{Subject: validUUID, Kind: "PAT", Scopes: []string{"app:read"}},
 		},
 		{
 			name:        "invalid UUID subject",
-			claims:      Claims{Subject: "invalid-uuid", Kind: "session"},
+			claims:      Claims{Subject: "invalid-uuid", Kind: "SESSION"},
 			expectError: true,
 		},
 		{
 			name:        "empty subject",
-			claims:      Claims{Subject: "", Kind: "session"},
+			claims:      Claims{Subject: "", Kind: "SESSION"},
 			expectError: true,
 		},
 		{

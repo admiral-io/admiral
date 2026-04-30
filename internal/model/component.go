@@ -4,6 +4,7 @@ import (
 	"database/sql/driver"
 	"encoding/json"
 	"fmt"
+	"regexp"
 	"strings"
 	"time"
 
@@ -20,6 +21,13 @@ import (
 const (
 	ComponentKindInfrastructure = "INFRASTRUCTURE"
 	ComponentKindWorkload       = "WORKLOAD"
+)
+
+const (
+	ComponentDesiredStateActive    = "ACTIVE"
+	ComponentDesiredStateDestroy   = "DESTROY"
+	ComponentDesiredStateOrphan    = "ORPHAN"
+	ComponentDesiredStateDestroyed = "DESTROYED"
 )
 
 var componentKindToProto = map[string]componentv1.ComponentKind{
@@ -93,42 +101,48 @@ func ComponentOutputsFromProto(protos []*componentv1.ComponentOutput) ComponentO
 	return result
 }
 
-// --- Component ---
-
 type Component struct {
-	Id             uuid.UUID        `gorm:"type:uuid;default:gen_random_uuid();primaryKey"`
-	ApplicationId  uuid.UUID        `gorm:"type:uuid;not null;index"`
-	Name           string           `gorm:"not null"`
-	Description    string           `gorm:"type:text"`
-	Kind           string           `gorm:"not null"`
-	ModuleId       uuid.UUID        `gorm:"type:uuid;not null;index"`
-	Version        string           `gorm:"type:text;not null;default:''"`
-	ValuesTemplate string           `gorm:"type:text;not null;default:''"`
-	DependsOn      pq.StringArray   `gorm:"type:text[];not null;default:'{}'"`
-	Outputs        ComponentOutputs `gorm:"type:jsonb;default:'[]'"`
-	CreatedBy      string           `gorm:"not null"`
-	CreatedAt      time.Time
-	UpdatedAt      time.Time
-	DeletedAt      gorm.DeletedAt `gorm:"index"`
-	CreatedByName  string         `gorm:"->;column:created_by_name"`
-	CreatedByEmail string         `gorm:"->;column:created_by_email"`
+	Id                 uuid.UUID        `gorm:"type:uuid;default:gen_random_uuid();primaryKey"`
+	ApplicationId      uuid.UUID        `gorm:"type:uuid;not null;index"`
+	EnvironmentId      uuid.UUID        `gorm:"type:uuid;not null;index"`
+	Name               string           `gorm:"not null"`
+	Slug               string           `gorm:"not null"`
+	Description        string           `gorm:"type:text"`
+	Kind               string           `gorm:"not null"`
+	DesiredState       string           `gorm:"not null;default:ACTIVE"`
+	DeletionProtection bool             `gorm:"not null;default:false"`
+	ModuleId           uuid.UUID        `gorm:"type:uuid;not null;index"`
+	Version            string           `gorm:"type:text;not null;default:''"`
+	ValuesTemplate     string           `gorm:"type:text;not null;default:''"`
+	DependsOn          pq.StringArray   `gorm:"type:text[];not null;default:'{}'"`
+	Outputs            ComponentOutputs `gorm:"type:jsonb;default:'[]'"`
+	CreatedBy          string           `gorm:"not null"`
+	CreatedAt          time.Time
+	UpdatedAt          time.Time
+	DeletedAt          gorm.DeletedAt `gorm:"index"`
+	CreatedByName      string         `gorm:"->;column:created_by_name"`
+	CreatedByEmail     string         `gorm:"->;column:created_by_email"`
 }
 
 func (c *Component) ToProto() *componentv1.Component {
 	return &componentv1.Component{
-		Id:             c.Id.String(),
-		ApplicationId:  c.ApplicationId.String(),
-		Name:           c.Name,
-		Description:    c.Description,
-		Kind:           componentKindToProto[c.Kind],
-		ModuleId:       c.ModuleId.String(),
-		Version:        c.Version,
-		ValuesTemplate: c.ValuesTemplate,
-		DependsOn:      []string(c.DependsOn),
-		Outputs:        c.Outputs.ToProto(),
-		CreatedBy:      &commonv1.ActorRef{Id: c.CreatedBy, DisplayName: c.CreatedByName, Email: c.CreatedByEmail},
-		CreatedAt:      timestamppb.New(c.CreatedAt),
-		UpdatedAt:      timestamppb.New(c.UpdatedAt),
+		Id:                 c.Id.String(),
+		ApplicationId:      c.ApplicationId.String(),
+		EnvironmentId:      c.EnvironmentId.String(),
+		Name:               c.Name,
+		Slug:               c.Slug,
+		Description:        c.Description,
+		Kind:               componentKindToProto[c.Kind],
+		DesiredState:       c.DesiredState,
+		DeletionProtection: c.DeletionProtection,
+		ModuleId:           c.ModuleId.String(),
+		Version:            c.Version,
+		ValuesTemplate:     c.ValuesTemplate,
+		DependsOn:          []string(c.DependsOn),
+		Outputs:            c.Outputs.ToProto(),
+		CreatedBy:          &commonv1.ActorRef{Id: c.CreatedBy, DisplayName: c.CreatedByName, Email: c.CreatedByEmail},
+		CreatedAt:          timestamppb.New(c.CreatedAt),
+		UpdatedAt:          timestamppb.New(c.UpdatedAt),
 	}
 }
 
@@ -165,98 +179,11 @@ func ParseDependsOn(deps []string) ([]string, error) {
 	return out, nil
 }
 
-// --- ComponentOverride ---
+var slugRegex = regexp.MustCompile(`^[a-z]([a-z0-9-]{0,61}[a-z0-9])?$`)
 
-type ComponentOverride struct {
-	ComponentId    uuid.UUID         `gorm:"type:uuid;primaryKey"`
-	EnvironmentId  uuid.UUID         `gorm:"type:uuid;primaryKey"`
-	Disabled       bool              `gorm:"not null;default:false"`
-	ModuleId       *uuid.UUID        `gorm:"type:uuid"`
-	Version        *string           `gorm:"type:text"`
-	ValuesTemplate *string           `gorm:"type:text"`
-	DependsOn      pq.StringArray    `gorm:"type:text[]"`
-	Outputs        *ComponentOutputs `gorm:"type:jsonb"`
-	CreatedBy      string            `gorm:"not null"`
-	CreatedAt      time.Time
-	UpdatedAt      time.Time
-	CreatedByName  string `gorm:"->;column:created_by_name"`
-	CreatedByEmail string `gorm:"->;column:created_by_email"`
-}
-
-func (o *ComponentOverride) TableName() string {
-	return "component_overrides"
-}
-
-func (o *ComponentOverride) ApplyTo(p *componentv1.Component) {
-	p.Disabled = o.Disabled
-	if o.Disabled {
-		return
+func ValidateSlug(s string) error {
+	if !slugRegex.MatchString(s) {
+		return fmt.Errorf("invalid slug %q: must be lowercase alphanumeric with hyphens, start with a letter", s)
 	}
-	if o.ModuleId != nil {
-		p.ModuleId = o.ModuleId.String()
-	}
-	if o.Version != nil {
-		p.Version = *o.Version
-	}
-	if o.ValuesTemplate != nil {
-		p.ValuesTemplate = *o.ValuesTemplate
-	}
-	if o.DependsOn != nil {
-		p.DependsOn = []string(o.DependsOn)
-	}
-	if o.Outputs != nil {
-		p.Outputs = o.Outputs.ToProto()
-	}
-}
-
-func (o *ComponentOverride) ApplyToModel(c *Component) bool {
-	if o.Disabled {
-		return true
-	}
-	if o.ModuleId != nil {
-		c.ModuleId = *o.ModuleId
-	}
-	if o.Version != nil {
-		c.Version = *o.Version
-	}
-	if o.ValuesTemplate != nil {
-		c.ValuesTemplate = *o.ValuesTemplate
-	}
-	if o.DependsOn != nil {
-		c.DependsOn = pq.StringArray(o.DependsOn)
-	}
-	if o.Outputs != nil {
-		c.Outputs = ComponentOutputs(*o.Outputs)
-	}
-	return false
-}
-
-func (o *ComponentOverride) ToProto() *componentv1.ComponentOverride {
-	out := &componentv1.ComponentOverride{
-		ComponentId:   o.ComponentId.String(),
-		EnvironmentId: o.EnvironmentId.String(),
-		Disabled:      o.Disabled,
-		CreatedBy:     &commonv1.ActorRef{Id: o.CreatedBy, DisplayName: o.CreatedByName, Email: o.CreatedByEmail},
-		CreatedAt:     timestamppb.New(o.CreatedAt),
-		UpdatedAt:     timestamppb.New(o.UpdatedAt),
-	}
-	if o.ModuleId != nil {
-		s := o.ModuleId.String()
-		out.ModuleId = &s
-	}
-	if o.Version != nil {
-		v := *o.Version
-		out.Version = &v
-	}
-	if o.ValuesTemplate != nil {
-		v := *o.ValuesTemplate
-		out.ValuesTemplate = &v
-	}
-	if o.DependsOn != nil {
-		out.DependsOn = []string(o.DependsOn)
-	}
-	if o.Outputs != nil {
-		out.Outputs = o.Outputs.ToProto()
-	}
-	return out
+	return nil
 }

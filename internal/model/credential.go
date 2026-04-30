@@ -15,9 +15,9 @@ import (
 )
 
 const (
-	AuthKindSSHKey      = "ssh_key"
-	AuthKindBasicAuth   = "basic_auth"
-	AuthKindBearerToken = "bearer_token"
+	AuthKindSSHKey      = "SSH_KEY"
+	AuthKindBasicAuth   = "BASIC_AUTH"
+	AuthKindBearerToken = "BEARER_TOKEN"
 )
 
 const (
@@ -56,13 +56,6 @@ type BearerTokenAuth struct {
 	Token string `json:"token"`
 }
 
-// AuthConfig is the JSONB-backed polymorphic auth configuration.
-// Kind is the discriminator; exactly one of the pointer fields is non-nil
-// when populated.
-//
-// The raw field holds pre-serialized bytes (e.g. an encrypted envelope) that
-// bypass normal JSON marshalling in Value(). This is set by the store layer
-// before GORM writes to the database.
 type AuthConfig struct {
 	Kind        string           `json:"type"`
 	SSHKey      *SSHKeyAuth      `json:"ssh_key,omitempty"`

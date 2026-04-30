@@ -11,7 +11,7 @@ import (
 	"github.com/lib/pq"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	deploymentv1 "go.admiral.io/sdk/proto/admiral/deployment/v1"
+	runv1 "go.admiral.io/sdk/proto/admiral/run/v1"
 	runnerv1 "go.admiral.io/sdk/proto/admiral/runner/v1"
 )
 
@@ -25,23 +25,34 @@ const (
 	RevisionStatusFailed           = "FAILED"
 	RevisionStatusBlocked          = "BLOCKED"
 	RevisionStatusCanceled         = "CANCELED"
+	RevisionStatusSuperseded       = "SUPERSEDED"
 )
 
-var revisionStatusToProto = map[string]deploymentv1.RevisionStatus{
-	RevisionStatusPending:          deploymentv1.RevisionStatus_REVISION_STATUS_PENDING,
-	RevisionStatusQueued:           deploymentv1.RevisionStatus_REVISION_STATUS_QUEUED,
-	RevisionStatusPlanning:         deploymentv1.RevisionStatus_REVISION_STATUS_PLANNING,
-	RevisionStatusAwaitingApproval: deploymentv1.RevisionStatus_REVISION_STATUS_AWAITING_APPROVAL,
-	RevisionStatusApplying:         deploymentv1.RevisionStatus_REVISION_STATUS_APPLYING,
-	RevisionStatusSucceeded:        deploymentv1.RevisionStatus_REVISION_STATUS_SUCCEEDED,
-	RevisionStatusFailed:           deploymentv1.RevisionStatus_REVISION_STATUS_FAILED,
-	RevisionStatusBlocked:          deploymentv1.RevisionStatus_REVISION_STATUS_BLOCKED,
-	RevisionStatusCanceled:         deploymentv1.RevisionStatus_REVISION_STATUS_CANCELED,
+const (
+	RevisionChangeTypeCreate   = "CREATE"
+	RevisionChangeTypeUpdate   = "UPDATE"
+	RevisionChangeTypeDestroy  = "DESTROY"
+	RevisionChangeTypeRecreate = "RECREATE"
+	RevisionChangeTypeImport   = "IMPORT"
+	RevisionChangeTypeNoChange = "NO_CHANGE"
+)
+
+var revisionStatusToProto = map[string]runv1.RevisionStatus{
+	RevisionStatusPending:          runv1.RevisionStatus_REVISION_STATUS_PENDING,
+	RevisionStatusQueued:           runv1.RevisionStatus_REVISION_STATUS_QUEUED,
+	RevisionStatusPlanning:         runv1.RevisionStatus_REVISION_STATUS_PLANNING,
+	RevisionStatusAwaitingApproval: runv1.RevisionStatus_REVISION_STATUS_AWAITING_APPROVAL,
+	RevisionStatusApplying:         runv1.RevisionStatus_REVISION_STATUS_APPLYING,
+	RevisionStatusSucceeded:        runv1.RevisionStatus_REVISION_STATUS_SUCCEEDED,
+	RevisionStatusFailed:           runv1.RevisionStatus_REVISION_STATUS_FAILED,
+	RevisionStatusBlocked:          runv1.RevisionStatus_REVISION_STATUS_BLOCKED,
+	RevisionStatusCanceled:         runv1.RevisionStatus_REVISION_STATUS_CANCELED,
+	RevisionStatusSuperseded:       runv1.RevisionStatus_REVISION_STATUS_SUPERSEDED,
 }
 
-var revisionKindToProto = map[string]deploymentv1.RevisionKind{
-	ComponentKindInfrastructure: deploymentv1.RevisionKind_REVISION_KIND_INFRASTRUCTURE,
-	ComponentKindWorkload:       deploymentv1.RevisionKind_REVISION_KIND_WORKLOAD,
+var revisionKindToProto = map[string]runv1.RevisionKind{
+	ComponentKindInfrastructure: runv1.RevisionKind_REVISION_KIND_INFRASTRUCTURE,
+	ComponentKindWorkload:       runv1.RevisionKind_REVISION_KIND_WORKLOAD,
 }
 
 type ChangeSummary struct {
@@ -74,11 +85,11 @@ func (s *ChangeSummary) Scan(value any) error {
 	return json.Unmarshal(b, s)
 }
 
-func (s *ChangeSummary) ToProto() *deploymentv1.ChangeSummary {
+func (s *ChangeSummary) ToProto() *runv1.ChangeSummary {
 	if s == nil {
 		return nil
 	}
-	return &deploymentv1.ChangeSummary{
+	return &runv1.ChangeSummary{
 		Additions:    s.Additions,
 		Changes:      s.Changes,
 		Destructions: s.Destructions,
@@ -86,39 +97,42 @@ func (s *ChangeSummary) ToProto() *deploymentv1.ChangeSummary {
 }
 
 type Revision struct {
-	Id               uuid.UUID             `gorm:"type:uuid;default:gen_random_uuid();primaryKey"`
-	DeploymentId     uuid.UUID             `gorm:"type:uuid;not null;index"`
-	ComponentId      uuid.UUID             `gorm:"type:uuid;not null;index"`
-	ComponentName    string                `gorm:"not null"`
-	Kind             string                `gorm:"not null"`
-	Status           string                `gorm:"not null"`
-	ModuleId         uuid.UUID             `gorm:"type:uuid;not null"`
-	SourceId         *uuid.UUID            `gorm:"type:uuid"`
-	Version          string                `gorm:"type:text;not null;default:''"`
-	ResolvedValues   string                `gorm:"type:text;not null;default:''"`
-	DependsOn        pq.StringArray        `gorm:"type:text[];not null;default:'{}'"`
-	BlockedBy        pq.StringArray        `gorm:"type:text[];not null;default:'{}'"`
-	WorkingDirectory string                `gorm:"type:text;not null;default:''"`
-	ArtifactChecksum string                `gorm:"type:text;not null;default:''"`
-	ArtifactUrl      string                `gorm:"type:text;not null;default:''"`
-	PlanOutputKey    string                `gorm:"type:text;not null;default:''"`
-	PlanFileKey      string                `gorm:"type:text;not null;default:''"`
-	PlanSummary      *ChangeSummary `gorm:"type:jsonb"`
-	ErrorMessage     string                `gorm:"type:text;not null;default:''"`
-	RetryCount       int32                 `gorm:"not null;default:0"`
-	CreatedAt        time.Time
-	StartedAt        *time.Time
-	CompletedAt      *time.Time
+	Id                 uuid.UUID      `gorm:"type:uuid;default:gen_random_uuid();primaryKey"`
+	RunId              uuid.UUID      `gorm:"type:uuid;not null;index"`
+	ComponentId        uuid.UUID      `gorm:"type:uuid;not null;index"`
+	ComponentSlug      string         `gorm:"column:component_slug;not null"`
+	Kind               string         `gorm:"not null"`
+	Status             string         `gorm:"not null"`
+	ChangeType         string         `gorm:"not null;default:CREATE"`
+	PreviousRevisionId *uuid.UUID     `gorm:"type:uuid"`
+	ModuleId           uuid.UUID      `gorm:"type:uuid;not null"`
+	SourceId           *uuid.UUID     `gorm:"type:uuid"`
+	Version            string         `gorm:"type:text;not null;default:''"`
+	ResolvedValues     string         `gorm:"type:text;not null;default:''"`
+	DependsOn          pq.StringArray `gorm:"type:text[];not null;default:'{}'"`
+	BlockedBy          pq.StringArray `gorm:"type:text[];not null;default:'{}'"`
+	WorkingDirectory   string         `gorm:"type:text;not null;default:''"`
+	ArtifactChecksum   string         `gorm:"type:text;not null;default:''"`
+	ArtifactUrl        string         `gorm:"type:text;not null;default:''"`
+	PlanOutputKey      string         `gorm:"type:text;not null;default:''"`
+	PlanFileKey        string         `gorm:"type:text;not null;default:''"`
+	PlanSummary        *ChangeSummary `gorm:"type:jsonb"`
+	ErrorMessage       string         `gorm:"type:text;not null;default:''"`
+	RetryCount         int32          `gorm:"not null;default:0"`
+	CreatedAt          time.Time
+	StartedAt          *time.Time
+	CompletedAt        *time.Time
 }
 
-func (r *Revision) ToProto() *deploymentv1.Revision {
-	proto := &deploymentv1.Revision{
+func (r *Revision) ToProto() *runv1.Revision {
+	proto := &runv1.Revision{
 		Id:               r.Id.String(),
-		DeploymentId:     r.DeploymentId.String(),
+		RunId:            r.RunId.String(),
 		ComponentId:      r.ComponentId.String(),
-		ComponentName:    r.ComponentName,
+		ComponentSlug:    r.ComponentSlug,
 		Kind:             revisionKindToProto[r.Kind],
 		Status:           revisionStatusToProto[r.Status],
+		ChangeType:       r.ChangeType,
 		ModuleId:         r.ModuleId.String(),
 		Version:          r.Version,
 		ResolvedValues:   r.ResolvedValues,
@@ -132,6 +146,9 @@ func (r *Revision) ToProto() *deploymentv1.Revision {
 		ErrorMessage:     r.ErrorMessage,
 		RetryCount:       r.RetryCount,
 		CreatedAt:        timestamppb.New(r.CreatedAt),
+	}
+	if r.PreviousRevisionId != nil {
+		proto.PreviousRevisionId = r.PreviousRevisionId.String()
 	}
 	if r.SourceId != nil {
 		proto.SourceId = r.SourceId.String()
@@ -197,10 +214,6 @@ func DeriveRevisionUpdate(jobType, reportedStatus string, result *runnerv1.JobRe
 	return fields
 }
 
-// IsRevisionSatisfiedFor returns true if a blocker revision's status is
-// sufficient to unblock the given job type. Plan jobs are unblocked when
-// blockers reach AWAITING_APPROVAL (plan complete). Apply jobs are unblocked
-// when blockers reach SUCCEEDED (apply complete).
 func IsRevisionSatisfiedFor(jobType, blockerStatus string) bool {
 	switch jobType {
 	case JobTypePlan, JobTypeDestroyPlan:

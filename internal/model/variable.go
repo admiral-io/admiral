@@ -67,38 +67,6 @@ type Variable struct {
 	CreatedByEmail string `gorm:"->;column:created_by_email"`
 }
 
-func (v *Variable) Validate() error {
-	switch v.Type {
-	case VariableTypeString:
-		// No constraint on string values.
-	case VariableTypeNumber:
-		if _, err := strconv.ParseFloat(v.Value, 64); err != nil {
-			return fmt.Errorf("value must be a valid number for type NUMBER")
-		}
-	case VariableTypeBoolean:
-		if v.Value != "true" && v.Value != "false" {
-			return fmt.Errorf("value must be \"true\" or \"false\" for type BOOLEAN")
-		}
-	case VariableTypeComplex:
-		if !json.Valid([]byte(v.Value)) {
-			return fmt.Errorf("value must be valid JSON for type COMPLEX")
-		}
-	case "":
-		return fmt.Errorf("variable type is required")
-	default:
-		return fmt.Errorf("unsupported variable type: %s", v.Type)
-	}
-
-	if v.ApplicationId == uuid.Nil {
-		return fmt.Errorf("application_id is required")
-	}
-	if v.EnvironmentId == uuid.Nil {
-		return fmt.Errorf("environment_id is required")
-	}
-
-	return nil
-}
-
 func (v *Variable) ToProto() *variablev1.Variable {
 	appID := v.ApplicationId.String()
 	envID := v.EnvironmentId.String()
@@ -122,6 +90,45 @@ func (v *Variable) ToProto() *variablev1.Variable {
 	}
 
 	return out
+}
+
+func (v *Variable) Validate() error {
+	if err := ValidateVariableValue(v.Type, v.Value); err != nil {
+		return err
+	}
+
+	if v.ApplicationId == uuid.Nil {
+		return fmt.Errorf("application_id is required")
+	}
+	if v.EnvironmentId == uuid.Nil {
+		return fmt.Errorf("environment_id is required")
+	}
+
+	return nil
+}
+
+func ValidateVariableValue(varType, value string) error {
+	switch varType {
+	case VariableTypeString:
+		// No constraint on string values.
+	case VariableTypeNumber:
+		if _, err := strconv.ParseFloat(value, 64); err != nil {
+			return fmt.Errorf("value must be a valid number for type NUMBER")
+		}
+	case VariableTypeBoolean:
+		if value != "true" && value != "false" {
+			return fmt.Errorf("value must be \"true\" or \"false\" for type BOOLEAN")
+		}
+	case VariableTypeComplex:
+		if !json.Valid([]byte(value)) {
+			return fmt.Errorf("value must be valid JSON for type COMPLEX")
+		}
+	case "":
+		return fmt.Errorf("variable type is required")
+	default:
+		return fmt.Errorf("unsupported variable type: %s", varType)
+	}
+	return nil
 }
 
 func VariablesFromEngineOutputs(

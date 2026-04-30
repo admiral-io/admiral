@@ -19,12 +19,12 @@ func TestCheckTokenType(t *testing.T) {
 		kind    string
 		wantErr bool
 	}{
-		{name: "no restriction", allowed: nil, kind: "pat"},
-		{name: "empty allowed list", allowed: []string{}, kind: "pat"},
-		{name: "allowed kind", allowed: []string{"pat", "session"}, kind: "pat"},
-		{name: "session allowed", allowed: []string{"session"}, kind: "session"},
-		{name: "denied kind", allowed: []string{"session"}, kind: "pat", wantErr: true},
-		{name: "sat denied", allowed: []string{"pat"}, kind: "sat", wantErr: true},
+		{name: "no restriction", allowed: nil, kind: "PAT"},
+		{name: "empty allowed list", allowed: []string{}, kind: "PAT"},
+		{name: "allowed kind", allowed: []string{"PAT", "SESSION"}, kind: "PAT"},
+		{name: "session allowed", allowed: []string{"SESSION"}, kind: "SESSION"},
+		{name: "denied kind", allowed: []string{"SESSION"}, kind: "PAT", wantErr: true},
+		{name: "sat denied", allowed: []string{"PAT"}, kind: "SAT", wantErr: true},
 	}
 
 	for _, tt := range tests {

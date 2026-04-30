@@ -94,7 +94,7 @@ func (a *api) CreateEnvironment(ctx context.Context, req *environmentv1.CreateEn
 	}
 
 	return &environmentv1.CreateEnvironmentResponse{
-		Environment: env.ToProto(),
+		Environment: env.ToProto(false),
 	}, nil
 }
 
@@ -113,10 +113,9 @@ func (a *api) GetEnvironment(ctx context.Context, req *environmentv1.GetEnvironm
 	if err != nil {
 		a.logger.Warn("failed to compute pending changes", zap.String("environment_id", id.String()), zap.Error(err))
 	}
-	env.HasPendingChanges = pending
 
 	return &environmentv1.GetEnvironmentResponse{
-		Environment: env.ToProto(),
+		Environment: env.ToProto(pending),
 	}, nil
 }
 
@@ -138,8 +137,7 @@ func (a *api) ListEnvironments(ctx context.Context, req *environmentv1.ListEnvir
 		if err != nil {
 			a.logger.Warn("failed to compute pending changes", zap.String("environment_id", envs[i].Id.String()), zap.Error(err))
 		}
-		envs[i].HasPendingChanges = pending
-		resp.Environments = append(resp.Environments, envs[i].ToProto())
+		resp.Environments = append(resp.Environments, envs[i].ToProto(pending))
 	}
 
 	if len(envs) > 0 && int32(len(envs)) == querybuilder.EffectiveLimit(req.GetPageSize()) {
@@ -207,7 +205,7 @@ func (a *api) UpdateEnvironment(ctx context.Context, req *environmentv1.UpdateEn
 	}
 
 	return &environmentv1.UpdateEnvironmentResponse{
-		Environment: env.ToProto(),
+		Environment: env.ToProto(false),
 	}, nil
 }
 

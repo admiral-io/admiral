@@ -2,9 +2,9 @@ CREATE TABLE IF NOT EXISTS access_tokens (
     id                TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
     name              TEXT NOT NULL DEFAULT '',
     subject           TEXT NOT NULL,
-    kind              TEXT NOT NULL CHECK (kind IN ('pat', 'sat', 'session')),
-    binding_type      TEXT NOT NULL CHECK (binding_type IN ('user', 'cluster', 'runner')),
-    status            TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'revoked')),
+    kind              TEXT NOT NULL CHECK (kind IN ('PAT', 'SAT', 'SESSION')),
+    binding_type      TEXT NOT NULL CHECK (binding_type IN ('USER', 'CLUSTER', 'RUNNER')),
+    status            TEXT NOT NULL DEFAULT 'ACTIVE' CHECK (status IN ('ACTIVE', 'REVOKED')),
     token_hash        BYTEA NOT NULL,
     token_prefix      TEXT NOT NULL,
     scopes            TEXT[] NOT NULL DEFAULT '{}',
@@ -20,6 +20,6 @@ CREATE TABLE IF NOT EXISTS access_tokens (
 );
 
 CREATE UNIQUE INDEX idx_access_tokens_token_hash ON access_tokens(token_hash);
-CREATE UNIQUE INDEX idx_access_tokens_subject_name ON access_tokens(subject, name) WHERE deleted_at IS NULL AND kind <> 'session';
+CREATE UNIQUE INDEX idx_access_tokens_subject_name ON access_tokens(subject, name) WHERE deleted_at IS NULL AND kind <> 'SESSION';
 CREATE INDEX idx_access_tokens_subject_kind ON access_tokens(subject, kind);
 CREATE INDEX idx_access_tokens_status ON access_tokens(status);

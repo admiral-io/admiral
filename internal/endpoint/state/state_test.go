@@ -23,7 +23,7 @@ import (
 func validClaims() *authn.Claims {
 	return &authn.Claims{
 		Subject: uuid.New().String(),
-		Kind:    "sat",
+		Kind:    "SAT",
 		Scopes:  []string{"state:read", "state:write"},
 	}
 }

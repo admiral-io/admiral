@@ -5,9 +5,9 @@ import "fmt"
 type TokenKind string
 
 const (
-	TokenKindSession TokenKind = "session"
-	TokenKindPAT     TokenKind = "pat"
-	TokenKindSAT     TokenKind = "sat"
+	TokenKindSession TokenKind = "SESSION"
+	TokenKindPAT     TokenKind = "PAT"
+	TokenKindSAT     TokenKind = "SAT"
 )
 
 var AllScopes = []string{

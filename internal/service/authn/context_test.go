@@ -72,11 +72,11 @@ func TestContextWithClaims(t *testing.T) {
 	}{
 		{
 			name:   "valid user claims",
-			claims: &Claims{Subject: validUUID, Kind: "pat"},
+			claims: &Claims{Subject: validUUID, Kind: "PAT"},
 		},
 		{
 			name:   "claims with scopes",
-			claims: &Claims{Subject: validUUID, Kind: "pat", Scopes: []string{"app:read", "env:write"}},
+			claims: &Claims{Subject: validUUID, Kind: "PAT", Scopes: []string{"app:read", "env:write"}},
 		},
 		{
 			name:   "minimal claims",
@@ -110,7 +110,7 @@ func TestContextWithClaims(t *testing.T) {
 
 	t.Run("preserves parent context values", func(t *testing.T) {
 		parentCtx := context.WithValue(context.Background(), testContextKey("parent-key"), "parent-value")
-		claims := &Claims{Subject: validUUID, Kind: "pat"}
+		claims := &Claims{Subject: validUUID, Kind: "PAT"}
 
 		ctx := ContextWithClaims(parentCtx, claims)
 
@@ -128,7 +128,7 @@ func TestContextWithClaims(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, AnonymousSubject, anonymousClaims.Subject)
 
-		newClaims := &Claims{Subject: validUUID, Kind: "pat"}
+		newClaims := &Claims{Subject: validUUID, Kind: "PAT"}
 		ctx = ContextWithClaims(ctx, newClaims)
 
 		retrievedClaims, err := ClaimsFromContext(ctx)
@@ -142,7 +142,7 @@ func TestClaimsFromContext(t *testing.T) {
 	validUUID := uuid.New().String()
 
 	t.Run("retrieves valid claims", func(t *testing.T) {
-		originalClaims := &Claims{Subject: validUUID, Kind: "pat", Scopes: []string{"app:read"}}
+		originalClaims := &Claims{Subject: validUUID, Kind: "PAT", Scopes: []string{"app:read"}}
 
 		ctx := ContextWithClaims(context.Background(), originalClaims)
 		retrievedClaims, err := ClaimsFromContext(ctx)

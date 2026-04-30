@@ -6,8 +6,6 @@ CREATE TABLE IF NOT EXISTS environments (
     workload_targets JSONB NOT NULL DEFAULT '[]',
     infrastructure_targets JSONB NOT NULL DEFAULT '[]',
     labels JSONB NOT NULL DEFAULT '{}',
-    has_pending_changes BOOLEAN NOT NULL DEFAULT FALSE,
-    last_deployed_at TIMESTAMP WITH TIME ZONE,
     created_by TEXT NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),

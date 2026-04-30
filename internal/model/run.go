@@ -170,3 +170,20 @@ func IsActiveRunStatus(s string) bool {
 	}
 	return false
 }
+
+// IsInFlightRunStatus reports whether a run is mid-flight -- still doing
+// real work, with the engine potentially holding state. Distinct from
+// IsActiveRunStatus: this set INCLUDES APPLYING because deletion of the
+// surrounding env/app while terraform is mid-apply would corrupt state.
+// Use this to gate destructive operations (env/app deletion, etc.).
+func IsInFlightRunStatus(s string) bool {
+	switch s {
+	case RunStatusPending,
+		RunStatusQueued,
+		RunStatusPlanning,
+		RunStatusPlanned,
+		RunStatusApplying:
+		return true
+	}
+	return false
+}

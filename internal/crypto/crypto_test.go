@@ -64,7 +64,7 @@ func TestEncryptDecryptRoundTrip(t *testing.T) {
 	enc, err := NewEncryptor(generateKey(t), "")
 	require.NoError(t, err)
 
-	plaintext := []byte(`{"type":"bearer_token","bearer_token":{"token":"secret123"}}`)
+	plaintext := []byte(`{"type":"BEARER_TOKEN","bearer_token":{"token":"secret123"}}`)
 
 	encrypted, err := enc.Encrypt(plaintext)
 	require.NoError(t, err)
@@ -112,7 +112,7 @@ func TestKeyRotation(t *testing.T) {
 	encBefore, err := NewEncryptor(oldKey, "")
 	require.NoError(t, err)
 
-	plaintext := []byte(`{"type":"ssh_key","ssh_key":{"private_key":"-----BEGIN..."}}`)
+	plaintext := []byte(`{"type":"SSH_KEY","ssh_key":{"private_key":"-----BEGIN..."}}`)
 	encrypted, err := encBefore.Encrypt(plaintext)
 	require.NoError(t, err)
 
@@ -213,7 +213,7 @@ func TestDecryptCorruptedData(t *testing.T) {
 func TestIsEnvelope(t *testing.T) {
 	assert.True(t, IsEnvelope([]byte(`{"key":"active","nonce":"x","ciphertext":"y"}`)))
 	assert.True(t, IsEnvelope([]byte(`{"key":"old","nonce":"x","ciphertext":"y"}`)))
-	assert.False(t, IsEnvelope([]byte(`{"type":"bearer_token","bearer_token":{"token":"x"}}`)))
+	assert.False(t, IsEnvelope([]byte(`{"type":"BEARER_TOKEN","bearer_token":{"token":"x"}}`)))
 	assert.False(t, IsEnvelope([]byte(`not json`)))
 	assert.False(t, IsEnvelope([]byte(`{"key":"unknown"}`)))
 }

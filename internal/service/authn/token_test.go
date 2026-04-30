@@ -11,12 +11,12 @@ func TestValidTokenKind(t *testing.T) {
 		kind string
 		want bool
 	}{
-		{"session", true},
-		{"pat", true},
-		{"sat", true},
+		{"SESSION", true},
+		{"PAT", true},
+		{"SAT", true},
 		{"", false},
 		{"invalid", false},
-		{"PAT", false},
+		{"pat", false},
 	}
 
 	for _, tt := range tests {
@@ -53,7 +53,7 @@ func TestValidateScopes(t *testing.T) {
 }
 
 func TestTokenKindConstants(t *testing.T) {
-	assert.Equal(t, TokenKind("session"), TokenKindSession)
-	assert.Equal(t, TokenKind("pat"), TokenKindPAT)
-	assert.Equal(t, TokenKind("sat"), TokenKindSAT)
+	assert.Equal(t, TokenKind("SESSION"), TokenKindSession)
+	assert.Equal(t, TokenKind("PAT"), TokenKindPAT)
+	assert.Equal(t, TokenKind("SAT"), TokenKindSAT)
 }
