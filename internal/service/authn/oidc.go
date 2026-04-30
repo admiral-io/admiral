@@ -209,6 +209,10 @@ func (p *OIDCProvider) Verify(ctx context.Context, credential string) (*Claims, 
 		return nil, fmt.Errorf("invalid token: %w", err)
 	}
 
+	if at.Status != model.AccessTokenStatusActive {
+		return nil, errors.New("token is not active")
+	}
+
 	if at.ExpiresAt != nil && at.ExpiresAt.Before(time.Now()) {
 		return nil, errors.New("token has expired")
 	}
@@ -236,6 +240,10 @@ func (p *OIDCProvider) RefreshSession(ctx context.Context, sessionToken string) 
 	session, err := p.tokenStore.GetByHash(ctx, hash)
 	if err != nil {
 		return fmt.Errorf("failed to get session: %w", err)
+	}
+
+	if session.Status != model.AccessTokenStatusActive {
+		return errors.New("session is not active")
 	}
 
 	if session.Kind != model.AccessTokenKindSession {

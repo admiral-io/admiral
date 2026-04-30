@@ -215,18 +215,18 @@ func (a *api) DeleteEnvironment(ctx context.Context, req *environmentv1.DeleteEn
 		return nil, status.Errorf(codes.InvalidArgument, "invalid environment ID: %v", err)
 	}
 
-	runsDeleted, err := a.store.DeleteCascade(ctx, id, req.GetForce())
+	result, err := a.store.Delete(ctx, id, req.GetForce())
 	if err != nil {
-		if depErr, ok := errors.AsType[*store.HasDependentsError](err); ok {
+		if depErr, ok := errors.AsType[*store.DependentsError](err); ok {
 			return nil, status.Errorf(codes.FailedPrecondition, "%s", depErr.Error())
 		}
 		return nil, status.Errorf(codes.Internal, "failed to delete environment: %v", err)
 	}
 
-	if runsDeleted > 0 {
+	if result.Runs > 0 {
 		a.logger.Info("force-deleted environment",
 			zap.String("environment_id", id.String()),
-			zap.Int64("runs_deleted", runsDeleted),
+			zap.Int64("runs_deleted", result.Runs),
 		)
 	}
 

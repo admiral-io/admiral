@@ -115,14 +115,31 @@ func (s *ComponentStore) CountByModuleID(ctx context.Context, moduleID uuid.UUID
 	return count, nil
 }
 
-func (s *ComponentStore) CountByApplicationID(ctx context.Context, appID uuid.UUID) (int64, error) {
+// HasProtectedForEnv reports whether the given (application, environment)
+// has any component with DeletionProtection=true. Used to block destructive
+// operations on the surrounding env regardless of the `force` flag.
+func (s *ComponentStore) HasProtectedForEnv(ctx context.Context, appID, envID uuid.UUID) (bool, error) {
 	var count int64
 	err := s.db.WithContext(ctx).
 		Model(&model.Component{}).
-		Where("application_id = ?", appID).
+		Where("application_id = ? AND environment_id = ? AND deletion_protection = TRUE", appID, envID).
 		Count(&count).Error
 	if err != nil {
-		return 0, fmt.Errorf("failed to count components for application: %w", err)
+		return false, fmt.Errorf("failed to check protected components for environment: %w", err)
 	}
-	return count, nil
+	return count > 0, nil
+}
+
+// HasProtectedForApp reports whether the given application has any
+// component with DeletionProtection=true across any environment.
+func (s *ComponentStore) HasProtectedForApp(ctx context.Context, appID uuid.UUID) (bool, error) {
+	var count int64
+	err := s.db.WithContext(ctx).
+		Model(&model.Component{}).
+		Where("application_id = ? AND deletion_protection = TRUE", appID).
+		Count(&count).Error
+	if err != nil {
+		return false, fmt.Errorf("failed to check protected components for application: %w", err)
+	}
+	return count > 0, nil
 }

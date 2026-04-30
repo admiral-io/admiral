@@ -188,9 +188,9 @@ func (a *api) DeleteApplication(ctx context.Context, req *applicationv1.DeleteAp
 		return nil, status.Errorf(codes.InvalidArgument, "invalid application ID: %v", err)
 	}
 
-	result, err := a.store.DeleteCascade(ctx, id, req.GetForce())
+	result, err := a.store.Delete(ctx, id, req.GetForce())
 	if err != nil {
-		if depErr, ok := errors.AsType[*store.HasDependentsError](err); ok {
+		if depErr, ok := errors.AsType[*store.DependentsError](err); ok {
 			return nil, status.Errorf(codes.FailedPrecondition, "%s", depErr.Error())
 		}
 		return nil, status.Errorf(codes.Internal, "failed to delete application: %v", err)

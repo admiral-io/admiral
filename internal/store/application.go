@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strings"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -12,33 +11,36 @@ import (
 	"go.admiral.io/admiral/internal/model"
 )
 
-type HasDependentsError struct {
-	Resource string
-	Name     string
-	Count    int64
-	Children []string
-}
-
-func (e *HasDependentsError) Error() string {
-	return fmt.Sprintf("cannot delete %s %q: %d dependent(s) still exist (%s); delete them first or use force",
-		e.Resource, e.Name, e.Count, strings.Join(e.Children, ", "))
-}
-
-type DeleteResult struct {
-	Environments int64
-	Deployments  int64
-}
-
 type ApplicationStore struct {
-	db *gorm.DB
+	db             *gorm.DB
+	runStore       *RunStore
+	componentStore *ComponentStore
+	tfStateStore   *TerraformStateStore
 }
 
 func NewApplicationStore(db *gorm.DB) (*ApplicationStore, error) {
 	if db == nil {
 		return nil, errors.New("database is required")
 	}
+	runStore, err := NewRunStore(db)
+	if err != nil {
+		return nil, err
+	}
+	componentStore, err := NewComponentStore(db)
+	if err != nil {
+		return nil, err
+	}
+	tfStateStore, err := NewTerraformStateStore(db)
+	if err != nil {
+		return nil, err
+	}
 
-	return &ApplicationStore{db: db}, nil
+	return &ApplicationStore{
+		db:             db,
+		runStore:       runStore,
+		componentStore: componentStore,
+		tfStateStore:   tfStateStore,
+	}, nil
 }
 
 func (s *ApplicationStore) DB() *gorm.DB {
@@ -92,68 +94,76 @@ func (s *ApplicationStore) Update(ctx context.Context, app *model.Application, f
 	return s.Get(ctx, app.Id)
 }
 
-func (s *ApplicationStore) Delete(ctx context.Context, id uuid.UUID) error {
-	result := s.db.WithContext(ctx).Where("id = ?", id).Delete(&model.Application{})
-	if result.Error != nil {
-		return fmt.Errorf("failed to delete application: %w", result.Error)
-	}
-
-	if result.RowsAffected == 0 {
-		return fmt.Errorf("application not found: %s", id)
-	}
-
-	return nil
-}
-
-func (s *ApplicationStore) DeleteCascade(ctx context.Context, id uuid.UUID, force bool) (*DeleteResult, error) {
+// Delete deletes an application after checking the same blocker set as
+// EnvironmentStore.Delete, scoped across every environment in the
+// application:
+//
+//   - In-flight runs anywhere in the app: always blocks.
+//   - Components with DeletionProtection=true anywhere in the app: always
+//     blocks; cannot be bypassed by `force`.
+//   - Components with stored terraform state anywhere in the app: soft
+//     block; `force=true` bypasses (operator accepts the leak).
+//
+// Environments and run history cascade silently in the transaction below.
+func (s *ApplicationStore) Delete(ctx context.Context, id uuid.UUID, force bool) (*DeleteResult, error) {
 	app, err := s.Get(ctx, id)
 	if err != nil {
 		return nil, err
 	}
 
-	var envCount int64
-	if err := s.db.WithContext(ctx).
-		Model(&model.Environment{}).
-		Where("application_id = ?", id).
-		Count(&envCount).Error; err != nil {
-		return nil, fmt.Errorf("failed to count environments: %w", err)
-	}
-
-	if envCount > 0 && !force {
-		var names []string
-		_ = s.db.WithContext(ctx).
-			Model(&model.Environment{}).
-			Where("application_id = ?", id).
-			Order("name").Limit(10).
-			Pluck("name", &names).Error
-		return nil, &HasDependentsError{
+	if hasInFlight, err := s.runStore.HasInFlightForApp(ctx, id); err != nil {
+		return nil, err
+	} else if hasInFlight {
+		return nil, &DependentsError{
 			Resource: "application",
 			Name:     app.Name,
-			Count:    envCount,
-			Children: names,
+			Children: []string{"in-flight runs"},
+		}
+	}
+
+	if hasProtected, err := s.componentStore.HasProtectedForApp(ctx, id); err != nil {
+		return nil, err
+	} else if hasProtected {
+		return nil, &DependentsError{
+			Resource: "application",
+			Name:     app.Name,
+			Children: []string{"components with deletion_protection=true"},
+		}
+	}
+
+	if !force {
+		if hasState, err := s.tfStateStore.HasStateForApp(ctx, id); err != nil {
+			return nil, err
+		} else if hasState {
+			return nil, &DependentsError{
+				Resource: "application",
+				Name:     app.Name,
+				Children: []string{"components with deployed terraform state (use force to delete; cloud resources will leak)"},
+			}
 		}
 	}
 
 	result := &DeleteResult{}
 
 	if err := s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		if envCount > 0 {
-			dep := tx.Where("application_id = ?", id).Delete(&model.Deployment{})
-			if dep.Error != nil {
-				return fmt.Errorf("failed to delete deployments: %w", dep.Error)
-			}
-			result.Deployments = dep.RowsAffected
-
-			env := tx.Where("application_id = ?", id).Delete(&model.Environment{})
-			if env.Error != nil {
-				return fmt.Errorf("failed to delete environments: %w", env.Error)
-			}
-			result.Environments = env.RowsAffected
+		// Runs FK is ON DELETE RESTRICT, so manual delete before envs/app
+		// can go. Components/overrides/terraform_states cascade via their
+		// FKs to environments.
+		r := tx.Where("application_id = ?", id).Delete(&model.Run{})
+		if r.Error != nil {
+			return fmt.Errorf("failed to delete runs: %w", r.Error)
 		}
+		result.Runs = r.RowsAffected
 
-		app := tx.Where("id = ?", id).Delete(&model.Application{})
-		if app.Error != nil {
-			return fmt.Errorf("failed to delete application: %w", app.Error)
+		env := tx.Where("application_id = ?", id).Delete(&model.Environment{})
+		if env.Error != nil {
+			return fmt.Errorf("failed to delete environments: %w", env.Error)
+		}
+		result.Environments = env.RowsAffected
+
+		appResult := tx.Where("id = ?", id).Delete(&model.Application{})
+		if appResult.Error != nil {
+			return fmt.Errorf("failed to delete application: %w", appResult.Error)
 		}
 		return nil
 	}); err != nil {
