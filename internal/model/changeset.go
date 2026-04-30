@@ -58,6 +58,10 @@ const (
 	ChangeSetEntryTypeOrphan  = "ORPHAN"
 )
 
+// DisplayIDPrefixChangeSet is the typed prefix for changeset display IDs
+// (e.g. cs-3k7m9p2q4rvw). Used with displayid.Generate / displayid.Is.
+const DisplayIDPrefixChangeSet = "cs"
+
 func IsTerminalChangeSetStatus(s string) bool {
 	return s == ChangeSetStatusDeployed || s == ChangeSetStatusDiscarded
 }

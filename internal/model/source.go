@@ -16,8 +16,8 @@ import (
 )
 
 const (
-	SourceConfigKindTerraform = "terraform"
-	SourceConfigKindHelm      = "helm"
+	SourceConfigKindTerraform = "TERRAFORM"
+	SourceConfigKindHelm      = "HELM"
 )
 
 const (
