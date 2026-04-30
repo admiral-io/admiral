@@ -52,6 +52,34 @@ func JobStatusFromProto(s runnerv1.JobStatus) (string, error) {
 	return "", fmt.Errorf("reported job status must be SUCCEEDED or FAILED (got %s)", s)
 }
 
+func (j *Job) Validate() error {
+	if j.RunnerId == uuid.Nil {
+		return fmt.Errorf("runner_id is required")
+	}
+	if j.RevisionId == uuid.Nil {
+		return fmt.Errorf("revision_id is required")
+	}
+	if j.RunId == uuid.Nil {
+		return fmt.Errorf("run_id is required")
+	}
+	switch j.JobType {
+	case JobTypePlan, JobTypeApply, JobTypeDestroyPlan, JobTypeDestroyApply:
+	case "":
+		return fmt.Errorf("job_type is required")
+	default:
+		return fmt.Errorf("invalid job_type: %s", j.JobType)
+	}
+	switch j.Status {
+	case JobStatusPending, JobStatusAssigned, JobStatusRunning,
+		JobStatusSucceeded, JobStatusFailed, JobStatusCanceled:
+	case "":
+		return fmt.Errorf("status is required")
+	default:
+		return fmt.Errorf("invalid status: %s", j.Status)
+	}
+	return nil
+}
+
 type Job struct {
 	Id                  uuid.UUID  `gorm:"type:uuid;default:gen_random_uuid();primaryKey"`
 	RunnerId            uuid.UUID  `gorm:"type:uuid;not null;index:idx_jobs_runner_status,priority:1"`

@@ -219,6 +219,29 @@ type Credential struct {
 	CreatedByEmail string         `gorm:"->;column:created_by_email"`
 }
 
+func (c *Credential) Validate() error {
+	if err := ValidateSlug(c.Name); err != nil {
+		return fmt.Errorf("invalid name: %w", err)
+	}
+	switch c.Type {
+	case CredentialTypeSSHKey, CredentialTypeBasicAuth, CredentialTypeBearerToken:
+	case "":
+		return fmt.Errorf("type is required")
+	default:
+		return fmt.Errorf("invalid type: %s", c.Type)
+	}
+	if err := c.AuthConfig.Validate(c.Type); err != nil {
+		return err
+	}
+	if err := c.Labels.Validate(); err != nil {
+		return err
+	}
+	if c.CreatedBy == "" {
+		return fmt.Errorf("created_by is required")
+	}
+	return nil
+}
+
 func (c *Credential) ToProto() *credentialv1.Credential {
 	out := &credentialv1.Credential{
 		Id:          c.Id.String(),

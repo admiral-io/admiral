@@ -135,6 +135,37 @@ func (b *AccessTokenBindingType) Scan(value any) error {
 	return nil
 }
 
+func (at *AccessToken) Validate() error {
+	if at.Subject == "" {
+		return fmt.Errorf("subject is required")
+	}
+	switch at.Kind {
+	case AccessTokenKindPAT, AccessTokenKindSAT, AccessTokenKindSession:
+	case "":
+		return fmt.Errorf("kind is required")
+	default:
+		return fmt.Errorf("invalid kind: %s", at.Kind)
+	}
+	switch at.BindingType {
+	case AccessTokenBindingTypeUser, AccessTokenBindingTypeCluster, AccessTokenBindingTypeRunner:
+	case "":
+		return fmt.Errorf("binding_type is required")
+	default:
+		return fmt.Errorf("invalid binding_type: %s", at.BindingType)
+	}
+	switch at.Status {
+	case AccessTokenStatusActive, AccessTokenStatusRevoked:
+	case "":
+		return fmt.Errorf("status is required")
+	default:
+		return fmt.Errorf("invalid status: %s", at.Status)
+	}
+	if len(at.TokenHash) == 0 {
+		return fmt.Errorf("token_hash is required")
+	}
+	return nil
+}
+
 func (b *AccessTokenBindingType) String() string {
 	switch *b {
 	case AccessTokenBindingTypeUser, AccessTokenBindingTypeCluster, AccessTokenBindingTypeRunner:

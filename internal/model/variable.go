@@ -93,17 +93,31 @@ func (v *Variable) ToProto() *variablev1.Variable {
 }
 
 func (v *Variable) Validate() error {
+	if v.Key == "" {
+		return fmt.Errorf("key is required")
+	}
+	if len(v.Key) > 63 {
+		return fmt.Errorf("key must be 63 characters or less")
+	}
 	if err := ValidateVariableValue(v.Type, v.Value); err != nil {
 		return err
 	}
-
+	switch v.Source {
+	case VariableSourceUser, VariableSourceInfrastructure:
+	case "":
+		return fmt.Errorf("source is required")
+	default:
+		return fmt.Errorf("invalid source: %s", v.Source)
+	}
 	if v.ApplicationId == uuid.Nil {
 		return fmt.Errorf("application_id is required")
 	}
 	if v.EnvironmentId == uuid.Nil {
 		return fmt.Errorf("environment_id is required")
 	}
-
+	if v.CreatedBy == "" {
+		return fmt.Errorf("created_by is required")
+	}
 	return nil
 }
 

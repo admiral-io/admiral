@@ -1,6 +1,7 @@
 package model
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/google/uuid"
@@ -22,6 +23,19 @@ type Application struct {
 	DeletedAt      gorm.DeletedAt `gorm:"index"`
 	CreatedByName  string         `gorm:"->;column:created_by_name"`
 	CreatedByEmail string         `gorm:"->;column:created_by_email"`
+}
+
+func (app *Application) Validate() error {
+	if err := ValidateSlug(app.Name); err != nil {
+		return fmt.Errorf("invalid name: %w", err)
+	}
+	if err := app.Labels.Validate(); err != nil {
+		return err
+	}
+	if app.CreatedBy == "" {
+		return fmt.Errorf("created_by is required")
+	}
+	return nil
 }
 
 func (app *Application) ToProto() *applicationv1.Application {

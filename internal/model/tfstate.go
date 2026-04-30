@@ -1,6 +1,7 @@
 package model
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/google/uuid"
@@ -20,6 +21,19 @@ type TerraformState struct {
 	CreatedAt     time.Time
 }
 
+func (s *TerraformState) Validate() error {
+	if s.ComponentId == uuid.Nil {
+		return fmt.Errorf("component_id is required")
+	}
+	if s.EnvironmentId == uuid.Nil {
+		return fmt.Errorf("environment_id is required")
+	}
+	if s.CreatedBy == "" {
+		return fmt.Errorf("created_by is required")
+	}
+	return nil
+}
+
 type TerraformStateLock struct {
 	ComponentId   uuid.UUID `gorm:"type:uuid;primaryKey"`
 	EnvironmentId uuid.UUID `gorm:"type:uuid;primaryKey"`
@@ -30,4 +44,17 @@ type TerraformStateLock struct {
 	Version       string    `gorm:"type:text;not null;default:''"`
 	Path          string    `gorm:"type:text;not null;default:''"`
 	CreatedAt     time.Time
+}
+
+func (l *TerraformStateLock) Validate() error {
+	if l.ComponentId == uuid.Nil {
+		return fmt.Errorf("component_id is required")
+	}
+	if l.EnvironmentId == uuid.Nil {
+		return fmt.Errorf("environment_id is required")
+	}
+	if l.LockId == "" {
+		return fmt.Errorf("lock_id is required")
+	}
+	return nil
 }

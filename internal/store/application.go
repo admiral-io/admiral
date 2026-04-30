@@ -48,6 +48,9 @@ func (s *ApplicationStore) DB() *gorm.DB {
 }
 
 func (s *ApplicationStore) Create(ctx context.Context, app *model.Application) (*model.Application, error) {
+	if err := app.Validate(); err != nil {
+		return nil, fmt.Errorf("invalid application: %w", err)
+	}
 	if err := s.db.WithContext(ctx).Create(app).Error; err != nil {
 		return nil, fmt.Errorf("failed to create application: %w", err)
 	}
@@ -94,17 +97,8 @@ func (s *ApplicationStore) Update(ctx context.Context, app *model.Application, f
 	return s.Get(ctx, app.Id)
 }
 
-// Delete deletes an application after checking the same blocker set as
-// EnvironmentStore.Delete, scoped across every environment in the
-// application:
-//
-//   - In-flight runs anywhere in the app: always blocks.
-//   - Components with DeletionProtection=true anywhere in the app: always
-//     blocks; cannot be bypassed by `force`.
-//   - Components with stored terraform state anywhere in the app: soft
-//     block; `force=true` bypasses (operator accepts the leak).
-//
-// Environments and run history cascade silently in the transaction below.
+// Delete deletes an application along with all its environments. Blocker
+// rules match EnvironmentStore.Delete, evaluated app-wide.
 func (s *ApplicationStore) Delete(ctx context.Context, id uuid.UUID, force bool) (*DeleteResult, error) {
 	app, err := s.Get(ctx, id)
 	if err != nil {

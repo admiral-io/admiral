@@ -1,6 +1,7 @@
 package model
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/google/uuid"
@@ -34,6 +35,28 @@ var runStatusToProto = map[string]runv1.RunStatus{
 	RunStatusFailed:          runv1.RunStatus_RUN_STATUS_FAILED,
 	RunStatusCanceled:        runv1.RunStatus_RUN_STATUS_CANCELED,
 	RunStatusSuperseded:      runv1.RunStatus_RUN_STATUS_SUPERSEDED,
+}
+
+func (r *Run) Validate() error {
+	if r.ApplicationId == uuid.Nil {
+		return fmt.Errorf("application_id is required")
+	}
+	if r.EnvironmentId == uuid.Nil {
+		return fmt.Errorf("environment_id is required")
+	}
+	switch r.Status {
+	case RunStatusPending, RunStatusQueued, RunStatusPlanning, RunStatusPlanned,
+		RunStatusApplying, RunStatusSucceeded, RunStatusPartiallyFailed,
+		RunStatusFailed, RunStatusCanceled, RunStatusSuperseded:
+	case "":
+		return fmt.Errorf("status is required")
+	default:
+		return fmt.Errorf("invalid status: %s", r.Status)
+	}
+	if r.TriggeredBy == "" {
+		return fmt.Errorf("triggered_by is required")
+	}
+	return nil
 }
 
 type Run struct {

@@ -27,6 +27,9 @@ func (s *ComponentStore) DB() *gorm.DB {
 }
 
 func (s *ComponentStore) Create(ctx context.Context, c *model.Component) (*model.Component, error) {
+	if err := c.Validate(); err != nil {
+		return nil, fmt.Errorf("invalid component: %w", err)
+	}
 	if err := s.db.WithContext(ctx).Create(c).Error; err != nil {
 		return nil, fmt.Errorf("failed to create component: %w", err)
 	}

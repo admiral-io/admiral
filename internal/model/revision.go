@@ -124,6 +124,47 @@ type Revision struct {
 	CompletedAt        *time.Time
 }
 
+func (r *Revision) Validate() error {
+	if r.RunId == uuid.Nil {
+		return fmt.Errorf("run_id is required")
+	}
+	if r.ComponentId == uuid.Nil {
+		return fmt.Errorf("component_id is required")
+	}
+	if r.ComponentSlug == "" {
+		return fmt.Errorf("component_slug is required")
+	}
+	switch r.Kind {
+	case ComponentKindInfrastructure, ComponentKindWorkload:
+	case "":
+		return fmt.Errorf("kind is required")
+	default:
+		return fmt.Errorf("invalid kind: %s", r.Kind)
+	}
+	switch r.Status {
+	case RevisionStatusPending, RevisionStatusQueued, RevisionStatusPlanning,
+		RevisionStatusAwaitingApproval, RevisionStatusApplying,
+		RevisionStatusSucceeded, RevisionStatusFailed, RevisionStatusBlocked,
+		RevisionStatusCanceled, RevisionStatusSuperseded:
+	case "":
+		return fmt.Errorf("status is required")
+	default:
+		return fmt.Errorf("invalid status: %s", r.Status)
+	}
+	switch r.ChangeType {
+	case RevisionChangeTypeCreate, RevisionChangeTypeUpdate, RevisionChangeTypeDestroy,
+		RevisionChangeTypeRecreate, RevisionChangeTypeImport, RevisionChangeTypeNoChange:
+	case "":
+		return fmt.Errorf("change_type is required")
+	default:
+		return fmt.Errorf("invalid change_type: %s", r.ChangeType)
+	}
+	if r.ModuleId == uuid.Nil {
+		return fmt.Errorf("module_id is required")
+	}
+	return nil
+}
+
 func (r *Revision) ToProto() *runv1.Revision {
 	proto := &runv1.Revision{
 		Id:               r.Id.String(),

@@ -29,6 +29,9 @@ func (s *AccessTokenStore) DB() *gorm.DB {
 }
 
 func (s *AccessTokenStore) Create(ctx context.Context, token *model.AccessToken) (*model.AccessToken, error) {
+	if err := token.Validate(); err != nil {
+		return nil, fmt.Errorf("invalid access token: %w", err)
+	}
 	if err := s.db.WithContext(ctx).Create(token).Error; err != nil {
 		return nil, fmt.Errorf("failed to create access token: %w", err)
 	}

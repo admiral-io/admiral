@@ -124,6 +124,48 @@ type Component struct {
 	CreatedByEmail     string         `gorm:"->;column:created_by_email"`
 }
 
+func (c *Component) Validate() error {
+	if c.ApplicationId == uuid.Nil {
+		return fmt.Errorf("application_id is required")
+	}
+	if c.EnvironmentId == uuid.Nil {
+		return fmt.Errorf("environment_id is required")
+	}
+	if err := ValidateSlug(c.Name); err != nil {
+		return fmt.Errorf("invalid name: %w", err)
+	}
+	if err := ValidateSlug(c.Slug); err != nil {
+		return fmt.Errorf("invalid slug: %w", err)
+	}
+	switch c.Kind {
+	case ComponentKindInfrastructure, ComponentKindWorkload:
+	case "":
+		return fmt.Errorf("kind is required")
+	default:
+		return fmt.Errorf("invalid kind: %s", c.Kind)
+	}
+	switch c.DesiredState {
+	case ComponentDesiredStateActive,
+		ComponentDesiredStateDestroy,
+		ComponentDesiredStateOrphan,
+		ComponentDesiredStateDestroyed:
+	case "":
+		return fmt.Errorf("desired_state is required")
+	default:
+		return fmt.Errorf("invalid desired_state: %s", c.DesiredState)
+	}
+	if c.ModuleId == uuid.Nil {
+		return fmt.Errorf("module_id is required")
+	}
+	if c.CreatedBy == "" {
+		return fmt.Errorf("created_by is required")
+	}
+	if err := ValidateValuesTemplate(c.ValuesTemplate); err != nil {
+		return fmt.Errorf("invalid values_template: %w", err)
+	}
+	return nil
+}
+
 func (c *Component) ToProto() *componentv1.Component {
 	return &componentv1.Component{
 		Id:                 c.Id.String(),

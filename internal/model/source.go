@@ -256,6 +256,32 @@ type Source struct {
 	CreatedByEmail string         `gorm:"->;column:created_by_email"`
 }
 
+func (s *Source) Validate() error {
+	if err := ValidateSlug(s.Name); err != nil {
+		return fmt.Errorf("invalid name: %w", err)
+	}
+	switch s.Type {
+	case SourceTypeGit, SourceTypeTerraform, SourceTypeHelm, SourceTypeOCI, SourceTypeHTTP:
+	case "":
+		return fmt.Errorf("type is required")
+	default:
+		return fmt.Errorf("invalid type: %s", s.Type)
+	}
+	if strings.TrimSpace(s.URL) == "" {
+		return fmt.Errorf("url is required")
+	}
+	if err := s.SourceConfig.Validate(s.Type); err != nil {
+		return err
+	}
+	if err := s.Labels.Validate(); err != nil {
+		return err
+	}
+	if s.CreatedBy == "" {
+		return fmt.Errorf("created_by is required")
+	}
+	return nil
+}
+
 func (s *Source) ToProto() *sourcev1.Source {
 	out := &sourcev1.Source{
 		Id:            s.Id.String(),

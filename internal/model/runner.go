@@ -121,6 +121,19 @@ type Runner struct {
 	CreatedByEmail  string         `gorm:"->;column:created_by_email"`
 }
 
+func (r *Runner) Validate() error {
+	if err := ValidateSlug(r.Name); err != nil {
+		return fmt.Errorf("invalid name: %w", err)
+	}
+	if err := r.Labels.Validate(); err != nil {
+		return err
+	}
+	if r.CreatedBy == "" {
+		return fmt.Errorf("created_by is required")
+	}
+	return nil
+}
+
 func (r *Runner) ToProto() *runnerv1.Runner {
 	return &runnerv1.Runner{
 		Id:           r.Id.String(),

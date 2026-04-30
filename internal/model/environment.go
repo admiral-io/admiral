@@ -90,6 +90,22 @@ func (t *InfrastructureTargets) Scan(value any) error {
 	return json.Unmarshal(bytes, t)
 }
 
+func (env *Environment) Validate() error {
+	if env.ApplicationId == uuid.Nil {
+		return fmt.Errorf("application_id is required")
+	}
+	if err := ValidateSlug(env.Name); err != nil {
+		return fmt.Errorf("invalid name: %w", err)
+	}
+	if err := env.Labels.Validate(); err != nil {
+		return err
+	}
+	if env.CreatedBy == "" {
+		return fmt.Errorf("created_by is required")
+	}
+	return nil
+}
+
 type Environment struct {
 	Id                    uuid.UUID             `gorm:"type:uuid;default:gen_random_uuid();primaryKey"`
 	ApplicationId         uuid.UUID             `gorm:"type:uuid;not null;index"`

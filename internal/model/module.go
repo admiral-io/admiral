@@ -2,6 +2,7 @@ package model
 
 import (
 	"fmt"
+	"regexp"
 	"time"
 
 	"github.com/google/uuid"
@@ -75,6 +76,33 @@ type Module struct {
 	DeletedAt      gorm.DeletedAt `gorm:"index"`
 	CreatedByName  string         `gorm:"->;column:created_by_name"`
 	CreatedByEmail string         `gorm:"->;column:created_by_email"`
+}
+
+// moduleNameRegex permits slug-style segments separated by /, e.g.
+// "platform/postgres". Mirrors the migration's CHECK constraint.
+var moduleNameRegex = regexp.MustCompile(`^[a-z][a-z0-9-]*(/[a-z][a-z0-9-]*)*$`)
+
+func (m *Module) Validate() error {
+	if !moduleNameRegex.MatchString(m.Name) {
+		return fmt.Errorf("invalid name %q: must be lowercase alphanumeric with hyphens, optionally separated by /", m.Name)
+	}
+	switch m.Type {
+	case ModuleTypeTerraform, ModuleTypeHelm, ModuleTypeKustomize, ModuleTypeManifest:
+	case "":
+		return fmt.Errorf("type is required")
+	default:
+		return fmt.Errorf("invalid type: %s", m.Type)
+	}
+	if m.SourceId == uuid.Nil {
+		return fmt.Errorf("source_id is required")
+	}
+	if err := m.Labels.Validate(); err != nil {
+		return err
+	}
+	if m.CreatedBy == "" {
+		return fmt.Errorf("created_by is required")
+	}
+	return nil
 }
 
 func (m *Module) ToProto() *modulev1.Module {
