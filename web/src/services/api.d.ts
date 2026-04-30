@@ -1219,8 +1219,8 @@ export interface paths {
         };
         /**
          * List runs
-         * @description Common filter fields: `application_id`, `environment_id`, `status`,
-         *      `trigger_type`. Use to view run history for an environment.
+         * @description Common filter fields: `application_id`, `environment_id`, `status`.
+         *      Use to view run history for an environment.
          *
          *      Scope: `run:read`
          */
@@ -2051,6 +2051,13 @@ export interface components {
              *      entries, or status).
              */
             updated_at?: components["schemas"]["google.protobuf.Timestamp"];
+            /**
+             * display_id
+             * @description Typed display identifier of the form `cs-<12-char-suffix>` (e.g.,
+             *      `cs-3k7m9p2q4rvw`). Server-generated, indexed, and stable. Prefer this
+             *      over `id` for user-facing references; lookups accept either form.
+             */
+            display_id?: string;
         };
         /**
          * ChangeSetEntry
@@ -2195,8 +2202,8 @@ export interface components {
         "admiral.changeset.v1.CopyChangeSetRequest": {
             /**
              * change_set_id
-             * Format: uuid
-             * @description The source change set to copy (UUID). Can be in any status.
+             * @description Identifier of the source change set to copy. Accepts either the short
+             *      ID (`cs-<suffix>`) or the canonical UUID. Can be in any status.
              */
             change_set_id?: string;
             /**
@@ -2277,8 +2284,8 @@ export interface components {
         "admiral.changeset.v1.DiscardChangeSetRequest": {
             /**
              * change_set_id
-             * Format: uuid
-             * @description Unique identifier of the change set to discard (UUID).
+             * @description Identifier of the change set to discard. Accepts either the short ID
+             *      (`cs-<suffix>`) or the canonical UUID.
              */
             change_set_id?: string;
         };
@@ -2300,8 +2307,8 @@ export interface components {
         "admiral.changeset.v1.GetChangeSetRequest": {
             /**
              * change_set_id
-             * Format: uuid
-             * @description Unique identifier of the change set (UUID).
+             * @description Identifier of the change set. Accepts either the short ID
+             *      (`cs-<suffix>`) or the canonical UUID.
              */
             change_set_id?: string;
         };
@@ -2374,8 +2381,8 @@ export interface components {
         "admiral.changeset.v1.RemoveEntryRequest": {
             /**
              * change_set_id
-             * Format: uuid
-             * @description The change set (UUID).
+             * @description Identifier of the change set. Accepts either the short ID
+             *      (`cs-<suffix>`) or the canonical UUID.
              */
             change_set_id?: string;
             /**
@@ -2397,8 +2404,8 @@ export interface components {
         "admiral.changeset.v1.RemoveVariableRequest": {
             /**
              * change_set_id
-             * Format: uuid
-             * @description The change set (UUID).
+             * @description Identifier of the change set. Accepts either the short ID
+             *      (`cs-<suffix>`) or the canonical UUID.
              */
             change_set_id?: string;
             /**
@@ -2425,8 +2432,8 @@ export interface components {
         "admiral.changeset.v1.SetEntryRequest": {
             /**
              * change_set_id
-             * Format: uuid
-             * @description The change set to add or replace the entry in (UUID).
+             * @description Identifier of the change set. Accepts either the short ID
+             *      (`cs-<suffix>`) or the canonical UUID.
              */
             change_set_id?: string;
             /**
@@ -2485,8 +2492,8 @@ export interface components {
         "admiral.changeset.v1.SetVariableRequest": {
             /**
              * change_set_id
-             * Format: uuid
-             * @description The change set (UUID).
+             * @description Identifier of the change set. Accepts either the short ID
+             *      (`cs-<suffix>`) or the canonical UUID.
              */
             change_set_id?: string;
             /**
@@ -5551,7 +5558,7 @@ export interface components {
              *        - `application_id` -- runs for a specific application (UUID).
              *        - `environment_id` -- runs to a specific environment (UUID).
              *        - `status` -- filter by run status (PENDING, RUNNING, SUCCEEDED, ...).
-             *        - `trigger_type` -- filter by trigger type (MANUAL, CI, DESTROY).
+             *        - `change_set_id` -- runs for a specific change set (UUID).
              *
              *      Example: `field['environment_id'] = '<uuid>' AND field['status'] = 'SUCCEEDED'`
              */
@@ -5893,11 +5900,6 @@ export interface components {
              */
             status?: components["schemas"]["admiral.run.v1.RunStatus"];
             /**
-             * trigger_type
-             * @description What triggered this run.
-             */
-            trigger_type?: components["schemas"]["admiral.run.v1.RunTriggerType"];
-            /**
              * triggered_by
              * @description The user or agent that triggered the run (server-populated from token).
              */
@@ -5953,12 +5955,6 @@ export interface components {
          * @enum {string}
          */
         "admiral.run.v1.RunStatus": "RUN_STATUS_UNSPECIFIED" | "RUN_STATUS_PENDING" | "RUN_STATUS_QUEUED" | "RUN_STATUS_PLANNING" | "RUN_STATUS_PLANNED" | "RUN_STATUS_APPLYING" | "RUN_STATUS_SUCCEEDED" | "RUN_STATUS_PARTIALLY_FAILED" | "RUN_STATUS_FAILED" | "RUN_STATUS_CANCELED" | "RUN_STATUS_SUPERSEDED";
-        /**
-         * RunTriggerType
-         * @description RunTriggerType indicates what initiated the run.
-         * @enum {string}
-         */
-        "admiral.run.v1.RunTriggerType": "RUN_TRIGGER_TYPE_UNSPECIFIED" | "RUN_TRIGGER_TYPE_MANUAL" | "RUN_TRIGGER_TYPE_CI" | "RUN_TRIGGER_TYPE_DESTROY";
         /**
          * ActiveJobInfo
          * @description ActiveJobInfo summarizes a job currently being executed by a runner instance.
@@ -9149,7 +9145,10 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Unique identifier of the change set (UUID). */
+                /**
+                 * @description Identifier of the change set. Accepts either the short ID
+                 *      (`cs-<suffix>`) or the canonical UUID.
+                 */
                 change_set_id: string;
             };
             cookie?: never;
@@ -9172,7 +9171,10 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description The source change set to copy (UUID). Can be in any status. */
+                /**
+                 * @description Identifier of the source change set to copy. Accepts either the short
+                 *      ID (`cs-<suffix>`) or the canonical UUID. Can be in any status.
+                 */
                 change_set_id: string;
             };
             cookie?: never;
@@ -9182,8 +9184,8 @@ export interface operations {
                 "application/json": {
                     /**
                      * change_set_id
-                     * Format: uuid
-                     * @description The source change set to copy (UUID). Can be in any status.
+                     * @description Identifier of the source change set to copy. Accepts either the short
+                     *      ID (`cs-<suffix>`) or the canonical UUID. Can be in any status.
                      */
                     change_set_id?: string;
                     /**
@@ -9224,7 +9226,10 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Unique identifier of the change set to discard (UUID). */
+                /**
+                 * @description Identifier of the change set to discard. Accepts either the short ID
+                 *      (`cs-<suffix>`) or the canonical UUID.
+                 */
                 change_set_id: string;
             };
             cookie?: never;
@@ -9234,8 +9239,8 @@ export interface operations {
                 "application/json": {
                     /**
                      * change_set_id
-                     * Format: uuid
-                     * @description Unique identifier of the change set to discard (UUID).
+                     * @description Identifier of the change set to discard. Accepts either the short ID
+                     *      (`cs-<suffix>`) or the canonical UUID.
                      */
                     change_set_id?: string;
                 };
@@ -9258,7 +9263,10 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description The change set to add or replace the entry in (UUID). */
+                /**
+                 * @description Identifier of the change set. Accepts either the short ID
+                 *      (`cs-<suffix>`) or the canonical UUID.
+                 */
                 change_set_id: string;
                 /** @description Component slug (immutable semantic key). Required. */
                 component_slug: string;
@@ -9270,8 +9278,8 @@ export interface operations {
                 "application/json": {
                     /**
                      * change_set_id
-                     * Format: uuid
-                     * @description The change set to add or replace the entry in (UUID).
+                     * @description Identifier of the change set. Accepts either the short ID
+                     *      (`cs-<suffix>`) or the canonical UUID.
                      */
                     change_set_id?: string;
                     /**
@@ -9331,7 +9339,10 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description The change set (UUID). */
+                /**
+                 * @description Identifier of the change set. Accepts either the short ID
+                 *      (`cs-<suffix>`) or the canonical UUID.
+                 */
                 change_set_id: string;
                 /** @description Component slug of the entry to remove. */
                 component_slug: string;
@@ -9356,7 +9367,10 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description The change set (UUID). */
+                /**
+                 * @description Identifier of the change set. Accepts either the short ID
+                 *      (`cs-<suffix>`) or the canonical UUID.
+                 */
                 change_set_id: string;
                 /** @description The variable key. */
                 key: string;
@@ -9368,8 +9382,8 @@ export interface operations {
                 "application/json": {
                     /**
                      * change_set_id
-                     * Format: uuid
-                     * @description The change set (UUID).
+                     * @description Identifier of the change set. Accepts either the short ID
+                     *      (`cs-<suffix>`) or the canonical UUID.
                      */
                     change_set_id?: string;
                     /**
@@ -9407,7 +9421,10 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description The change set (UUID). */
+                /**
+                 * @description Identifier of the change set. Accepts either the short ID
+                 *      (`cs-<suffix>`) or the canonical UUID.
+                 */
                 change_set_id: string;
                 /** @description The variable key to remove on apply. */
                 key: string;
@@ -11063,7 +11080,7 @@ export interface operations {
                  *        - `application_id` -- runs for a specific application (UUID).
                  *        - `environment_id` -- runs to a specific environment (UUID).
                  *        - `status` -- filter by run status (PENDING, RUNNING, SUCCEEDED, ...).
-                 *        - `trigger_type` -- filter by trigger type (MANUAL, CI, DESTROY).
+                 *        - `change_set_id` -- runs for a specific change set (UUID).
                  *
                  *      Example: `field['environment_id'] = '<uuid>' AND field['status'] = 'SUCCEEDED'`
                  */

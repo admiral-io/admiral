@@ -383,17 +383,18 @@ func (a *api) SetEntry(ctx context.Context, req *changesetv1.SetEntryRequest) (*
 	switch req.GetChangeType() {
 	case model.ChangeSetEntryTypeCreate:
 		// Reject CREATE if a component with this slug already exists in the
-		// application -- the operator wanted UPDATE.
-		if existing, err := a.compStore.GetByApplicationSlug(ctx, cs.ApplicationId, req.GetComponentSlug()); err == nil && existing != nil {
+		// (application, environment) the change set targets -- the operator
+		// wanted UPDATE.
+		if existing, err := a.compStore.GetByApplicationEnvSlug(ctx, cs.ApplicationId, cs.EnvironmentId, req.GetComponentSlug()); err == nil && existing != nil {
 			return nil, status.Errorf(codes.AlreadyExists,
-				"component %s already exists in application %s; use UPDATE instead",
-				req.GetComponentSlug(), cs.ApplicationId)
+				"component %s already exists in environment %s; use UPDATE instead",
+				req.GetComponentSlug(), cs.EnvironmentId)
 		}
 	case model.ChangeSetEntryTypeUpdate, model.ChangeSetEntryTypeDestroy, model.ChangeSetEntryTypeOrphan:
-		comp, err := a.compStore.GetByApplicationSlug(ctx, cs.ApplicationId, req.GetComponentSlug())
+		comp, err := a.compStore.GetByApplicationEnvSlug(ctx, cs.ApplicationId, cs.EnvironmentId, req.GetComponentSlug())
 		if err != nil {
 			return nil, status.Errorf(codes.NotFound,
-				"component %s not found in application %s", req.GetComponentSlug(), cs.ApplicationId)
+				"component %s not found in environment %s", req.GetComponentSlug(), cs.EnvironmentId)
 		}
 		entry.ComponentId = &comp.Id
 	}

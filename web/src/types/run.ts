@@ -15,7 +15,6 @@ export const runSchema = z.object({
   application_id: z.string().nullish(),
   environment_id: z.string().nullish(),
   status: z.string().nullish(),
-  trigger_type: z.string().nullish(),
   triggered_by: z.string().nullish(),
   message: z.string().nullish(),
   destroy: z.boolean().nullish(),

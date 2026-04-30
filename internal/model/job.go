@@ -56,7 +56,7 @@ type Job struct {
 	Id                  uuid.UUID  `gorm:"type:uuid;default:gen_random_uuid();primaryKey"`
 	RunnerId            uuid.UUID  `gorm:"type:uuid;not null;index:idx_jobs_runner_status,priority:1"`
 	RevisionId          uuid.UUID  `gorm:"type:uuid;not null;index"`
-	DeploymentId        uuid.UUID  `gorm:"type:uuid;not null;index"`
+	RunId               uuid.UUID  `gorm:"type:uuid;not null;index"`
 	JobType             string     `gorm:"not null"`
 	Status              string     `gorm:"not null;index:idx_jobs_runner_status,priority:2"`
 	ClaimedAt           *time.Time `gorm:"column:claimed_at"`
@@ -68,13 +68,13 @@ type Job struct {
 
 func (j *Job) ToProto() *runnerv1.Job {
 	proto := &runnerv1.Job{
-		Id:           j.Id.String(),
-		RunnerId:     j.RunnerId.String(),
-		RevisionId:   j.RevisionId.String(),
-		DeploymentId: j.DeploymentId.String(),
-		JobType:      jobTypeToProto[j.JobType],
-		Status:       jobStatusToProto[j.Status],
-		CreatedAt:    timestamppb.New(j.CreatedAt),
+		Id:         j.Id.String(),
+		RunnerId:   j.RunnerId.String(),
+		RevisionId: j.RevisionId.String(),
+		RunId:      j.RunId.String(),
+		JobType:    jobTypeToProto[j.JobType],
+		Status:     jobStatusToProto[j.Status],
+		CreatedAt:  timestamppb.New(j.CreatedAt),
 	}
 	if j.StartedAt != nil {
 		proto.StartedAt = timestamppb.New(*j.StartedAt)

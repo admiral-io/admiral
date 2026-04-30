@@ -45,10 +45,10 @@ func ActiveJobInfoFromProto(p *runnerv1.ActiveJobInfo) ActiveJobInfo {
 }
 
 type RunnerStatus struct {
-	Version            string            `json:"version,omitempty"`
-	ActiveJobs         int32             `json:"active_jobs"`
-	MaxConcurrentJobs  int32             `json:"max_concurrent_jobs"`
-	ActiveJobDetails []ActiveJobInfo `json:"active_job_details,omitempty"`
+	Version           string          `json:"version,omitempty"`
+	ActiveJobs        int32           `json:"active_jobs"`
+	MaxConcurrentJobs int32           `json:"max_concurrent_jobs"`
+	ActiveJobDetails  []ActiveJobInfo `json:"active_job_details,omitempty"`
 }
 
 func (s RunnerStatus) Value() (driver.Value, error) {

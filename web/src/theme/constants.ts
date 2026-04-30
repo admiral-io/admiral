@@ -148,7 +148,7 @@ export const APP_CONSTANTS = {
 
   // Status refresh intervals
   STATUS_REFRESH_INTERVAL: {
-    deployment: 5000,
+    run: 5000,
     health: 30000,
     metrics: 60000,
   },

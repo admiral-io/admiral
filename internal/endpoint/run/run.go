@@ -284,7 +284,7 @@ func (a *api) loadRunProto(ctx context.Context, run *model.Run) *runv1.Run {
 	revisions, err := a.revisionStore.ListByRun(ctx, run.Id)
 	if err != nil {
 		a.logger.Warn("failed to load revisions for summary", zap.String("run_id", run.Id.String()), zap.Error(err))
-		return model.BuildRunProto(run, nil)
+		return run.ToProto(nil)
 	}
-	return model.BuildRunProto(run, revisions)
+	return run.ToProto(model.DeriveRevisionSummary(revisions))
 }
