@@ -123,6 +123,22 @@ func (s *RevisionStore) LatestSucceededByEnv(ctx context.Context, applicationID,
 	return result, nil
 }
 
+// CountByModuleID returns the number of revisions referencing the given
+// module, regardless of revision status. Used by ModuleAPI.DeleteModule to
+// surface a clean precondition error instead of letting Postgres reject the
+// FK ON DELETE RESTRICT with an opaque message.
+func (s *RevisionStore) CountByModuleID(ctx context.Context, moduleID uuid.UUID) (int64, error) {
+	var count int64
+	err := s.db.WithContext(ctx).
+		Model(&model.Revision{}).
+		Where("module_id = ?", moduleID).
+		Count(&count).Error
+	if err != nil {
+		return 0, fmt.Errorf("failed to count revisions for module: %w", err)
+	}
+	return count, nil
+}
+
 func (s *RevisionStore) Update(ctx context.Context, r *model.Revision, fields map[string]any) (*model.Revision, error) {
 	result := s.db.WithContext(ctx).Model(r).Updates(fields)
 	if result.Error != nil {

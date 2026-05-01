@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/lib/pq"
 	"golang.org/x/oauth2"
 	"gorm.io/gorm"
 
@@ -99,30 +98,13 @@ func (s *AccessTokenStore) UpdateIdPTokens(ctx context.Context, id string, idpTo
 	}
 	result := s.db.WithContext(ctx).
 		Model(&model.AccessToken{}).
-		Where("id = ? AND status = ?", id, model.AccessTokenStatusActive).
+		Where("id = ?", id).
 		Updates(updates)
 	if result.Error != nil {
 		return fmt.Errorf("failed to update IdP tokens: %w", result.Error)
 	}
 	if result.RowsAffected == 0 {
-		return errors.New("no active access token found to update")
-	}
-	return nil
-}
-
-func (s *AccessTokenStore) UpdateScopes(ctx context.Context, id string, scopes []string) error {
-	result := s.db.WithContext(ctx).
-		Model(&model.AccessToken{}).
-		Where("id = ? AND status = ?", id, model.AccessTokenStatusActive).
-		Updates(map[string]any{
-			"scopes":     pq.StringArray(scopes),
-			"updated_at": time.Now(),
-		})
-	if result.Error != nil {
-		return fmt.Errorf("failed to update scopes: %w", result.Error)
-	}
-	if result.RowsAffected == 0 {
-		return errors.New("no active access token found to update")
+		return fmt.Errorf("access token not found: %s", id)
 	}
 	return nil
 }
@@ -134,13 +116,13 @@ func (s *AccessTokenStore) Update(ctx context.Context, id string, updates map[st
 	updates["updated_at"] = time.Now()
 	result := s.db.WithContext(ctx).
 		Model(&model.AccessToken{}).
-		Where("id = ? AND status = ?", id, model.AccessTokenStatusActive).
+		Where("id = ?", id).
 		Updates(updates)
 	if result.Error != nil {
 		return fmt.Errorf("failed to update access token: %w", result.Error)
 	}
 	if result.RowsAffected == 0 {
-		return errors.New("no active access token found to update")
+		return fmt.Errorf("access token not found: %s", id)
 	}
 	return nil
 }
