@@ -28,6 +28,9 @@ func (s *RunnerStore) DB() *gorm.DB {
 }
 
 func (s *RunnerStore) Create(ctx context.Context, r *model.Runner) (*model.Runner, error) {
+	if err := r.Validate(); err != nil {
+		return nil, fmt.Errorf("invalid runner: %w", err)
+	}
 	if err := s.db.WithContext(ctx).Create(r).Error; err != nil {
 		return nil, fmt.Errorf("failed to create runner: %w", err)
 	}
@@ -42,18 +45,6 @@ func (s *RunnerStore) Get(ctx context.Context, id uuid.UUID) (*model.Runner, err
 	}
 	if err != nil {
 		return nil, fmt.Errorf("failed to get runner: %w", err)
-	}
-	return &r, nil
-}
-
-func (s *RunnerStore) GetByName(ctx context.Context, name string) (*model.Runner, error) {
-	var r model.Runner
-	err := s.db.WithContext(ctx).Where("name = ?", name).First(&r).Error
-	if errors.Is(err, gorm.ErrRecordNotFound) {
-		return nil, fmt.Errorf("runner not found: %s", name)
-	}
-	if err != nil {
-		return nil, fmt.Errorf("failed to get runner by name: %w", err)
 	}
 	return &r, nil
 }

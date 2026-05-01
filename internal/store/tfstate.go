@@ -28,6 +28,16 @@ func (s *TerraformStateStore) DB() *gorm.DB {
 	return s.db
 }
 
+func (s *TerraformStateStore) Create(ctx context.Context, st *model.TerraformState) (*model.TerraformState, error) {
+	if err := st.Validate(); err != nil {
+		return nil, fmt.Errorf("invalid terraform state: %w", err)
+	}
+	if err := s.db.WithContext(ctx).Create(st).Error; err != nil {
+		return nil, fmt.Errorf("failed to create terraform state: %w", err)
+	}
+	return st, nil
+}
+
 func (s *TerraformStateStore) GetLatest(ctx context.Context, componentID, environmentID uuid.UUID) (*model.TerraformState, error) {
 	var st model.TerraformState
 	err := s.db.WithContext(ctx).
@@ -43,13 +53,6 @@ func (s *TerraformStateStore) GetLatest(ctx context.Context, componentID, enviro
 	return &st, nil
 }
 
-func (s *TerraformStateStore) Create(ctx context.Context, st *model.TerraformState) (*model.TerraformState, error) {
-	if err := s.db.WithContext(ctx).Create(st).Error; err != nil {
-		return nil, fmt.Errorf("failed to create terraform state: %w", err)
-	}
-	return st, nil
-}
-
 func (s *TerraformStateStore) SetStoragePath(ctx context.Context, id uuid.UUID, path string) error {
 	result := s.db.WithContext(ctx).
 		Model(&model.TerraformState{}).
@@ -59,6 +62,25 @@ func (s *TerraformStateStore) SetStoragePath(ctx context.Context, id uuid.UUID, 
 		return fmt.Errorf("failed to update storage path: %w", result.Error)
 	}
 	return nil
+}
+
+func (s *TerraformStateStore) AcquireLock(ctx context.Context, lock *model.TerraformStateLock) (*model.TerraformStateLock, error) {
+	if err := lock.Validate(); err != nil {
+		return nil, fmt.Errorf("invalid terraform state lock: %w", err)
+	}
+	err := s.db.WithContext(ctx).Create(lock).Error
+	if err != nil {
+		// Check for unique/PK violation → lock already held.
+		existing, loadErr := s.GetLock(ctx, lock.ComponentId, lock.EnvironmentId)
+		if loadErr != nil {
+			return nil, fmt.Errorf("failed to acquire lock and failed to load existing: %w", loadErr)
+		}
+		if existing != nil {
+			return existing, ErrLockConflict
+		}
+		return nil, fmt.Errorf("failed to acquire terraform state lock: %w", err)
+	}
+	return lock, nil
 }
 
 func (s *TerraformStateStore) GetLock(ctx context.Context, componentID, environmentID uuid.UUID) (*model.TerraformStateLock, error) {
@@ -73,22 +95,6 @@ func (s *TerraformStateStore) GetLock(ctx context.Context, componentID, environm
 		return nil, fmt.Errorf("failed to get terraform state lock: %w", err)
 	}
 	return &lock, nil
-}
-
-func (s *TerraformStateStore) AcquireLock(ctx context.Context, lock *model.TerraformStateLock) (*model.TerraformStateLock, error) {
-	err := s.db.WithContext(ctx).Create(lock).Error
-	if err != nil {
-		// Check for unique/PK violation → lock already held.
-		existing, loadErr := s.GetLock(ctx, lock.ComponentId, lock.EnvironmentId)
-		if loadErr != nil {
-			return nil, fmt.Errorf("failed to acquire lock and failed to load existing: %w", loadErr)
-		}
-		if existing != nil {
-			return existing, ErrLockConflict
-		}
-		return nil, fmt.Errorf("failed to acquire terraform state lock: %w", err)
-	}
-	return lock, nil
 }
 
 func (s *TerraformStateStore) ReleaseLock(ctx context.Context, componentID, environmentID uuid.UUID, lockID string) error {
@@ -110,4 +116,35 @@ func (s *TerraformStateStore) ReleaseLock(ctx context.Context, componentID, envi
 		// No lock at all — treat as success (idempotent unlock).
 	}
 	return nil
+}
+
+// HasStateForEnv reports whether any component in the environment has
+// stored terraform state (rows with non-empty storage_path). Used to gate
+// destructive operations on the env -- deleting an env with state would
+// orphan cloud resources.
+func (s *TerraformStateStore) HasStateForEnv(ctx context.Context, envID uuid.UUID) (bool, error) {
+	var count int64
+	err := s.db.WithContext(ctx).
+		Model(&model.TerraformState{}).
+		Where("environment_id = ? AND storage_path != ''", envID).
+		Count(&count).Error
+	if err != nil {
+		return false, fmt.Errorf("failed to check terraform state for environment: %w", err)
+	}
+	return count > 0, nil
+}
+
+// HasStateForApp reports whether any component anywhere in the application
+// has stored terraform state.
+func (s *TerraformStateStore) HasStateForApp(ctx context.Context, appID uuid.UUID) (bool, error) {
+	var count int64
+	err := s.db.WithContext(ctx).
+		Model(&model.TerraformState{}).
+		Joins("JOIN components ON components.id = terraform_states.component_id").
+		Where("components.application_id = ? AND terraform_states.storage_path != ''", appID).
+		Count(&count).Error
+	if err != nil {
+		return false, fmt.Errorf("failed to check terraform state for application: %w", err)
+	}
+	return count > 0, nil
 }

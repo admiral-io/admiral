@@ -11,7 +11,7 @@ import (
 	"go.admiral.io/admiral/internal/model"
 )
 
-var ErrInvalidSourceConfig = errors.New("invalid source config")
+var ErrInvalidSource = errors.New("invalid source")
 
 type SourceStore struct {
 	db *gorm.DB
@@ -30,8 +30,8 @@ func (s *SourceStore) DB() *gorm.DB {
 }
 
 func (s *SourceStore) Create(ctx context.Context, src *model.Source) (*model.Source, error) {
-	if err := src.SourceConfig.Validate(src.Type); err != nil {
-		return nil, fmt.Errorf("%w: %v", ErrInvalidSourceConfig, err)
+	if err := src.Validate(); err != nil {
+		return nil, fmt.Errorf("%w: %v", ErrInvalidSource, err)
 	}
 
 	if err := s.db.WithContext(ctx).Create(src).Error; err != nil {
@@ -71,10 +71,10 @@ func (s *SourceStore) Update(ctx context.Context, src *model.Source, fields map[
 	if sc, ok := fields["source_config"]; ok {
 		cfg, ok := sc.(model.SourceConfig)
 		if !ok {
-			return nil, fmt.Errorf("%w: source_config must be model.SourceConfig, got %T", ErrInvalidSourceConfig, sc)
+			return nil, fmt.Errorf("%w: source_config must be model.SourceConfig, got %T", ErrInvalidSource, sc)
 		}
 		if err := cfg.Validate(src.Type); err != nil {
-			return nil, fmt.Errorf("%w: %v", ErrInvalidSourceConfig, err)
+			return nil, fmt.Errorf("%w: %v", ErrInvalidSource, err)
 		}
 	}
 

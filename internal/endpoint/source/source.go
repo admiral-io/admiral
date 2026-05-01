@@ -115,7 +115,7 @@ func (a *api) CreateSource(ctx context.Context, req *sourcev1.CreateSourceReques
 
 	src, err = a.store.Create(ctx, src)
 	if err != nil {
-		if errors.Is(err, store.ErrInvalidSourceConfig) {
+		if errors.Is(err, store.ErrInvalidSource) {
 			return nil, status.Errorf(codes.InvalidArgument, "%v", err)
 		}
 		return nil, status.Errorf(codes.Internal, "failed to create source: %v", err)
@@ -258,7 +258,7 @@ func (a *api) UpdateSource(ctx context.Context, req *sourcev1.UpdateSourceReques
 
 	src, err = a.store.Update(ctx, src, fields)
 	if err != nil {
-		if errors.Is(err, store.ErrInvalidSourceConfig) {
+		if errors.Is(err, store.ErrInvalidSource) {
 			return nil, status.Errorf(codes.InvalidArgument, "%v", err)
 		}
 		return nil, status.Errorf(codes.Internal, "failed to update source: %v", err)

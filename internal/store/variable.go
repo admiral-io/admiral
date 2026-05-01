@@ -30,7 +30,6 @@ func (s *VariableStore) Create(ctx context.Context, v *model.Variable) (*model.V
 	if err := v.Validate(); err != nil {
 		return nil, fmt.Errorf("invalid variable: %w", err)
 	}
-
 	if err := s.db.WithContext(ctx).Create(v).Error; err != nil {
 		return nil, fmt.Errorf("failed to create variable: %w", err)
 	}
@@ -69,86 +68,79 @@ func (s *VariableStore) Update(ctx context.Context, v *model.Variable, fields ma
 	return s.Get(ctx, v.Id)
 }
 
-func (s *VariableStore) Delete(ctx context.Context, id uuid.UUID) error {
-	result := s.db.WithContext(ctx).Unscoped().Where("id = ?", id).Delete(&model.Variable{})
-	if result.Error != nil {
-		return fmt.Errorf("failed to delete variable: %w", result.Error)
-	}
-	if result.RowsAffected == 0 {
-		return fmt.Errorf("variable not found: %s", id)
-	}
-	return nil
-}
-
-func (s *VariableStore) ExistsByKey(ctx context.Context, key string, appID, envID *uuid.UUID) (bool, error) {
-	q := s.db.WithContext(ctx).Model(&model.Variable{}).Where("key = ?", key)
-
-	if envID != nil {
-		q = q.Where("environment_id = ?", *envID)
-	} else if appID != nil {
-		q = q.Where("application_id = ? AND environment_id IS NULL", *appID)
-	} else {
-		q = q.Where("application_id IS NULL AND environment_id IS NULL")
-	}
-
-	var count int64
-	if err := q.Count(&count).Error; err != nil {
-		return false, fmt.Errorf("failed to check variable key: %w", err)
-	}
-	return count > 0, nil
-}
-
+// Resolve returns every variable in (app, env) without pagination or scopes.
+// Used by orchestration to materialize the full variable set for runtime
+// substitution; List is the paginated, scope-driven counterpart used by the
+// env endpoint.
 func (s *VariableStore) Resolve(ctx context.Context, appID, envID uuid.UUID) ([]model.Variable, error) {
 	var all []model.Variable
-
-	// Load all three layers: global, app-level, env-level.
 	err := s.db.WithContext(ctx).
-		Where(
-			"(application_id IS NULL AND environment_id IS NULL) OR "+
-				"(application_id = ? AND environment_id IS NULL) OR "+
-				"(application_id = ? AND environment_id = ?)",
-			appID, appID, envID,
-		).
+		Where("application_id = ? AND environment_id = ?", appID, envID).
 		Find(&all).Error
 	if err != nil {
 		return nil, fmt.Errorf("failed to resolve variables: %w", err)
 	}
+	return all, nil
+}
 
-	// Merge: env overrides app overrides global.
-	merged := make(map[string]model.Variable, len(all))
-	for _, v := range all {
-		existing, ok := merged[v.Key]
-		if !ok {
-			merged[v.Key] = v
-			continue
-		}
-		// Higher specificity wins.
-		if scopePriority(&v) > scopePriority(&existing) {
-			merged[v.Key] = v
-		}
+func (s *VariableStore) UpsertEnvVariable(
+	ctx context.Context,
+	appID, envID uuid.UUID,
+	key, value, varType string,
+	sensitive bool,
+	createdBy string,
+) (*model.Variable, error) {
+	var existing model.Variable
+	err := s.db.WithContext(ctx).
+		Where("environment_id = ? AND key = ?", envID, key).
+		Take(&existing).Error
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, fmt.Errorf("failed to find existing env variable: %w", err)
 	}
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		v := &model.Variable{
+			Key:           key,
+			Value:         value,
+			Type:          varType,
+			Source:        model.VariableSourceUser,
+			Sensitive:     sensitive,
+			ApplicationId: appID,
+			EnvironmentId: envID,
+			CreatedBy:     createdBy,
+		}
+		return s.Create(ctx, v)
+	}
+	return s.Update(ctx, &existing, map[string]any{
+		"value":     value,
+		"type":      varType,
+		"sensitive": sensitive,
+	})
+}
 
-	result := make([]model.Variable, 0, len(merged))
-	for _, v := range merged {
-		result = append(result, v)
+func (s *VariableStore) DeleteByEnvKey(ctx context.Context, envID uuid.UUID, key string) error {
+	result := s.db.WithContext(ctx).
+		Where("environment_id = ? AND key = ?", envID, key).
+		Delete(&model.Variable{})
+	if result.Error != nil {
+		return fmt.Errorf("failed to delete env variable: %w", result.Error)
 	}
-	return result, nil
+	return nil
 }
 
 func (s *VariableStore) UpsertInfraOutputs(
 	ctx context.Context,
 	appID, envID uuid.UUID,
-	componentName string,
+	componentSlug string,
 	outputs []model.Variable,
 ) error {
-	prefix := componentName + "."
+	prefix := componentSlug + "."
 
 	return s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		// Delete all existing INFRASTRUCTURE variables for this component+env.
 		if err := tx.
 			Where("application_id = ? AND environment_id = ? AND source = ? AND key LIKE ?",
 				appID, envID, model.VariableSourceInfrastructure, prefix+"%").
-			Unscoped().Delete(&model.Variable{}).Error; err != nil {
+			Delete(&model.Variable{}).Error; err != nil {
 			return fmt.Errorf("failed to delete stale infra outputs: %w", err)
 		}
 
@@ -165,11 +157,10 @@ func (s *VariableStore) UpsertInfraOutputs(
 func (s *VariableStore) DeleteInfraOutputs(
 	ctx context.Context,
 	appID, envID uuid.UUID,
-	componentName string,
+	componentSlug string,
 ) error {
-	prefix := componentName + "."
+	prefix := componentSlug + "."
 	result := s.db.WithContext(ctx).
-		Unscoped().
 		Where("application_id = ? AND environment_id = ? AND source = ? AND key LIKE ?",
 			appID, envID, model.VariableSourceInfrastructure, prefix+"%").
 		Delete(&model.Variable{})
@@ -177,14 +168,4 @@ func (s *VariableStore) DeleteInfraOutputs(
 		return fmt.Errorf("failed to delete infra outputs: %w", result.Error)
 	}
 	return nil
-}
-
-func scopePriority(v *model.Variable) int {
-	if v.EnvironmentId != nil {
-		return 2
-	}
-	if v.ApplicationId != nil {
-		return 1
-	}
-	return 0
 }

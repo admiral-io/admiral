@@ -27,6 +27,9 @@ func (s *ModuleStore) DB() *gorm.DB {
 }
 
 func (s *ModuleStore) Create(ctx context.Context, mod *model.Module) (*model.Module, error) {
+	if err := mod.Validate(); err != nil {
+		return nil, fmt.Errorf("invalid module: %w", err)
+	}
 	if err := s.db.WithContext(ctx).Create(mod).Error; err != nil {
 		return nil, fmt.Errorf("failed to create module: %w", err)
 	}

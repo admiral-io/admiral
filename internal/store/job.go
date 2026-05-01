@@ -28,6 +28,9 @@ func (s *JobStore) DB() *gorm.DB {
 }
 
 func (s *JobStore) Create(ctx context.Context, j *model.Job) (*model.Job, error) {
+	if err := j.Validate(); err != nil {
+		return nil, fmt.Errorf("invalid job: %w", err)
+	}
 	if err := s.db.WithContext(ctx).Create(j).Error; err != nil {
 		return nil, fmt.Errorf("failed to create job: %w", err)
 	}
@@ -71,14 +74,14 @@ func (s *JobStore) ListByRevision(ctx context.Context, revisionID uuid.UUID) ([]
 	return jobs, nil
 }
 
-func (s *JobStore) ListByDeploymentAndStatus(ctx context.Context, deploymentID uuid.UUID, jobStatus string) ([]model.Job, error) {
+func (s *JobStore) ListByRunAndStatus(ctx context.Context, runID uuid.UUID, jobStatus string) ([]model.Job, error) {
 	var jobs []model.Job
 	err := s.db.WithContext(ctx).
-		Where("deployment_id = ? AND status = ?", deploymentID, jobStatus).
+		Where("run_id = ? AND status = ?", runID, jobStatus).
 		Order("created_at ASC").
 		Find(&jobs).Error
 	if err != nil {
-		return nil, fmt.Errorf("failed to list deployment jobs by status: %w", err)
+		return nil, fmt.Errorf("failed to list run jobs by status: %w", err)
 	}
 	return jobs, nil
 }
@@ -94,11 +97,16 @@ func (s *JobStore) Update(ctx context.Context, j *model.Job, fields map[string]a
 	return s.Get(ctx, j.Id)
 }
 
-func (s *JobStore) CancelNonTerminal(ctx context.Context, deploymentID uuid.UUID) error {
+// CancelNonTerminal transitions all non-terminal jobs for a run to
+// CANCELED. Used by both user cancel (CancelRun) and system supersede
+// (SupersedeRun) -- jobs have no SUPERSEDED status of their own, so the
+// supersede semantics live on the parent run and revisions while the
+// job rows go straight to CANCELED.
+func (s *JobStore) CancelNonTerminal(ctx context.Context, runID uuid.UUID) error {
 	return s.db.WithContext(ctx).
 		Model(&model.Job{}).
-		Where("deployment_id = ? AND status NOT IN ?",
-			deploymentID,
+		Where("run_id = ? AND status NOT IN ?",
+			runID,
 			[]string{model.JobStatusSucceeded, model.JobStatusFailed, model.JobStatusCanceled},
 		).
 		Updates(map[string]any{
