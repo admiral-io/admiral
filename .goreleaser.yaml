@@ -99,8 +99,8 @@ dockers_v2:
       - "ghcr.io/admiral-io/admiral-server"
     dockerfile: Dockerfile
     tags:
-      - "{{ .Tag }}"
-      - "latest"
+      - "{{ if .IsSnapshot }}edge{{ else }}{{ .Tag }}{{ end }}"
+      - "{{ if .IsSnapshot }}edge-{{ .ShortCommit }}{{ else }}latest{{ end }}"
     platforms:
       - linux/amd64
       - linux/arm64
