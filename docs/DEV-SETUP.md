@@ -35,22 +35,20 @@ You should see output similar to the following:
 
 ```bash
 CONTAINER ID   IMAGE                              COMMAND                  CREATED          STATUS                    PORTS                                                      NAMES
-7893d5f91799   quay.io/keycloak/keycloak:latest   "/opt/keycloak/bin/k…"   38 seconds ago   Up 31 seconds (healthy)   8080/tcp, 8443/tcp, 9000/tcp, 0.0.0.0:9090->9090/tcp       keycloak
-4e4a11a7906f   postgres:15-alpine                 "docker-entrypoint.s…"   38 seconds ago   Up 37 seconds (healthy)   0.0.0.0:5432->5432/tcp                                     postgresql
+7893d5f91799   quay.io/keycloak/keycloak:24.0     "/opt/keycloak/bin/k…"   38 seconds ago   Up 31 seconds (healthy)   8080/tcp, 8443/tcp, 9000/tcp, 0.0.0.0:9090->9090/tcp       keycloak
+4e4a11a7906f   admiral-postgres                   "docker-entrypoint.s…"   38 seconds ago   Up 37 seconds (healthy)   0.0.0.0:5432->5432/tcp                                     postgresql
 2e31a6b1ddea   minio/minio:latest                 "/usr/bin/docker-ent…"   38 seconds ago   Up 37 seconds (healthy)   0.0.0.0:9000-9001->9000-9001/tcp                           minio
-1f2e3d4c5b6a   temporalio/auto-setup:latest       "/entrypoint.sh"         38 seconds ago   Up 37 seconds (healthy)   0.0.0.0:7233->7233/tcp                                     temporal
-5b6a7c8d9e0f   temporalio/ui:latest               "/start.sh"              38 seconds ago   Up 37 seconds             0.0.0.0:7070->8080/tcp                                     temporal-ui
 9a51bbfb9d51   axllent/mailpit:latest             "/mailpit"               38 seconds ago   Up 37 seconds (healthy)   0.0.0.0:1025->1025/tcp, 0.0.0.0:8025->8025/tcp, 1110/tcp   mailpit
 ```
 
-- Each service (Keycloak, PostgreSQL, Minio, Temporal, Mailpit) should have a STATUS of Up and (healthy).
+- Each service (Keycloak, PostgreSQL, Minio, Mailpit) should have a STATUS of Up and (healthy).
 - If any service is not running or healthy, check the logs with
 
 ```bash
 docker logs <container_name>
 ```
 
-Replace `<container_name>` with the name of the service (e.g., `keycloak`, `postgresql`, `minio`, `temporal`, `mailpit`).
+Replace `<container_name>` with the name of the service (e.g., `keycloak`, `postgresql`, `minio`, `mailpit`).
 
 ### 2. Start the Development Environment
 
@@ -75,7 +73,7 @@ The `docker-compose.yaml` file in `deploy/docker-compose/` sets up the following
   - Username: `admiral`
   - Password: `shipitnow`
 
-_Notes: The schema is applied via migrations in Step 2. Connect manually with `psql -h localhost -U admiral -d admiral` if needed (password: `secret`)._
+_Notes: The schema is applied via migrations in Step 2. Connect manually with `psql -h localhost -U admiral -d admiral` if needed (password: `shipitnow`)._
 
 ### Keycloak (Local Identity Provider)
 
@@ -108,24 +106,6 @@ _Notes: Use the admin console to manage users, roles, or clients as needed._
   - Password: `shipitnow`
 
 _Notes: Buckets are automatically created during container initialization. Access the MinIO web console at http://localhost:9001.
-
-### Temporal (Workflow Engine)
-
-- **Purpose:** Provides durable workflow execution and orchestration for long-running business processes.
-- **Components:**
-  - **Temporal Server:** Core workflow engine
-    - **Port:** 7233 (gRPC API)
-    - **Health Check:** Accessible via `tctl workflow list`
-  - **Temporal UI:** Web interface for monitoring workflows and activities
-    - **Port:** 7070 (Web UI)
-    - **URL:** http://localhost:7070/
-  - **Temporal Admin Tools:** CLI container for administrative tasks
-    - **Access:** `docker exec -it temporal-admin-tools bash`
-    - **Commands:** Use `tctl` for workflow management
-- **Database:** Uses the same PostgreSQL instance as the main application
-- **Configuration:** Uses development SQL configuration for local setup
-
-_Notes: The Temporal UI provides real-time visibility into workflow execution, history, and debugging. Use the admin tools container to interact with workflows via CLI._
 
 ### Mailpit (Email Sink)
 
@@ -175,7 +155,7 @@ docker compose -f deploy/docker-compose/docker-compose.yaml down -v
 
 - Docker Errors: Ensure Docker is running and you have permissions (e.g., add your user to the docker group on Linux).
 - Go Command Fails: Verify Go modules are downloaded (go mod download).
-- Port Conflicts: Check if ports (e.g., 9090, 5432, 7233, 7070, 8025) are in use (lsof -i :9090) and adjust configs if needed.
+- Port Conflicts: Check if ports (e.g., 9090, 5432, 8025) are in use (lsof -i :9090) and adjust configs if needed.
 
 ## Pre-commit Hooks Setup
 
