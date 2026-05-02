@@ -196,9 +196,7 @@ func TestExtractArchive_TarGz_HappyPath(t *testing.T) {
 	}
 	tgz := buildTarGz(t, files)
 
-	tmp, err := os.MkdirTemp("", "extract-test-*")
-	require.NoError(t, err)
-	defer os.RemoveAll(tmp)
+	tmp := t.TempDir()
 
 	archivePath := filepath.Join(tmp, "chart.tgz")
 	require.NoError(t, os.WriteFile(archivePath, tgz, 0o644))
@@ -206,7 +204,7 @@ func TestExtractArchive_TarGz_HappyPath(t *testing.T) {
 	destDir := filepath.Join(tmp, "out")
 	require.NoError(t, os.MkdirAll(destDir, 0o755))
 
-	err = extractArchive(archivePath, "tar.gz", destDir)
+	err := extractArchive(archivePath, "tar.gz", destDir)
 	require.NoError(t, err)
 
 	// Verify expected files exist with expected content.
@@ -222,24 +220,20 @@ func TestExtractArchive_TarGz_RejectsPathTraversal(t *testing.T) {
 		"../escape/evil.sh": "rm -rf /",
 	}
 	tgz := buildTarGz(t, files)
-	tmp, err := os.MkdirTemp("", "extract-test-*")
-	require.NoError(t, err)
-	defer os.RemoveAll(tmp)
+	tmp := t.TempDir()
 	archivePath := filepath.Join(tmp, "chart.tgz")
 	require.NoError(t, os.WriteFile(archivePath, tgz, 0o644))
 	destDir := filepath.Join(tmp, "out")
 	require.NoError(t, os.MkdirAll(destDir, 0o755))
 
-	err = extractArchive(archivePath, "tar.gz", destDir)
+	err := extractArchive(archivePath, "tar.gz", destDir)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "escapes destination")
 }
 
 func TestExtractArchive_UnknownFormat(t *testing.T) {
-	tmp, err := os.MkdirTemp("", "extract-test-*")
-	require.NoError(t, err)
-	defer os.RemoveAll(tmp)
-	err = extractArchive(filepath.Join(tmp, "nothing"), "rar", tmp)
+	tmp := t.TempDir()
+	err := extractArchive(filepath.Join(tmp, "nothing"), "rar", tmp)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "unsupported archive format")
 }

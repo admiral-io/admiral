@@ -145,8 +145,8 @@ func TestOCIRegistryRoot(t *testing.T) {
 
 func TestMapProbeStatus(t *testing.T) {
 	cases := []struct {
-		code    int
-		substr  string // empty = nil
+		code   int
+		substr string // empty = nil
 	}{
 		{http.StatusOK, ""},
 		{http.StatusUnauthorized, "authentication failed"},
@@ -236,7 +236,7 @@ func TestDetectArchiveFormat(t *testing.T) {
 		{"https://example.com/x.tgz", "tar.gz"},
 		{"https://example.com/x.tar", "tar"},
 		{"https://example.com/x.zip", "zip"},
-		{"https://example.com/x.TAR.GZ", "tar.gz"},         // case-insensitive
+		{"https://example.com/x.TAR.GZ", "tar.gz"},           // case-insensitive
 		{"https://example.com/x.tar.gz?token=abc", "tar.gz"}, // query stripped
 		{"https://example.com/x.tgz#frag", "tar.gz"},         // fragment stripped
 		{"https://example.com/x.txt", ""},                    // unknown
@@ -333,14 +333,14 @@ func TestIsLikelyCommitSHA(t *testing.T) {
 		ref  string
 		want bool
 	}{
-		{"abc1234", true},               // 7 hex — minimum
+		{"abc1234", true}, // 7 hex — minimum
 		{"abcdef0123456789abcdef0123456789abcdef01", true}, // 40 hex
-		{"ABC1234", true},               // uppercase ok
-		{"abcdefg", false},              // non-hex
-		{"abc12", false},                // too short (<7)
+		{"ABC1234", true},                      // uppercase ok
+		{"abcdefg", false},                     // non-hex
+		{"abc12", false},                       // too short (<7)
 		{"a" + strings.Repeat("b", 40), false}, // 41 chars, too long
-		{"main", false},                 // looks like a branch
-		{"v1.2.3", false},               // tag format
+		{"main", false},                        // looks like a branch
+		{"v1.2.3", false},                      // tag format
 		{"", false},
 	}
 	for _, tc := range cases {

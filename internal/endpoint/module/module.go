@@ -34,6 +34,7 @@ type api struct {
 	srcStore  *store.SourceStore
 	credStore *store.CredentialStore
 	compStore *store.ComponentStore
+	revStore  *store.RevisionStore
 	qb        querybuilder.QueryBuilder
 	logger    *zap.Logger
 	scope     tally.Scope
@@ -70,11 +71,17 @@ func New(_ *config.Config, log *zap.Logger, scope tally.Scope) (endpoint.Endpoin
 		return nil, err
 	}
 
+	revStore, err := store.NewRevisionStore(db.GormDB())
+	if err != nil {
+		return nil, err
+	}
+
 	return &api{
 		store:     modStore,
 		srcStore:  srcStore,
 		credStore: credStore,
 		compStore: compStore,
+		revStore:  revStore,
 		logger:    log.Named(Name),
 		scope:     scope.SubScope("module"),
 		qb:        querybuilder.New("modules", filterColumns),
@@ -257,6 +264,15 @@ func (a *api) DeleteModule(ctx context.Context, req *modulev1.DeleteModuleReques
 	if refCount > 0 {
 		return nil, status.Errorf(codes.FailedPrecondition,
 			"module is in use by %d component(s); delete or reassign them before deleting this module", refCount)
+	}
+
+	revCount, err := a.revStore.CountByModuleID(ctx, id)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to check module references: %v", err)
+	}
+	if revCount > 0 {
+		return nil, status.Errorf(codes.FailedPrecondition,
+			"module is referenced by %d historical revision(s); module versions cannot be removed once they have been deployed", revCount)
 	}
 
 	if err := a.store.Delete(ctx, id); err != nil {

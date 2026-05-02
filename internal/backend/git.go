@@ -62,7 +62,7 @@ func (b *gitBackend) probeHTTPS(ctx context.Context, cred *model.Credential, tar
 			}
 			req.SetBasicAuth(cred.AuthConfig.BasicAuth.Username, cred.AuthConfig.BasicAuth.Password)
 		case model.CredentialTypeSSHKey:
-			return fmt.Errorf("ssh_key credential cannot be used against an HTTPS git URL; use ssh:// or git@host:")
+			return fmt.Errorf("ssh_key credential cannot be used against an HTTPS git URL; use an ssh:// or git@host URL instead")
 		default:
 			return fmt.Errorf("git backend: unsupported credential type %s for HTTPS", cred.Type)
 		}
@@ -305,7 +305,7 @@ func isLikelyCommitSHA(ref string) bool {
 		return false
 	}
 	for _, r := range ref {
-		if !((r >= '0' && r <= '9') || (r >= 'a' && r <= 'f') || (r >= 'A' && r <= 'F')) {
+		if (r < '0' || r > '9') && (r < 'a' || r > 'f') && (r < 'A' || r > 'F') {
 			return false
 		}
 	}

@@ -271,4 +271,3 @@ func resolveRelativeURL(base, ref string) (string, error) {
 	}
 	return b.ResolveReference(r).String(), nil
 }
-
