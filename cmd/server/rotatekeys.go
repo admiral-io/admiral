@@ -66,13 +66,15 @@ Use --status to see how many credentials use each key without making changes.`,
 			}
 			defer func() { _ = logger.Sync() }()
 
-			cfg, err := config.Build(globals.configFile, globals.envVarFiles, globals.debug)
+			cfg, err := config.Load(globals.configFile, globals.envVarFiles, globals.debug)
 			if err != nil {
 				return err
 			}
-
-			if cfg.Services.Encryption == nil {
-				return fmt.Errorf("services.encryption is not configured")
+			if err := config.ValidateRequired(cfg.Services.Database, "services.database"); err != nil {
+				return err
+			}
+			if err := config.ValidateRequired(cfg.Services.Encryption, "services.encryption"); err != nil {
+				return err
 			}
 
 			enc, err := cfg.Services.Encryption.NewEncryptor()

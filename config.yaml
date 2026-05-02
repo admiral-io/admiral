@@ -61,6 +61,3 @@ services:
       same_site: ${SESSION_COOKIE_SAME_SITE}
       secure: ${SESSION_COOKIE_SECURE}
       persist: ${SESSION_COOKIE_PERSIST}
-  temporal:
-    host: ${TEMPORAL_HOST}
-    port: ${TEMPORAL_PORT}

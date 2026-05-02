@@ -57,3 +57,28 @@ func TestValidateRequired_NilConfigurable(t *testing.T) {
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "services.database config is nil")
 }
+
+const rotateKeysOnlyYAML = `
+services:
+  database:
+    host: localhost
+    port: 5432
+    user: admiral
+    password: secret
+    database_name: admiral
+    ssl_mode: disable
+  encryption:
+    active_key: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+`
+
+// Load + ValidateRequired(Database, Encryption) succeed on a config that omits
+// object storage -- rotate-keys must not require it.
+func TestLoad_RotateKeysOnlyConfig(t *testing.T) {
+	path := writeConfig(t, rotateKeysOnlyYAML)
+
+	cfg, err := Load(path, nil, false)
+	require.NoError(t, err)
+
+	assert.NoError(t, ValidateRequired(cfg.Services.Database, "services.database"))
+	assert.NoError(t, ValidateRequired(cfg.Services.Encryption, "services.encryption"))
+}
