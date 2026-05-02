@@ -75,8 +75,11 @@ last migration, or --reset to clear a dirty migration state.`,
 			}
 			defer func() { _ = logger.Sync() }()
 
-			cfg, err := config.Build(globals.configFile, globals.envVarFiles, globals.debug)
+			cfg, err := config.Load(globals.configFile, globals.envVarFiles, globals.debug)
 			if err != nil {
+				return err
+			}
+			if err := config.ValidateRequired(cfg.Services.Database, "services.database"); err != nil {
 				return err
 			}
 			m := &migrator{

@@ -30,7 +30,11 @@ type Services struct {
 	ObjectStorage *ObjectStorage `yaml:"object_storage"`
 }
 
-func Build(file string, envFiles []string, debug bool) (*Config, error) {
+// Load parses the configuration file, applies defaults, and runs struct-tag
+// validation. It does not enforce which services are required -- callers that
+// need only a subset (e.g. migrate, rotate-keys) call Load and then validate
+// the services they actually use via ValidateRequired or Configurable.Validate.
+func Load(file string, envFiles []string, debug bool) (*Config, error) {
 	if err := loadEnv(envFiles); err != nil {
 		return nil, fmt.Errorf("failed to load environment variables: %w", err)
 	}
@@ -41,6 +45,32 @@ func Build(file string, envFiles []string, debug bool) (*Config, error) {
 	}
 
 	return cfg, nil
+}
+
+// Build is Load + full server validation (Database, Encryption, ObjectStorage
+// required; Authn, Session, Server optional). Use for server startup.
+func Build(file string, envFiles []string, debug bool) (*Config, error) {
+	cfg, err := Load(file, envFiles, debug)
+	if err != nil {
+		return nil, err
+	}
+	if err := cfg.validate(); err != nil {
+		return nil, fmt.Errorf("configuration validation failed: %w", err)
+	}
+	return cfg, nil
+}
+
+// ValidateRequired ensures c is non-nil and passes its Validate. Used by
+// commands that need only a subset of services (migrate, rotate-keys) to
+// validate exactly what they consume without paying for full-config validation.
+func ValidateRequired(c Configurable, name string) error {
+	if c == nil || reflect.ValueOf(c).IsNil() {
+		return fmt.Errorf("%s config is nil", name)
+	}
+	if err := c.Validate(); err != nil {
+		return fmt.Errorf("invalid %s config: %w", name, err)
+	}
+	return nil
 }
 
 func loadEnv(envFiles []string) error {
@@ -89,10 +119,6 @@ func parseConfig(file string, debug bool) (*Config, error) {
 	validate := validator.New()
 	if err := validate.Struct(cfg); err != nil {
 		return nil, fmt.Errorf("struct tag validation failed: %w", err)
-	}
-
-	if err := cfg.validate(); err != nil {
-		return nil, fmt.Errorf("configuration validation failed: %w", err)
 	}
 
 	return cfg, nil
@@ -155,12 +181,11 @@ func (c *Config) validate() error {
 }
 
 func validateConfigItem(c Configurable, name string, required bool) error {
-	// Check if the interface contains a nil value
 	if c == nil || reflect.ValueOf(c).IsNil() {
 		if required {
 			return fmt.Errorf("%s config is nil", name)
 		}
-		return nil // Optional and nil are OK
+		return nil
 	}
 	if err := c.Validate(); err != nil {
 		return fmt.Errorf("invalid %s config: %w", name, err)
