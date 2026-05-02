@@ -61,139 +61,32 @@ func (s *Service) CreateRun(ctx context.Context, params CreateRunParams) (*model
 		return nil, status.Errorf(codes.FailedPrecondition, "assigned runner not found: %s", runnerID)
 	}
 
-	var sourceRevByComponent map[string]*model.Revision
-	if params.SourceRunID != nil {
-		srcRun, err := s.runStore.Get(ctx, *params.SourceRunID)
-		if err != nil {
-			return nil, status.Errorf(codes.NotFound, "source run not found: %s", *params.SourceRunID)
-		}
-		if srcRun.ApplicationId != params.ApplicationID {
-			return nil, status.Errorf(codes.InvalidArgument, "source run belongs to a different application")
-		}
-		srcRevisions, err := s.revisionStore.ListByRun(ctx, *params.SourceRunID)
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to load source run revisions: %v", err)
-		}
-		sourceRevByComponent = make(map[string]*model.Revision, len(srcRevisions))
-		for i := range srcRevisions {
-			sourceRevByComponent[srcRevisions[i].ComponentSlug] = &srcRevisions[i]
-		}
+	sourceRevByComponent, err := s.resolveSourceRevisions(ctx, params)
+	if err != nil {
+		return nil, err
 	}
 
-	var (
-		infraComponents []model.Component
-		destroySlugs    map[string]bool
-		changeSetVars   []model.ChangeSetVariableEntry
-	)
-	if params.ChangeSetID != nil {
-		cs, err := s.changeSetStore.Get(ctx, *params.ChangeSetID)
-		if err != nil {
-			return nil, status.Errorf(codes.NotFound, "change set not found: %s", *params.ChangeSetID)
-		}
-		if cs.Status != model.ChangeSetStatusOpen {
-			return nil, status.Errorf(codes.FailedPrecondition, "change set %s is %s and cannot be deployed", cs.DisplayId, cs.Status)
-		}
-		if cs.ApplicationId != params.ApplicationID || cs.EnvironmentId != params.EnvironmentID {
-			return nil, status.Error(codes.InvalidArgument, "change set's application/environment does not match the run target")
-		}
-
-		// Replan policy: auto-supersede a prior active run on the same change
-		// set unless it's APPLYING (mid-flight; superseding would leave state
-		// incoherent).
-		if existing, err := s.runStore.FindActiveByChangeSet(ctx, *params.ChangeSetID); err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to check for active run on change set %s: %v", cs.DisplayId, err)
-		} else if existing != nil {
-			if existing.Status == model.RunStatusApplying {
-				return nil, status.Errorf(codes.FailedPrecondition,
-					"change set has an active applying run %s; wait for it to complete or cancel it",
-					existing.Id)
-			}
-			if err := s.SupersedeRun(ctx, existing); err != nil {
-				return nil, status.Errorf(codes.Internal, "failed to supersede prior run: %v", err)
-			}
-		}
-
-		entries, err := s.changeSetStore.ListEntries(ctx, *params.ChangeSetID)
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to load change set %s entries: %v", cs.DisplayId, err)
-		}
-		changeSetVars, err = s.changeSetStore.ListVariableEntries(ctx, *params.ChangeSetID)
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to load change set %s variable entries: %v", cs.DisplayId, err)
-		}
-		if err := s.checkChangeSetConflicts(ctx, cs, entries); err != nil {
-			return nil, err
-		}
-		if len(entries) == 0 {
-			infraComponents, err = s.listEnvironmentInfraComponents(ctx, params.ApplicationID, params.EnvironmentID)
-			if err != nil {
-				return nil, err
-			}
-		} else {
-			infraComponents, destroySlugs, err = s.materializeChangeSetEntries(ctx, cs, params.ApplicationID, params.EnvironmentID, entries)
-			if err != nil {
-				return nil, err
-			}
-		}
-	} else {
-		infraComponents, err = s.listEnvironmentInfraComponents(ctx, params.ApplicationID, params.EnvironmentID)
-		if err != nil {
-			return nil, err
-		}
+	infraComponents, destroySlugs, changeSetVars, err := s.resolveDeployableComponents(ctx, params)
+	if err != nil {
+		return nil, err
 	}
 	if len(infraComponents) == 0 {
 		return nil, status.Error(codes.FailedPrecondition, "no components to deploy for this environment")
 	}
 
-	resolved, err := s.variableStore.Resolve(ctx, params.ApplicationID, params.EnvironmentID)
+	varMap, err := s.resolveVariables(ctx, params.ApplicationID, params.EnvironmentID, changeSetVars)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to resolve variables: %v", err)
+		return nil, err
 	}
-	varMap := make(map[string]any, len(resolved)+len(changeSetVars))
-	for _, v := range resolved {
-		varMap[v.Key] = v.Value
-	}
-	for i := range changeSetVars {
-		v := &changeSetVars[i]
-		if v.IsDelete() {
-			delete(varMap, v.Key)
-			continue
-		}
-		varMap[v.Key] = *v.Value
-	}
-
 	evalCtx := &admtemplate.EvalContext{
 		Var: varMap,
 		App: admtemplate.AppMeta{Name: app.Name, Id: params.ApplicationID.String()},
 		Env: admtemplate.EnvMeta{Name: env.Name, Id: params.EnvironmentID.String()},
 	}
 
-	idToSlug := make(map[string]string, len(infraComponents))
-	slugToComp := make(map[string]*model.Component, len(infraComponents))
-	for i := range infraComponents {
-		c := &infraComponents[i]
-		idToSlug[c.Id.String()] = c.Slug
-		slugToComp[c.Slug] = c
-	}
-
-	g := dag.New()
-	for _, comp := range infraComponents {
-		g.AddNode(comp.Slug)
-		for _, depID := range comp.DependsOn {
-			if depSlug, ok := idToSlug[depID]; ok {
-				g.AddEdge(comp.Slug, depSlug)
-			}
-		}
-		for _, depSlug := range admtemplate.ExtractOutputSlugs(comp.ValuesTemplate) {
-			if _, ok := slugToComp[depSlug]; ok {
-				g.AddEdge(comp.Slug, depSlug)
-			}
-		}
-	}
-
-	phases, err := g.TopoSort()
+	phases, slugToComp, blockers, err := buildComponentDAG(infraComponents)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "component dependency error: %v", err)
+		return nil, err
 	}
 
 	active, err := s.runStore.FindActive(ctx, params.ApplicationID, params.EnvironmentID)
@@ -222,9 +115,199 @@ func (s *Service) CreateRun(ctx context.Context, params CreateRunParams) (*model
 	}
 	evalCtx.Run = admtemplate.RunMeta{Id: run.Id.String()}
 
-	// Snapshot revisions in topological order. Always created at run create
-	// time; jobs are dispatched only for non-queued runs (queued runs get
-	// their jobs created when promoted; see promoteQueuedRun).
+	if err := s.snapshotRevisions(ctx, run, phases, slugToComp, sourceRevByComponent, destroySlugs, blockers, evalCtx); err != nil {
+		return nil, err
+	}
+
+	// Jobs are dispatched only for non-queued runs; queued runs get their
+	// jobs created when promoted (see promoteQueuedRun).
+	if !queued {
+		if err := s.createPlanJobs(ctx, run); err != nil {
+			return nil, err
+		}
+	}
+
+	return run, nil
+}
+
+// resolveSourceRevisions loads the source run's revisions for the rollback
+// path, returning a slug→revision map. Returns nil when SourceRunID is unset.
+func (s *Service) resolveSourceRevisions(ctx context.Context, params CreateRunParams) (map[string]*model.Revision, error) {
+	if params.SourceRunID == nil {
+		return nil, nil
+	}
+	srcRun, err := s.runStore.Get(ctx, *params.SourceRunID)
+	if err != nil {
+		return nil, status.Errorf(codes.NotFound, "source run not found: %s", *params.SourceRunID)
+	}
+	if srcRun.ApplicationId != params.ApplicationID {
+		return nil, status.Errorf(codes.InvalidArgument, "source run belongs to a different application")
+	}
+	srcRevisions, err := s.revisionStore.ListByRun(ctx, *params.SourceRunID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to load source run revisions: %v", err)
+	}
+	out := make(map[string]*model.Revision, len(srcRevisions))
+	for i := range srcRevisions {
+		out[srcRevisions[i].ComponentSlug] = &srcRevisions[i]
+	}
+	return out, nil
+}
+
+// resolveDeployableComponents picks the component set for the run. With a
+// change set, it materializes the entries, supersedes any prior non-applying
+// run on the same change set, and returns the changeset's variable overlay.
+// Without a change set, it lists the env's active infra components (drift
+// correction). destroySlugs is non-empty only on the change-set path.
+func (s *Service) resolveDeployableComponents(
+	ctx context.Context,
+	params CreateRunParams,
+) ([]model.Component, map[string]bool, []model.ChangeSetVariableEntry, error) {
+	if params.ChangeSetID == nil {
+		infra, err := s.listEnvironmentInfraComponents(ctx, params.ApplicationID, params.EnvironmentID)
+		if err != nil {
+			return nil, nil, nil, err
+		}
+		return infra, nil, nil, nil
+	}
+
+	cs, err := s.changeSetStore.Get(ctx, *params.ChangeSetID)
+	if err != nil {
+		return nil, nil, nil, status.Errorf(codes.NotFound, "change set not found: %s", *params.ChangeSetID)
+	}
+	if cs.Status != model.ChangeSetStatusOpen {
+		return nil, nil, nil, status.Errorf(codes.FailedPrecondition, "change set %s is %s and cannot be deployed", cs.DisplayId, cs.Status)
+	}
+	if cs.ApplicationId != params.ApplicationID || cs.EnvironmentId != params.EnvironmentID {
+		return nil, nil, nil, status.Error(codes.InvalidArgument, "change set's application/environment does not match the run target")
+	}
+
+	// Replan policy: auto-supersede a prior active run on the same change
+	// set unless it's APPLYING (mid-flight; superseding would leave state
+	// incoherent).
+	if existing, err := s.runStore.FindActiveByChangeSet(ctx, *params.ChangeSetID); err != nil {
+		return nil, nil, nil, status.Errorf(codes.Internal, "failed to check for active run on change set %s: %v", cs.DisplayId, err)
+	} else if existing != nil {
+		if existing.Status == model.RunStatusApplying {
+			return nil, nil, nil, status.Errorf(codes.FailedPrecondition,
+				"change set has an active applying run %s; wait for it to complete or cancel it",
+				existing.Id)
+		}
+		if err := s.SupersedeRun(ctx, existing); err != nil {
+			return nil, nil, nil, status.Errorf(codes.Internal, "failed to supersede prior run: %v", err)
+		}
+	}
+
+	entries, err := s.changeSetStore.ListEntries(ctx, *params.ChangeSetID)
+	if err != nil {
+		return nil, nil, nil, status.Errorf(codes.Internal, "failed to load change set %s entries: %v", cs.DisplayId, err)
+	}
+	csVars, err := s.changeSetStore.ListVariableEntries(ctx, *params.ChangeSetID)
+	if err != nil {
+		return nil, nil, nil, status.Errorf(codes.Internal, "failed to load change set %s variable entries: %v", cs.DisplayId, err)
+	}
+	if err := s.checkChangeSetConflicts(ctx, cs, entries); err != nil {
+		return nil, nil, nil, err
+	}
+	// Variables-only change set: re-plan every infra component so a variable
+	// change reaches everything that consumes it.
+	if len(entries) == 0 {
+		infra, err := s.listEnvironmentInfraComponents(ctx, params.ApplicationID, params.EnvironmentID)
+		if err != nil {
+			return nil, nil, nil, err
+		}
+		return infra, nil, csVars, nil
+	}
+	infra, destroySlugs, err := s.materializeChangeSetEntries(ctx, cs, params.ApplicationID, params.EnvironmentID, entries)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	return infra, destroySlugs, csVars, nil
+}
+
+// resolveVariables resolves the env's variable map and applies the change
+// set's variable overlay (delete tombstones drop keys; non-tombstones
+// upsert). The returned map is the Var slot of the template eval context.
+func (s *Service) resolveVariables(
+	ctx context.Context,
+	appID, envID uuid.UUID,
+	csVars []model.ChangeSetVariableEntry,
+) (map[string]any, error) {
+	resolved, err := s.variableStore.Resolve(ctx, appID, envID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to resolve variables: %v", err)
+	}
+	out := make(map[string]any, len(resolved)+len(csVars))
+	for _, v := range resolved {
+		out[v.Key] = v.Value
+	}
+	for i := range csVars {
+		v := &csVars[i]
+		if v.IsDelete() {
+			delete(out, v.Key)
+			continue
+		}
+		out[v.Key] = *v.Value
+	}
+	return out, nil
+}
+
+// buildComponentDAG topologically sorts the component set. Edges come from
+// each component's DependsOn (UUID-keyed) plus the slugs referenced by its
+// values_template (output references). Returns the topo phases, a slug→component
+// index, and a slug→blockers index used to populate Revision.BlockedBy.
+func buildComponentDAG(infra []model.Component) ([][]string, map[string]*model.Component, map[string][]string, error) {
+	idToSlug := make(map[string]string, len(infra))
+	slugToComp := make(map[string]*model.Component, len(infra))
+	for i := range infra {
+		c := &infra[i]
+		idToSlug[c.Id.String()] = c.Slug
+		slugToComp[c.Slug] = c
+	}
+
+	g := dag.New()
+	for _, comp := range infra {
+		g.AddNode(comp.Slug)
+		for _, depID := range comp.DependsOn {
+			if depSlug, ok := idToSlug[depID]; ok {
+				g.AddEdge(comp.Slug, depSlug)
+			}
+		}
+		for _, depSlug := range admtemplate.ExtractOutputSlugs(comp.ValuesTemplate) {
+			if _, ok := slugToComp[depSlug]; ok {
+				g.AddEdge(comp.Slug, depSlug)
+			}
+		}
+	}
+
+	phases, err := g.TopoSort()
+	if err != nil {
+		return nil, nil, nil, status.Errorf(codes.InvalidArgument, "component dependency error: %v", err)
+	}
+
+	blockers := make(map[string][]string, len(infra))
+	for slug := range slugToComp {
+		blockers[slug] = g.Dependencies(slug)
+	}
+	return phases, slugToComp, blockers, nil
+}
+
+// snapshotRevisions persists one revision per component in topological order.
+// For rollback runs (sourceRevByComponent populated), the revision is seeded
+// from the prior run's stored fields verbatim. Otherwise it pulls module/version
+// from the component's HEAD, evaluates the values_template, and derives
+// change_type vs the env's last-deployed revision (CREATE/UPDATE/RECREATE/
+// NO_CHANGE), unless the change set marked the slug for DESTROY.
+func (s *Service) snapshotRevisions(
+	ctx context.Context,
+	run *model.Run,
+	phases [][]string,
+	slugToComp map[string]*model.Component,
+	sourceRevByComponent map[string]*model.Revision,
+	destroySlugs map[string]bool,
+	blockers map[string][]string,
+	evalCtx *admtemplate.EvalContext,
+) error {
 	for _, phase := range phases {
 		for _, compSlug := range phase {
 			comp := slugToComp[compSlug]
@@ -247,7 +330,7 @@ func (s *Service) CreateRun(ctx context.Context, params CreateRunParams) (*model
 			} else {
 				mod, err := s.moduleStore.Get(ctx, comp.ModuleId)
 				if err != nil {
-					return nil, status.Errorf(codes.Internal, "failed to resolve module for component %s: %v", comp.Id, err)
+					return status.Errorf(codes.Internal, "failed to resolve module for component %s: %v", comp.Id, err)
 				}
 				moduleId = comp.ModuleId
 				sourceId = &mod.SourceId
@@ -258,15 +341,15 @@ func (s *Service) CreateRun(ctx context.Context, params CreateRunParams) (*model
 				if resolvedValues != "" {
 					resolvedValues, err = admtemplate.Evaluate(resolvedValues, evalCtx)
 					if err != nil {
-						return nil, status.Errorf(codes.InvalidArgument,
+						return status.Errorf(codes.InvalidArgument,
 							"failed to evaluate values_template for component %q: %v", comp.Slug, err)
 					}
 				}
 			}
 
-			prevRev, err := s.revisionStore.LastDeployed(ctx, comp.Id, params.EnvironmentID)
+			prevRev, err := s.revisionStore.LastDeployed(ctx, comp.Id, run.EnvironmentId)
 			if err != nil {
-				return nil, status.Errorf(codes.Internal, "failed to query previous revision for %q: %v", comp.Slug, err)
+				return status.Errorf(codes.Internal, "failed to query previous revision for %q: %v", comp.Slug, err)
 			}
 			changeType := model.RevisionChangeTypeCreate
 			var previousRevisionId *uuid.UUID
@@ -298,22 +381,15 @@ func (s *Service) CreateRun(ctx context.Context, params CreateRunParams) (*model
 				Version:            version,
 				ResolvedValues:     resolvedValues,
 				DependsOn:          pq.StringArray(comp.DependsOn),
-				BlockedBy:          pq.StringArray(g.Dependencies(compSlug)),
+				BlockedBy:          pq.StringArray(blockers[compSlug]),
 				WorkingDirectory:   workingDirectory,
 			}
-			if _, err = s.revisionStore.Create(ctx, rev); err != nil {
-				return nil, status.Errorf(codes.Internal, "failed to create revision: %v", err)
+			if _, err := s.revisionStore.Create(ctx, rev); err != nil {
+				return status.Errorf(codes.Internal, "failed to create revision: %v", err)
 			}
 		}
 	}
-
-	if !queued {
-		if err := s.createPlanJobs(ctx, run); err != nil {
-			return nil, err
-		}
-	}
-
-	return run, nil
+	return nil
 }
 
 // ApplyRun transitions a run from plan phase to apply phase by dispatching

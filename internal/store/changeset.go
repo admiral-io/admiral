@@ -334,4 +334,3 @@ func (s *ChangeSetStore) ListVariableEntries(ctx context.Context, changeSetID uu
 	}
 	return out, nil
 }
-
