@@ -163,6 +163,11 @@ func (c *Component) Validate() error {
 	if err := ValidateValuesTemplate(c.ValuesTemplate); err != nil {
 		return fmt.Errorf("invalid values_template: %w", err)
 	}
+	for _, dep := range c.DependsOn {
+		if err := ValidateSlug(dep); err != nil {
+			return fmt.Errorf("invalid depends_on entry %q: %w", dep, err)
+		}
+	}
 	return nil
 }
 
@@ -204,21 +209,6 @@ func ValidateValuesTemplate(s string) error {
 		return nil
 	}
 	return admtemplate.Validate(s)
-}
-
-func ParseDependsOn(deps []string) ([]string, error) {
-	if len(deps) == 0 {
-		return nil, nil
-	}
-	out := make([]string, 0, len(deps))
-	for _, d := range deps {
-		id, err := uuid.Parse(d)
-		if err != nil {
-			return nil, fmt.Errorf("not a valid UUID: %s", d)
-		}
-		out = append(out, id.String())
-	}
-	return out, nil
 }
 
 var slugRegex = regexp.MustCompile(`^[a-z]([a-z0-9-]{0,61}[a-z0-9])?$`)

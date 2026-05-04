@@ -108,6 +108,7 @@ type Revision struct {
 	ModuleId           uuid.UUID      `gorm:"type:uuid;not null"`
 	SourceId           *uuid.UUID     `gorm:"type:uuid"`
 	Version            string         `gorm:"type:text;not null;default:''"`
+	ValuesTemplate     string         `gorm:"type:text;not null;default:''"`
 	ResolvedValues     string         `gorm:"type:text;not null;default:''"`
 	DependsOn          pq.StringArray `gorm:"type:text[];not null;default:'{}'"`
 	BlockedBy          pq.StringArray `gorm:"type:text[];not null;default:'{}'"`
@@ -203,28 +204,34 @@ func (r *Revision) ToProto() *runv1.Revision {
 	return proto
 }
 
+// ParseResolvedValuesAsVars decodes a JSON-object string of variable values
+// into the bundle map sent to runners. Every value in the returned map is a
+// JSON literal — strings carry their quotes (`"us-west-2"`), numbers and
+// booleans are bare (`42`, `true`), null is `null`, and complex values
+// (arrays/objects) are their JSON-encoded form. The runner pastes each value
+// verbatim into `admiral.auto.tfvars.json` without re-encoding, so
+// Terraform sees the right type for each variable.
 func ParseResolvedValuesAsVars(raw string) (map[string]string, error) {
 	if strings.TrimSpace(raw) == "" {
 		return map[string]string{}, nil
 	}
-	var parsed map[string]any
+	var parsed map[string]json.RawMessage
 	if err := json.Unmarshal([]byte(raw), &parsed); err != nil {
 		return nil, fmt.Errorf("resolved_values is not a JSON object: %w", err)
 	}
 	out := make(map[string]string, len(parsed))
 	for k, v := range parsed {
-		switch t := v.(type) {
-		case string:
-			out[k] = t
-		case nil:
-			out[k] = ""
-		default:
-			b, err := json.Marshal(v)
-			if err != nil {
-				return nil, fmt.Errorf("marshal var %q: %w", k, err)
-			}
-			out[k] = string(b)
+		// Re-marshal through `any` to normalize whitespace and reject
+		// malformed entries; the result is the canonical JSON literal.
+		var decoded any
+		if err := json.Unmarshal(v, &decoded); err != nil {
+			return nil, fmt.Errorf("decode var %q: %w", k, err)
 		}
+		b, err := json.Marshal(decoded)
+		if err != nil {
+			return nil, fmt.Errorf("marshal var %q: %w", k, err)
+		}
+		out[k] = string(b)
 	}
 	return out, nil
 }
@@ -255,7 +262,18 @@ func DeriveRevisionUpdate(jobType, reportedStatus string, result *runnerv1.JobRe
 	return fields
 }
 
-func IsRevisionSatisfiedFor(jobType, blockerStatus string) bool {
+// IsRevisionSatisfiedFor decides whether a blocker has reached a status that
+// lets a downstream job proceed. requiresOutputs is true when the downstream's
+// values_template references the blocker's outputs via {{ .component.<slug>.* }};
+// in that case the blocker must be SUCCEEDED (apply done, outputs captured),
+// because plan-time alone produces no concrete output values for substitution.
+// Without an output reference, plan jobs unblock once the blocker reaches
+// AWAITING_APPROVAL (its plan is computable independently); apply jobs always
+// require SUCCEEDED.
+func IsRevisionSatisfiedFor(jobType, blockerStatus string, requiresOutputs bool) bool {
+	if requiresOutputs {
+		return blockerStatus == RevisionStatusSucceeded
+	}
 	switch jobType {
 	case JobTypePlan, JobTypeDestroyPlan:
 		return blockerStatus == RevisionStatusAwaitingApproval ||

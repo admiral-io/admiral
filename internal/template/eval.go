@@ -32,20 +32,20 @@ type SelfMeta struct {
 
 // EvalContext holds every namespace reachable from a template expression.
 //
-//	{{ .var.KEY }}             → Var[KEY]
-//	{{ .output.SLUG.OUT }}    → Output[SLUG][OUT]
-//	{{ .app.name }}           → App.Name
-//	{{ .env.name }}           → Env.Name
-//	{{ .run.id }}             → Run.Id
-//	{{ .self.name }}          → Self.Name
-//	{{ .self.slug }}          → Self.Slug
+//	{{ .var.KEY }}                → Var[KEY]
+//	{{ .component.SLUG.OUT }}     → Component[SLUG][OUT]
+//	{{ .app.name }}               → App.Name
+//	{{ .env.name }}               → Env.Name
+//	{{ .run.id }}                 → Run.Id
+//	{{ .self.name }}              → Self.Name
+//	{{ .self.slug }}              → Self.Slug
 type EvalContext struct {
-	Var    map[string]any            // resolved variables (hierarchy-merged)
-	Output map[string]map[string]any // component_slug → output_name → value
-	App    AppMeta
-	Env    EnvMeta
-	Run    RunMeta
-	Self   SelfMeta
+	Var       map[string]any            // resolved variables (hierarchy-merged)
+	Component map[string]map[string]any // component_slug → output_name → value
+	App       AppMeta
+	Env       EnvMeta
+	Run       RunMeta
+	Self      SelfMeta
 }
 
 // Evaluate executes tmpl as a Go text/template against ctx and returns the
@@ -66,23 +66,23 @@ func Evaluate(tmpl string, ctx *EvalContext) (string, error) {
 	}
 
 	// Build a map[string]any so template authors write {{ .var.x }},
-	// {{ .output.vpc.id }}, {{ .app.name }} with lowercase namespace keys.
+	// {{ .component.vpc.id }}, {{ .app.name }} with lowercase namespace keys.
 	varMap := ctx.Var
 	if varMap == nil {
 		varMap = map[string]any{}
 	}
-	outMap := ctx.Output
-	if outMap == nil {
-		outMap = map[string]map[string]any{}
+	compMap := ctx.Component
+	if compMap == nil {
+		compMap = map[string]map[string]any{}
 	}
 
 	data := map[string]any{
-		"var":    varMap,
-		"output": outMap,
-		"app":    ctx.App,
-		"env":    ctx.Env,
-		"run":    ctx.Run,
-		"self":   ctx.Self,
+		"var":       varMap,
+		"component": compMap,
+		"app":       ctx.App,
+		"env":       ctx.Env,
+		"run":       ctx.Run,
+		"self":      ctx.Self,
 	}
 
 	var buf bytes.Buffer

@@ -19,7 +19,7 @@ func TestExtractRefs_VarOnly(t *testing.T) {
 }
 
 func TestExtractRefs_OutputOnly(t *testing.T) {
-	tmpl := `{"vpc_id": "{{ .output.vpc.vpc_id }}", "subnets": {{ .output.vpc.subnet_ids | toJson }}}`
+	tmpl := `{"vpc_id": "{{ .component.vpc.vpc_id }}", "subnets": {{ .component.vpc.subnet_ids | toJson }}}`
 	vars, outputs := ExtractRefs(tmpl)
 
 	if len(vars) != 0 {
@@ -36,9 +36,9 @@ func TestExtractRefs_OutputOnly(t *testing.T) {
 
 func TestExtractRefs_Mixed(t *testing.T) {
 	tmpl := `{
-		"vpc_id": "{{ .output.vpc.vpc_id }}",
+		"vpc_id": "{{ .component.vpc.vpc_id }}",
 		"region": "{{ .var.region }}",
-		"db_host": "{{ .output.database.endpoint }}",
+		"db_host": "{{ .component.database.endpoint }}",
 		"env": "{{ .var.environment }}"
 	}`
 	vars, outputs := ExtractRefs(tmpl)
@@ -58,7 +58,7 @@ func TestExtractRefs_Mixed(t *testing.T) {
 }
 
 func TestExtractRefs_Deduplicated(t *testing.T) {
-	tmpl := `{"a": "{{ .var.x }}", "b": "{{ .var.x }}", "c": "{{ .output.vpc.id }}", "d": "{{ .output.vpc.id }}"}`
+	tmpl := `{"a": "{{ .var.x }}", "b": "{{ .var.x }}", "c": "{{ .component.vpc.id }}", "d": "{{ .component.vpc.id }}"}`
 	vars, outputs := ExtractRefs(tmpl)
 
 	if len(vars) != 1 || vars[0].Key != "x" {
@@ -80,7 +80,7 @@ func TestExtractRefs_Empty(t *testing.T) {
 }
 
 func TestExtractRefs_WithPipeline(t *testing.T) {
-	tmpl := `{"ids": {{ .output.vpc.subnet_ids | toJson }}, "region": "{{ .var.region | upper }}"}`
+	tmpl := `{"ids": {{ .component.vpc.subnet_ids | toJson }}, "region": "{{ .var.region | upper }}"}`
 	vars, outputs := ExtractRefs(tmpl)
 
 	if len(vars) != 1 || vars[0].Key != "region" {
@@ -93,9 +93,9 @@ func TestExtractRefs_WithPipeline(t *testing.T) {
 
 func TestExtractOutputSlugs(t *testing.T) {
 	tmpl := `{
-		"vpc_id": "{{ .output.vpc.vpc_id }}",
-		"db": "{{ .output.database.endpoint }}",
-		"cidr": "{{ .output.vpc.cidr_block }}"
+		"vpc_id": "{{ .component.vpc.vpc_id }}",
+		"db": "{{ .component.database.endpoint }}",
+		"cidr": "{{ .component.vpc.cidr_block }}"
 	}`
 	slugs := ExtractOutputSlugs(tmpl)
 	want := []string{"database", "vpc"}
@@ -112,7 +112,7 @@ func TestExtractOutputSlugs_Empty(t *testing.T) {
 }
 
 func TestExtractRefs_HyphenatedSlug(t *testing.T) {
-	tmpl := `{"id": "{{ .output.my-vpc.vpc_id }}"}`
+	tmpl := `{"id": "{{ .component.my-vpc.vpc_id }}"}`
 	_, outputs := ExtractRefs(tmpl)
 	if len(outputs) != 1 || outputs[0].Slug != "my-vpc" {
 		t.Errorf("expected slug 'my-vpc', got %v", outputs)

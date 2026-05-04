@@ -2,7 +2,6 @@ package authz
 
 import (
 	"context"
-	"slices"
 	"strings"
 
 	"github.com/uber-go/tally/v4"
@@ -90,12 +89,14 @@ func checkTokenType(rule *commonv1.AuthRule, claims *authn.Claims) error {
 		return nil
 	}
 
-	if !slices.Contains(allowed, claims.Kind) {
-		return status.Errorf(codes.PermissionDenied,
-			"token type %q is not allowed for this endpoint", claims.Kind)
+	for _, a := range allowed {
+		if strings.EqualFold(a, claims.Kind) {
+			return nil
+		}
 	}
 
-	return nil
+	return status.Errorf(codes.PermissionDenied,
+		"token type %q is not allowed for this endpoint", claims.Kind)
 }
 
 func checkScope(rule *commonv1.AuthRule, claims *authn.Claims) error {

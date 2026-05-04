@@ -9,6 +9,7 @@ import (
 	"go.uber.org/zap"
 
 	"go.admiral.io/admiral/internal/model"
+	admtemplate "go.admiral.io/admiral/internal/template"
 	runnerv1 "go.admiral.io/sdk/proto/admiral/runner/v1"
 )
 
@@ -210,9 +211,12 @@ func (s *Service) captureOutputs(
 }
 
 // promoteUnblockedJobs checks for PENDING jobs in the same run whose
-// BlockedBy dependencies are now all satisfied (their revisions have reached
-// a post-plan or post-apply terminal state). Satisfied jobs are promoted from
-// PENDING to ASSIGNED so the runner can claim them.
+// BlockedBy dependencies are now all satisfied. Plan jobs that reference an
+// upstream component's outputs (`{{ .component.<slug>.* }}`) require the
+// upstream to be SUCCEEDED (apply done, outputs captured) before promotion;
+// other plan jobs unblock at AWAITING_APPROVAL. Just before promoting a plan
+// job, the revision's values_template is rendered against the latest captured
+// outputs; the runner then reads the populated ResolvedValues from the bundle.
 func (s *Service) promoteUnblockedJobs(ctx context.Context, completedRev *model.Revision) error {
 	pendingJobs, err := s.jobStore.ListByRunAndStatus(ctx, completedRev.RunId, model.JobStatusPending)
 	if err != nil {
@@ -233,6 +237,11 @@ func (s *Service) promoteUnblockedJobs(ctx context.Context, completedRev *model.
 		revByID[revisions[i].Id] = &revisions[i]
 	}
 
+	run, err := s.runStore.Get(ctx, completedRev.RunId)
+	if err != nil {
+		return fmt.Errorf("load run: %w", err)
+	}
+
 	for i := range pendingJobs {
 		pj := &pendingJobs[i]
 		rev, ok := revByID[pj.RevisionId]
@@ -243,6 +252,7 @@ func (s *Service) promoteUnblockedJobs(ctx context.Context, completedRev *model.
 			continue
 		}
 
+		outputRefBlockers := outputRefSet(rev.ValuesTemplate)
 		allSatisfied := true
 		for _, blockerName := range rev.BlockedBy {
 			blocker, ok := revBySlug[blockerName]
@@ -250,23 +260,52 @@ func (s *Service) promoteUnblockedJobs(ctx context.Context, completedRev *model.
 				allSatisfied = false
 				break
 			}
-			if !model.IsRevisionSatisfiedFor(pj.JobType, blocker.Status) {
+			if !model.IsRevisionSatisfiedFor(pj.JobType, blocker.Status, outputRefBlockers[blockerName]) {
 				allSatisfied = false
 				break
 			}
 		}
 
-		if allSatisfied {
-			if err := s.jobStore.PromoteToAssigned(ctx, pj.Id); err != nil {
-				s.logger.Error("failed to promote job",
+		if !allSatisfied {
+			continue
+		}
+
+		// Plan jobs render against the just-captured upstream outputs; apply
+		// jobs reuse the values rendered during plan (the user approved that
+		// specific plan, so the apply must run with the same inputs).
+		if pj.JobType == model.JobTypePlan || pj.JobType == model.JobTypeDestroyPlan {
+			if err := s.renderRevision(ctx, run, rev); err != nil {
+				s.logger.Error("failed to render values_template before promotion",
 					zap.String("job_id", pj.Id.String()),
+					zap.String("component", rev.ComponentSlug),
 					zap.Error(err))
 				continue
 			}
-			s.logger.Info("promoted blocked job",
-				zap.String("job_id", pj.Id.String()),
-				zap.String("component", rev.ComponentSlug))
 		}
+
+		if err := s.jobStore.PromoteToAssigned(ctx, pj.Id); err != nil {
+			s.logger.Error("failed to promote job",
+				zap.String("job_id", pj.Id.String()),
+				zap.Error(err))
+			continue
+		}
+		s.logger.Info("promoted blocked job",
+			zap.String("job_id", pj.Id.String()),
+			zap.String("component", rev.ComponentSlug))
 	}
 	return nil
+}
+
+// outputRefSet returns the set of component slugs whose outputs are referenced
+// by the given values_template (via `{{ .component.<slug>.* }}`).
+func outputRefSet(valuesTemplate string) map[string]bool {
+	slugs := admtemplate.ExtractOutputSlugs(valuesTemplate)
+	if len(slugs) == 0 {
+		return nil
+	}
+	out := make(map[string]bool, len(slugs))
+	for _, s := range slugs {
+		out[s] = true
+	}
+	return out
 }

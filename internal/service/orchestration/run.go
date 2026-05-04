@@ -40,8 +40,7 @@ func (s *Service) CreateRun(ctx context.Context, params CreateRunParams) (*model
 		return nil, status.Error(codes.InvalidArgument, "source_run_id and change_set_id are mutually exclusive")
 	}
 
-	app, err := s.appStore.Get(ctx, params.ApplicationID)
-	if err != nil {
+	if _, err := s.appStore.Get(ctx, params.ApplicationID); err != nil {
 		return nil, status.Errorf(codes.NotFound, "application not found: %s", params.ApplicationID)
 	}
 
@@ -74,14 +73,10 @@ func (s *Service) CreateRun(ctx context.Context, params CreateRunParams) (*model
 		return nil, status.Error(codes.FailedPrecondition, "no components to deploy for this environment")
 	}
 
-	varMap, err := s.resolveVariables(ctx, params.ApplicationID, params.EnvironmentID, changeSetVars)
-	if err != nil {
+	// Validate that variable resolution succeeds before persisting the run;
+	// the merged map is rebuilt per-revision at render time (renderRevision).
+	if _, err := s.resolveVariables(ctx, params.ApplicationID, params.EnvironmentID, changeSetVars); err != nil {
 		return nil, err
-	}
-	evalCtx := &admtemplate.EvalContext{
-		Var: varMap,
-		App: admtemplate.AppMeta{Name: app.Name, Id: params.ApplicationID.String()},
-		Env: admtemplate.EnvMeta{Name: env.Name, Id: params.EnvironmentID.String()},
 	}
 
 	phases, slugToComp, blockers, err := buildComponentDAG(infraComponents)
@@ -113,9 +108,8 @@ func (s *Service) CreateRun(ctx context.Context, params CreateRunParams) (*model
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to create run: %v", err)
 	}
-	evalCtx.Run = admtemplate.RunMeta{Id: run.Id.String()}
 
-	if err := s.snapshotRevisions(ctx, run, phases, slugToComp, sourceRevByComponent, destroySlugs, blockers, evalCtx); err != nil {
+	if err := s.snapshotRevisions(ctx, run, phases, slugToComp, sourceRevByComponent, destroySlugs, blockers); err != nil {
 		return nil, err
 	}
 
@@ -253,23 +247,21 @@ func (s *Service) resolveVariables(
 }
 
 // buildComponentDAG topologically sorts the component set. Edges come from
-// each component's DependsOn (UUID-keyed) plus the slugs referenced by its
+// each component's DependsOn (slug-keyed) plus the slugs referenced by its
 // values_template (output references). Returns the topo phases, a slug→component
 // index, and a slug→blockers index used to populate Revision.BlockedBy.
 func buildComponentDAG(infra []model.Component) ([][]string, map[string]*model.Component, map[string][]string, error) {
-	idToSlug := make(map[string]string, len(infra))
 	slugToComp := make(map[string]*model.Component, len(infra))
 	for i := range infra {
 		c := &infra[i]
-		idToSlug[c.Id.String()] = c.Slug
 		slugToComp[c.Slug] = c
 	}
 
 	g := dag.New()
 	for _, comp := range infra {
 		g.AddNode(comp.Slug)
-		for _, depID := range comp.DependsOn {
-			if depSlug, ok := idToSlug[depID]; ok {
+		for _, depSlug := range comp.DependsOn {
+			if _, ok := slugToComp[depSlug]; ok {
 				g.AddEdge(comp.Slug, depSlug)
 			}
 		}
@@ -295,9 +287,12 @@ func buildComponentDAG(infra []model.Component) ([][]string, map[string]*model.C
 // snapshotRevisions persists one revision per component in topological order.
 // For rollback runs (sourceRevByComponent populated), the revision is seeded
 // from the prior run's stored fields verbatim. Otherwise it pulls module/version
-// from the component's HEAD, evaluates the values_template, and derives
-// change_type vs the env's last-deployed revision (CREATE/UPDATE/RECREATE/
-// NO_CHANGE), unless the change set marked the slug for DESTROY.
+// from the component's HEAD and stores the raw values_template; rendering is
+// deferred until each plan job is dispatched (renderRevision), so cross-component
+// {{ .component.<slug>.<output> }} references resolve against the upstream's
+// captured outputs instead of an empty context. change_type is derived vs the
+// env's last-deployed revision (CREATE/UPDATE/RECREATE/NO_CHANGE), unless the
+// change set marked the slug for DESTROY.
 func (s *Service) snapshotRevisions(
 	ctx context.Context,
 	run *model.Run,
@@ -306,17 +301,16 @@ func (s *Service) snapshotRevisions(
 	sourceRevByComponent map[string]*model.Revision,
 	destroySlugs map[string]bool,
 	blockers map[string][]string,
-	evalCtx *admtemplate.EvalContext,
 ) error {
 	for _, phase := range phases {
 		for _, compSlug := range phase {
 			comp := slugToComp[compSlug]
-			evalCtx.Self = admtemplate.SelfMeta{Name: comp.Name, Slug: comp.Slug}
 
 			var (
 				moduleId         uuid.UUID
 				sourceId         *uuid.UUID
 				version          string
+				valuesTemplate   string
 				resolvedValues   string
 				workingDirectory string
 			)
@@ -325,6 +319,7 @@ func (s *Service) snapshotRevisions(
 				moduleId = srcRev.ModuleId
 				sourceId = srcRev.SourceId
 				version = srcRev.Version
+				valuesTemplate = srcRev.ValuesTemplate
 				resolvedValues = srcRev.ResolvedValues
 				workingDirectory = srcRev.WorkingDirectory
 			} else {
@@ -335,16 +330,8 @@ func (s *Service) snapshotRevisions(
 				moduleId = comp.ModuleId
 				sourceId = &mod.SourceId
 				version = comp.Version
+				valuesTemplate = comp.ValuesTemplate
 				workingDirectory = filepath.Join(mod.Root, mod.Path)
-
-				resolvedValues = comp.ValuesTemplate
-				if resolvedValues != "" {
-					resolvedValues, err = admtemplate.Evaluate(resolvedValues, evalCtx)
-					if err != nil {
-						return status.Errorf(codes.InvalidArgument,
-							"failed to evaluate values_template for component %q: %v", comp.Slug, err)
-					}
-				}
 			}
 
 			prevRev, err := s.revisionStore.LastDeployed(ctx, comp.Id, run.EnvironmentId)
@@ -358,7 +345,7 @@ func (s *Service) snapshotRevisions(
 				switch {
 				case moduleId != prevRev.ModuleId:
 					changeType = model.RevisionChangeTypeRecreate
-				case version != prevRev.Version || resolvedValues != prevRev.ResolvedValues:
+				case version != prevRev.Version || valuesTemplate != prevRev.ValuesTemplate:
 					changeType = model.RevisionChangeTypeUpdate
 				default:
 					changeType = model.RevisionChangeTypeNoChange
@@ -379,6 +366,7 @@ func (s *Service) snapshotRevisions(
 				ModuleId:           moduleId,
 				SourceId:           sourceId,
 				Version:            version,
+				ValuesTemplate:     valuesTemplate,
 				ResolvedValues:     resolvedValues,
 				DependsOn:          pq.StringArray(comp.DependsOn),
 				BlockedBy:          pq.StringArray(blockers[compSlug]),
@@ -433,6 +421,20 @@ func (s *Service) ApplyRun(ctx context.Context, runID uuid.UUID) (*model.Run, er
 		return nil, status.Errorf(codes.FailedPrecondition, "%v", err)
 	}
 
+	// Apply jobs that depend on already-SUCCEEDED siblings start ASSIGNED so
+	// the runner can claim them immediately; otherwise nothing would ever fire
+	// promoteUnblockedJobs (which only runs on a peer's CompleteJob). This
+	// matters when a downstream component plans only after its upstream's apply
+	// has already finished (the b1 gate-stiffening flow).
+	allRevs, err := s.revisionStore.ListByRun(ctx, runID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to list revisions: %v", err)
+	}
+	revBySlug := make(map[string]*model.Revision, len(allRevs))
+	for i := range allRevs {
+		revBySlug[allRevs[i].ComponentSlug] = &allRevs[i]
+	}
+
 	for i := range pending {
 		rev := pending[i]
 		if _, err := s.revisionStore.Update(ctx, &rev, map[string]any{
@@ -440,9 +442,13 @@ func (s *Service) ApplyRun(ctx context.Context, runID uuid.UUID) (*model.Run, er
 		}); err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to update revision status: %v", err)
 		}
-		jobStatus := model.JobStatusPending
-		if len(rev.BlockedBy) == 0 {
-			jobStatus = model.JobStatusAssigned
+		jobStatus := model.JobStatusAssigned
+		for _, blockerSlug := range rev.BlockedBy {
+			blocker, ok := revBySlug[blockerSlug]
+			if !ok || !model.IsRevisionSatisfiedFor(model.JobTypeApply, blocker.Status, false) {
+				jobStatus = model.JobStatusPending
+				break
+			}
 		}
 		job := &model.Job{
 			RunnerId:   runnerID,
@@ -583,6 +589,12 @@ func (s *Service) createPlanJobs(ctx context.Context, run *model.Run) error {
 		rev := &revisions[i]
 		jobStatus := model.JobStatusPending
 		if len(rev.BlockedBy) == 0 {
+			// Render now so the runner reads the rendered ResolvedValues
+			// when it claims the job. Blocked revisions render later in
+			// promoteUnblockedJobs once their dependencies finish.
+			if err := s.renderRevision(ctx, run, rev); err != nil {
+				return status.Errorf(codes.InvalidArgument, "%v", err)
+			}
 			jobStatus = model.JobStatusAssigned
 		}
 		job := &model.Job{

@@ -16,6 +16,7 @@ CREATE TABLE IF NOT EXISTS revisions (
     module_id UUID NOT NULL REFERENCES modules(id) ON DELETE RESTRICT,
     source_id UUID,
     version TEXT NOT NULL DEFAULT '',
+    values_template TEXT NOT NULL DEFAULT '',
     resolved_values TEXT NOT NULL DEFAULT '',
     depends_on TEXT[] NOT NULL DEFAULT '{}',
     blocked_by TEXT[] NOT NULL DEFAULT '{}',

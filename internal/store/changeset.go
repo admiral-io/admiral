@@ -62,7 +62,10 @@ func createWithDisplayID(tx *gorm.DB, cs *model.ChangeSet) error {
 func (s *ChangeSetStore) Get(ctx context.Context, id uuid.UUID) (*model.ChangeSet, error) {
 	var cs model.ChangeSet
 	err := s.db.WithContext(ctx).
-		Scopes(WithActorRef("change_sets", "created_by")).
+		Scopes(WithEnrichment("change_sets",
+			ActorJoin("created_by"),
+			NameJoin("application_id", "applications"),
+			NameJoin("environment_id", "environments"))).
 		Where("change_sets.id = ?", id).
 		Take(&cs).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -80,7 +83,10 @@ func (s *ChangeSetStore) GetByIdentifier(ctx context.Context, ident string) (*mo
 	if displayid.Is(ident, model.DisplayIDPrefixChangeSet) {
 		var cs model.ChangeSet
 		err := s.db.WithContext(ctx).
-			Scopes(WithActorRef("change_sets", "created_by")).
+			Scopes(WithEnrichment("change_sets",
+			ActorJoin("created_by"),
+			NameJoin("application_id", "applications"),
+			NameJoin("environment_id", "environments"))).
 			Where("change_sets.display_id = ?", ident).
 			Take(&cs).Error
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -101,7 +107,10 @@ func (s *ChangeSetStore) GetByIdentifier(ctx context.Context, ident string) (*mo
 func (s *ChangeSetStore) List(ctx context.Context, scopes ...func(*gorm.DB) *gorm.DB) ([]model.ChangeSet, error) {
 	var out []model.ChangeSet
 	err := s.db.WithContext(ctx).
-		Scopes(append(scopes, WithActorRef("change_sets", "created_by"))...).
+		Scopes(append(scopes, WithEnrichment("change_sets",
+			ActorJoin("created_by"),
+			NameJoin("application_id", "applications"),
+			NameJoin("environment_id", "environments")))...).
 		Order("change_sets.created_at DESC").
 		Find(&out).Error
 	if err != nil {

@@ -15,8 +15,8 @@ type OutputRef struct {
 }
 
 var (
-	varPattern    = regexp.MustCompile(`\.\bvar\.([a-zA-Z_][a-zA-Z0-9_]*)`)
-	outputPattern = regexp.MustCompile(`\.\boutput\.([a-zA-Z_][a-zA-Z0-9_-]*)\.([a-zA-Z_][a-zA-Z0-9_]*)`)
+	varPattern       = regexp.MustCompile(`\.\bvar\.([a-zA-Z_][a-zA-Z0-9_]*)`)
+	componentPattern = regexp.MustCompile(`\.\bcomponent\.([a-zA-Z_][a-zA-Z0-9_-]*)\.([a-zA-Z_][a-zA-Z0-9_]*)`)
 )
 
 func ExtractRefs(tmpl string) (vars []VarRef, outputs []OutputRef) {
@@ -56,7 +56,7 @@ func extractVarRefs(tmpl string) []VarRef {
 }
 
 func extractOutputRefs(tmpl string) []OutputRef {
-	matches := outputPattern.FindAllStringSubmatch(tmpl, -1)
+	matches := componentPattern.FindAllStringSubmatch(tmpl, -1)
 	type key struct{ s, o string }
 	seen := make(map[key]struct{}, len(matches))
 	var refs []OutputRef

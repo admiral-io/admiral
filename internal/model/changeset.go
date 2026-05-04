@@ -94,6 +94,8 @@ type ChangeSet struct {
 	UpdatedAt         time.Time
 	CreatedByName     string `gorm:"->;column:created_by_name"`
 	CreatedByEmail    string `gorm:"->;column:created_by_email"`
+	ApplicationName   string `gorm:"->;column:application_id_name"`
+	EnvironmentName   string `gorm:"->;column:environment_id_name"`
 }
 
 func (cs *ChangeSet) Validate() error {
@@ -122,13 +124,15 @@ func (cs *ChangeSet) RequireMutable() error {
 
 func (cs *ChangeSet) ToProto(entries []ChangeSetEntry, varEntries []ChangeSetVariableEntry) *changesetv1.ChangeSet {
 	out := &changesetv1.ChangeSet{
-		Id:            cs.Id.String(),
-		DisplayId:     cs.DisplayId,
-		ApplicationId: cs.ApplicationId.String(),
-		EnvironmentId: cs.EnvironmentId.String(),
-		Status:        cs.Status,
-		Title:         cs.Title,
-		Description:   cs.Description,
+		Id:              cs.Id.String(),
+		DisplayId:       cs.DisplayId,
+		ApplicationId:   cs.ApplicationId.String(),
+		ApplicationName: cs.ApplicationName,
+		EnvironmentId:   cs.EnvironmentId.String(),
+		EnvironmentName: cs.EnvironmentName,
+		Status:          cs.Status,
+		Title:           cs.Title,
+		Description:     cs.Description,
 		CreatedBy: &commonv1.ActorRef{
 			Id:          cs.CreatedBy,
 			DisplayName: cs.CreatedByName,
@@ -222,6 +226,11 @@ func (e *ChangeSetEntry) Validate() error {
 		return fmt.Errorf("change_type is required")
 	default:
 		return fmt.Errorf("invalid change_type: %s", e.ChangeType)
+	}
+	for _, dep := range e.DependsOn {
+		if err := ValidateSlug(dep); err != nil {
+			return fmt.Errorf("invalid depends_on entry %q: %w", dep, err)
+		}
 	}
 	return nil
 }
