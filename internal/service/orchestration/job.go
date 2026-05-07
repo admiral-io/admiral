@@ -6,12 +6,26 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/lib/pq"
 	"go.uber.org/zap"
 
 	"go.admiral.io/admiral/internal/model"
 	admtemplate "go.admiral.io/admiral/internal/template"
 	runnerv1 "go.admiral.io/sdk/proto/admiral/runner/v1"
 )
+
+// appendPhase returns existing with phase appended (idempotent: a phase
+// already present is not duplicated). Order is preserved -- phases are
+// appended in the order they ran, so a "plan then apply" revision carries
+// ["plan", "apply"]. Used by CompleteJob when a transcript lands.
+func appendPhase(existing []string, phase string) []string {
+	for _, p := range existing {
+		if p == phase {
+			return existing
+		}
+	}
+	return append(append([]string(nil), existing...), phase)
+}
 
 // CompleteJob processes a runner's job result report. It updates the job and
 // revision status, persists plan output, captures infrastructure outputs,
@@ -42,19 +56,24 @@ func (s *Service) CompleteJob(ctx context.Context, job *model.Job, result *runne
 	revFields := model.DeriveRevisionUpdate(job.JobType, jobStatus, result)
 	revFields["completed_at"] = now
 
-	// Persist plan output to object storage. On failure, override the
-	// revision status to FAILED so we never proceed to apply without a
-	// stored plan.
-	if planOutput := result.GetPlanOutput(); planOutput != "" {
-		key := fmt.Sprintf("plans/%s/plan.txt", rev.Id)
-		if err := s.objStore.PutObject(ctx, s.objBucket, key, []byte(planOutput)); err != nil {
-			s.logger.Error("failed to persist plan output, marking revision errored",
-				zap.String("revision_id", rev.Id.String()),
-				zap.Error(err))
-			revFields["status"] = model.RevisionStatusFailed
-			revFields["error_message"] = fmt.Sprintf("plan output storage failed: %v", err)
-		} else {
-			revFields["plan_output_key"] = key
+	// Persist this phase's transcript under a phase-keyed object-storage path
+	// (runs/<run_id>/<rev_id>/<phase>.txt). Apply transcripts no longer
+	// overwrite plan transcripts. On storage failure for a plan job, mark
+	// the revision FAILED so we never proceed to apply without a stored plan.
+	if transcript := result.GetPlanOutput(); transcript != "" {
+		phase := model.PhaseFromJobType(job.JobType)
+		if phase != "" {
+			key := rev.PhaseStorageKey(phase)
+			if err := s.objStore.PutObject(ctx, s.objBucket, key, []byte(transcript)); err != nil {
+				s.logger.Error("failed to persist transcript, marking revision errored",
+					zap.String("revision_id", rev.Id.String()),
+					zap.String("phase", phase),
+					zap.Error(err))
+				revFields["status"] = model.RevisionStatusFailed
+				revFields["error_message"] = fmt.Sprintf("%s transcript storage failed: %v", phase, err)
+			} else {
+				revFields["available_phases"] = pq.StringArray(appendPhase(rev.AvailablePhases, phase))
+			}
 		}
 	}
 
@@ -96,7 +115,7 @@ func (s *Service) CompleteJob(ctx context.Context, job *model.Job, result *runne
 		if err := s.promoteUnblockedJobs(ctx, rev); err != nil {
 			s.logger.Error("failed to promote unblocked jobs",
 				zap.String("run_id", rev.RunId.String()),
-				zap.String("component", rev.ComponentSlug),
+				zap.String("component", rev.ComponentName),
 				zap.Error(err))
 		}
 
@@ -109,7 +128,7 @@ func (s *Service) CompleteJob(ctx context.Context, job *model.Job, result *runne
 				s.logger.Error("change set: per-revision reconcile failed",
 					zap.String("run_id", run.Id.String()),
 					zap.String("change_set_id", s.changeSetDisplayID(ctx, *run.ChangeSetId)),
-					zap.String("component", rev.ComponentSlug),
+					zap.String("component", rev.ComponentName),
 					zap.Error(err))
 			}
 		}
@@ -174,45 +193,45 @@ func (s *Service) captureOutputs(
 		}
 		vars := model.VariablesFromEngineOutputs(
 			outputs,
-			rev.ComponentSlug,
+			rev.ComponentName,
 			run.ApplicationId,
 			run.EnvironmentId,
 			"system:output-capture",
 		)
 		if err := s.variableStore.UpsertInfraOutputs(
 			ctx, run.ApplicationId, run.EnvironmentId,
-			rev.ComponentSlug, vars,
+			rev.ComponentName, vars,
 		); err != nil {
 			s.logger.Error("output capture: upsert failed",
-				zap.String("component", rev.ComponentSlug),
+				zap.String("component", rev.ComponentName),
 				zap.String("run_id", run.Id.String()),
 				zap.Error(err))
 			return err
 		}
 		s.logger.Info("output capture: stored infrastructure outputs",
-			zap.String("component", rev.ComponentSlug),
+			zap.String("component", rev.ComponentName),
 			zap.Int("count", len(vars)))
 
 	case model.JobTypeDestroyApply:
 		if err := s.variableStore.DeleteInfraOutputs(
 			ctx, run.ApplicationId, run.EnvironmentId,
-			rev.ComponentSlug,
+			rev.ComponentName,
 		); err != nil {
 			s.logger.Error("output capture: delete failed",
-				zap.String("component", rev.ComponentSlug),
+				zap.String("component", rev.ComponentName),
 				zap.String("run_id", run.Id.String()),
 				zap.Error(err))
 			return err
 		}
 		s.logger.Info("output capture: cleared infrastructure outputs after destroy",
-			zap.String("component", rev.ComponentSlug))
+			zap.String("component", rev.ComponentName))
 	}
 	return nil
 }
 
 // promoteUnblockedJobs checks for PENDING jobs in the same run whose
 // BlockedBy dependencies are now all satisfied. Plan jobs that reference an
-// upstream component's outputs (`{{ .component.<slug>.* }}`) require the
+// upstream component's outputs (`{{ .component.<name>.* }}`) require the
 // upstream to be SUCCEEDED (apply done, outputs captured) before promotion;
 // other plan jobs unblock at AWAITING_APPROVAL. Just before promoting a plan
 // job, the revision's values_template is rendered against the latest captured
@@ -230,10 +249,10 @@ func (s *Service) promoteUnblockedJobs(ctx context.Context, completedRev *model.
 	if err != nil {
 		return fmt.Errorf("list revisions: %w", err)
 	}
-	revBySlug := make(map[string]*model.Revision, len(revisions))
+	revByName := make(map[string]*model.Revision, len(revisions))
 	revByID := make(map[uuid.UUID]*model.Revision, len(revisions))
 	for i := range revisions {
-		revBySlug[revisions[i].ComponentSlug] = &revisions[i]
+		revByName[revisions[i].ComponentName] = &revisions[i]
 		revByID[revisions[i].Id] = &revisions[i]
 	}
 
@@ -255,7 +274,7 @@ func (s *Service) promoteUnblockedJobs(ctx context.Context, completedRev *model.
 		outputRefBlockers := outputRefSet(rev.ValuesTemplate)
 		allSatisfied := true
 		for _, blockerName := range rev.BlockedBy {
-			blocker, ok := revBySlug[blockerName]
+			blocker, ok := revByName[blockerName]
 			if !ok {
 				allSatisfied = false
 				break
@@ -277,7 +296,7 @@ func (s *Service) promoteUnblockedJobs(ctx context.Context, completedRev *model.
 			if err := s.renderRevision(ctx, run, rev); err != nil {
 				s.logger.Error("failed to render values_template before promotion",
 					zap.String("job_id", pj.Id.String()),
-					zap.String("component", rev.ComponentSlug),
+					zap.String("component", rev.ComponentName),
 					zap.Error(err))
 				continue
 			}
@@ -291,20 +310,20 @@ func (s *Service) promoteUnblockedJobs(ctx context.Context, completedRev *model.
 		}
 		s.logger.Info("promoted blocked job",
 			zap.String("job_id", pj.Id.String()),
-			zap.String("component", rev.ComponentSlug))
+			zap.String("component", rev.ComponentName))
 	}
 	return nil
 }
 
-// outputRefSet returns the set of component slugs whose outputs are referenced
-// by the given values_template (via `{{ .component.<slug>.* }}`).
+// outputRefSet returns the set of component names whose outputs are referenced
+// by the given values_template (via `{{ .component.<name>.* }}`).
 func outputRefSet(valuesTemplate string) map[string]bool {
-	slugs := admtemplate.ExtractOutputSlugs(valuesTemplate)
-	if len(slugs) == 0 {
+	names := admtemplate.ExtractReferencedComponents(valuesTemplate)
+	if len(names) == 0 {
 		return nil
 	}
-	out := make(map[string]bool, len(slugs))
-	for _, s := range slugs {
+	out := make(map[string]bool, len(names))
+	for _, s := range names {
 		out[s] = true
 	}
 	return out
