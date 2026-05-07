@@ -34,13 +34,6 @@ const (
 	lockRoutePattern  = "/api/v1/state/{component_id}/env/{environment_id}/lock"
 )
 
-func scopeForStateMethod(method string) string {
-	if method == http.MethodGet {
-		return stateReadScope
-	}
-	return stateWriteScope
-}
-
 type stateStore interface {
 	GetLatest(ctx context.Context, componentID, environmentID uuid.UUID) (*model.TerraformState, error)
 	Create(ctx context.Context, st *model.TerraformState) (*model.TerraformState, error)
@@ -56,6 +49,12 @@ type componentGetter interface {
 
 type environmentGetter interface {
 	Get(ctx context.Context, id uuid.UUID) (*model.Environment, error)
+}
+
+type requestContext struct {
+	claims        *authn.Claims
+	componentID   uuid.UUID
+	environmentID uuid.UUID
 }
 
 type api struct {
@@ -79,10 +78,12 @@ func New(cfg *config.Config, log *zap.Logger, scope tally.Scope) (endpoint.Endpo
 	if err != nil {
 		return nil, err
 	}
+
 	componentStore, err := store.NewComponentStore(db.GormDB())
 	if err != nil {
 		return nil, err
 	}
+
 	environmentStore, err := store.NewEnvironmentStore(db.GormDB())
 	if err != nil {
 		return nil, err
@@ -123,12 +124,6 @@ func (a *api) Register(r endpoint.Registrar) error {
 	mux.Handle("LOCK "+lockRoutePattern, withAuth(http.HandlerFunc(a.handleLock)))
 	mux.Handle("UNLOCK "+lockRoutePattern, withAuth(http.HandlerFunc(a.handleUnlock)))
 	return nil
-}
-
-type requestContext struct {
-	claims        *authn.Claims
-	componentID   uuid.UUID
-	environmentID uuid.UUID
 }
 
 // resolveRequest parses path params and validates that the component and
@@ -291,4 +286,11 @@ func (a *api) handlePostState(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusOK)
+}
+
+func scopeForStateMethod(method string) string {
+	if method == http.MethodGet {
+		return stateReadScope
+	}
+	return stateWriteScope
 }

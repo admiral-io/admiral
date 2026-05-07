@@ -56,30 +56,37 @@ func New(_ *config.Config, log *zap.Logger, scope tally.Scope) (endpoint.Endpoin
 	if err != nil {
 		return nil, err
 	}
+
 	compStore, err := store.NewComponentStore(db.GormDB())
 	if err != nil {
 		return nil, err
 	}
+
 	modStore, err := store.NewModuleStore(db.GormDB())
 	if err != nil {
 		return nil, err
 	}
+
 	appStore, err := store.NewApplicationStore(db.GormDB())
 	if err != nil {
 		return nil, err
 	}
+
 	envStore, err := store.NewEnvironmentStore(db.GormDB())
 	if err != nil {
 		return nil, err
 	}
+
 	revStore, err := store.NewRevisionStore(db.GormDB())
 	if err != nil {
 		return nil, err
 	}
+
 	runStore, err := store.NewRunStore(db.GormDB())
 	if err != nil {
 		return nil, err
 	}
+
 	orch, err := service.GetService[*orchestration.Service](orchestration.Name)
 	if err != nil {
 		return nil, err
@@ -260,6 +267,14 @@ func (a *api) UpdateChangeSet(ctx context.Context, req *changesetv1.UpdateChange
 	return &changesetv1.UpdateChangeSetResponse{ChangeSet: cs.ToProto(nil, nil)}, nil
 }
 
+func (a *api) DiffChangeSet(ctx context.Context, req *changesetv1.DiffChangeSetRequest) (*changesetv1.DiffChangeSetResponse, error) {
+	diff, err := a.orch.DiffChangeSet(ctx, req.GetChangeSetId())
+	if err != nil {
+		return nil, err
+	}
+	return &changesetv1.DiffChangeSetResponse{Diff: diff.ToProto()}, nil
+}
+
 func (a *api) DiscardChangeSet(ctx context.Context, req *changesetv1.DiscardChangeSetRequest) (*changesetv1.DiscardChangeSetResponse, error) {
 	if _, err := authn.ClaimsFromContext(ctx); err != nil {
 		return nil, status.Error(codes.Unauthenticated, "authentication required")
@@ -343,17 +358,18 @@ func (a *api) SetEntry(ctx context.Context, req *changesetv1.SetEntryRequest) (*
 		return nil, err
 	}
 
-	if err := model.ValidateSlug(req.GetComponentSlug()); err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "invalid component_slug: %v", err)
+	if err := model.ValidateName(req.GetComponentName()); err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "invalid component_name: %v", err)
 	}
-	if err := model.ValidateChangeSetEntryType(req.GetChangeType()); err != nil {
+	changeType := model.ChangeSetEntryTypeFromProto(req.GetChangeType())
+	if err := model.ValidateChangeSetEntryType(changeType); err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
 	entry := &model.ChangeSetEntry{
 		ChangeSetId:   cs.Id,
-		ComponentSlug: req.GetComponentSlug(),
-		ChangeType:    req.GetChangeType(),
+		ComponentName: req.GetComponentName(),
+		ChangeType:    changeType,
 		DependsOn:     pq.StringArray(req.GetDependsOn()),
 	}
 
@@ -380,21 +396,21 @@ func (a *api) SetEntry(ctx context.Context, req *changesetv1.SetEntryRequest) (*
 		entry.Description = &v
 	}
 
-	switch req.GetChangeType() {
+	switch changeType {
 	case model.ChangeSetEntryTypeCreate:
-		// Reject CREATE if a component with this slug already exists in the
+		// Reject CREATE if a component with this name already exists in the
 		// (application, environment) the change set targets -- the operator
 		// wanted UPDATE.
-		if existing, err := a.compStore.GetByApplicationEnvSlug(ctx, cs.ApplicationId, cs.EnvironmentId, req.GetComponentSlug()); err == nil && existing != nil {
+		if existing, err := a.compStore.GetByApplicationEnvName(ctx, cs.ApplicationId, cs.EnvironmentId, req.GetComponentName()); err == nil && existing != nil {
 			return nil, status.Errorf(codes.AlreadyExists,
 				"component %s already exists in environment %s; use UPDATE instead",
-				req.GetComponentSlug(), cs.EnvironmentId)
+				req.GetComponentName(), cs.EnvironmentId)
 		}
 	case model.ChangeSetEntryTypeUpdate, model.ChangeSetEntryTypeDestroy, model.ChangeSetEntryTypeOrphan:
-		comp, err := a.compStore.GetByApplicationEnvSlug(ctx, cs.ApplicationId, cs.EnvironmentId, req.GetComponentSlug())
+		comp, err := a.compStore.GetByApplicationEnvName(ctx, cs.ApplicationId, cs.EnvironmentId, req.GetComponentName())
 		if err != nil {
 			return nil, status.Errorf(codes.NotFound,
-				"component %s not found in environment %s", req.GetComponentSlug(), cs.EnvironmentId)
+				"component %s not found in environment %s", req.GetComponentName(), cs.EnvironmentId)
 		}
 		entry.ComponentId = &comp.Id
 	}
@@ -419,12 +435,12 @@ func (a *api) RemoveEntry(ctx context.Context, req *changesetv1.RemoveEntryReque
 	if err := a.supersedeIfActive(ctx, cs); err != nil {
 		return nil, err
 	}
-	if err := model.ValidateSlug(req.GetComponentSlug()); err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "invalid component_slug: %v", err)
+	if err := model.ValidateName(req.GetComponentName()); err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "invalid component_name: %v", err)
 	}
 
-	if err := a.store.DeleteEntryBySlug(ctx, cs.Id, req.GetComponentSlug()); err != nil {
-		return nil, status.Errorf(codes.NotFound, "%v", err)
+	if err := a.orch.RemoveChangeSetEntry(ctx, cs.Id, req.GetComponentName()); err != nil {
+		return nil, err
 	}
 
 	return &changesetv1.RemoveEntryResponse{}, nil

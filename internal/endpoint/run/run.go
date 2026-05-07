@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/google/uuid"
 	"github.com/uber-go/tally/v4"
@@ -14,6 +15,7 @@ import (
 
 	"go.admiral.io/admiral/internal/config"
 	"go.admiral.io/admiral/internal/endpoint"
+	"go.admiral.io/admiral/internal/middleware/httpauth"
 	"go.admiral.io/admiral/internal/model"
 	"go.admiral.io/admiral/internal/querybuilder"
 	"go.admiral.io/admiral/internal/service"
@@ -25,21 +27,26 @@ import (
 	runv1 "go.admiral.io/sdk/proto/admiral/run/v1"
 )
 
-const Name = "endpoint.run"
+const (
+	Name                    = "endpoint.run"
+	phaseOutputRoutePattern = "/api/v1/runs/{run_id}/revisions/{revision_id}/{phase}"
+)
 
 var filterColumns = []string{"application_id", "environment_id", "status", "change_set_id"}
 
 type api struct {
 	runv1.UnimplementedRunAPIServer
 
-	runStore      *store.RunStore
-	revisionStore *store.RevisionStore
-	orch          *orchestration.Service
-	objStore      objectstorage.Service
-	objBucket     string
-	qb            querybuilder.QueryBuilder
-	logger        *zap.Logger
-	scope         tally.Scope
+	runStore        *store.RunStore
+	revisionStore   *store.RevisionStore
+	changeSetStore  *store.ChangeSetStore
+	orch            *orchestration.Service
+	objStore        objectstorage.Service
+	objBucket       string
+	qb              querybuilder.QueryBuilder
+	sessionProvider authn.SessionProvider
+	logger          *zap.Logger
+	scope           tally.Scope
 }
 
 func New(cfg *config.Config, log *zap.Logger, scope tally.Scope) (endpoint.Endpoint, error) {
@@ -52,7 +59,13 @@ func New(cfg *config.Config, log *zap.Logger, scope tally.Scope) (endpoint.Endpo
 	if err != nil {
 		return nil, err
 	}
+
 	revisionStore, err := store.NewRevisionStore(db.GormDB())
+	if err != nil {
+		return nil, err
+	}
+
+	changeSetStore, err := store.NewChangeSetStore(db.GormDB())
 	if err != nil {
 		return nil, err
 	}
@@ -67,24 +80,36 @@ func New(cfg *config.Config, log *zap.Logger, scope tally.Scope) (endpoint.Endpo
 		return nil, err
 	}
 
+	authnService, err := service.GetService[authn.Service](authn.Name)
+	if err != nil {
+		return nil, err
+	}
+
 	return &api{
-		runStore:      runStore,
-		revisionStore: revisionStore,
-		orch:          orch,
-		objStore:      objStore,
-		objBucket:     cfg.Services.ObjectStorage.Bucket,
-		logger:        log.Named(Name),
-		scope:         scope.SubScope("run"),
-		qb:            querybuilder.New("runs", filterColumns),
+		runStore:        runStore,
+		revisionStore:   revisionStore,
+		changeSetStore:  changeSetStore,
+		orch:            orch,
+		objStore:        objStore,
+		objBucket:       cfg.Services.ObjectStorage.Bucket,
+		sessionProvider: authnService,
+		logger:          log.Named(Name),
+		scope:           scope.SubScope("run"),
+		qb:              querybuilder.New("runs", filterColumns),
 	}, nil
 }
 
-const planOutputRoutePattern = "/api/v1/runs/{run_id}/revisions/{revision_id}/plan"
-
 func (a *api) Register(r endpoint.Registrar) error {
 	runv1.RegisterRunAPIServer(r.GRPCServer(), a)
-	r.HTTPMux().HandleFunc("GET "+planOutputRoutePattern, a.servePlanOutput)
-	return r.RegisterJSONGateway(runv1.RegisterRunAPIHandler)
+	if err := r.RegisterJSONGateway(runv1.RegisterRunAPIHandler); err != nil {
+		return err
+	}
+	withAuth := httpauth.Middleware(httpauth.Config{
+		SessionProvider: a.sessionProvider,
+		AllowBasicAuth:  false,
+	})
+	r.HTTPMux().Handle("GET "+phaseOutputRoutePattern, withAuth(http.HandlerFunc(a.servePhaseOutput)))
+	return nil
 }
 
 func (a *api) CreateRun(ctx context.Context, req *runv1.CreateRunRequest) (*runv1.CreateRunResponse, error) {
@@ -106,19 +131,19 @@ func (a *api) CreateRun(ctx context.Context, req *runv1.CreateRunRequest) (*runv
 	}
 	var sourceRunID *uuid.UUID
 	if raw := req.GetSourceRunId(); raw != "" {
-		id, err := uuid.Parse(raw)
+		src, err := a.runStore.GetByIdentifier(ctx, raw)
 		if err != nil {
-			return nil, status.Errorf(codes.InvalidArgument, "invalid source_run_id: %v", err)
+			return nil, status.Errorf(codes.NotFound, "source run not found: %s", raw)
 		}
-		sourceRunID = &id
+		sourceRunID = &src.Id
 	}
 	var changeSetID *uuid.UUID
 	if raw := req.GetChangeSetId(); raw != "" {
-		id, err := uuid.Parse(raw)
+		cs, err := a.changeSetStore.GetByIdentifier(ctx, raw)
 		if err != nil {
-			return nil, status.Errorf(codes.InvalidArgument, "invalid change_set_id: %v", err)
+			return nil, status.Errorf(codes.NotFound, "change set not found: %s", raw)
 		}
-		changeSetID = &id
+		changeSetID = &cs.Id
 	}
 
 	run, err := a.orch.CreateRun(ctx, orchestration.CreateRunParams{
@@ -136,13 +161,9 @@ func (a *api) CreateRun(ctx context.Context, req *runv1.CreateRunRequest) (*runv
 }
 
 func (a *api) GetRun(ctx context.Context, req *runv1.GetRunRequest) (*runv1.GetRunResponse, error) {
-	id, err := uuid.Parse(req.GetRunId())
+	run, err := a.runStore.GetByIdentifier(ctx, req.GetRunId())
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "invalid run_id: %v", err)
-	}
-	run, err := a.runStore.Get(ctx, id)
-	if err != nil {
-		return nil, status.Errorf(codes.NotFound, "run not found: %s", id)
+		return nil, status.Errorf(codes.NotFound, "run not found: %s", req.GetRunId())
 	}
 	return &runv1.GetRunResponse{Run: a.loadRunProto(ctx, run)}, nil
 }
@@ -176,11 +197,11 @@ func (a *api) ApplyRun(ctx context.Context, req *runv1.ApplyRunRequest) (*runv1.
 	if _, err := authn.ClaimsFromContext(ctx); err != nil {
 		return nil, status.Error(codes.Unauthenticated, "authentication required")
 	}
-	runID, err := uuid.Parse(req.GetRunId())
+	existing, err := a.runStore.GetByIdentifier(ctx, req.GetRunId())
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "invalid run_id: %v", err)
+		return nil, status.Errorf(codes.NotFound, "run not found: %s", req.GetRunId())
 	}
-	run, err := a.orch.ApplyRun(ctx, runID)
+	run, err := a.orch.ApplyRun(ctx, existing.Id)
 	if err != nil {
 		return nil, err
 	}
@@ -191,11 +212,11 @@ func (a *api) CancelRun(ctx context.Context, req *runv1.CancelRunRequest) (*runv
 	if _, err := authn.ClaimsFromContext(ctx); err != nil {
 		return nil, status.Error(codes.Unauthenticated, "authentication required")
 	}
-	runID, err := uuid.Parse(req.GetRunId())
+	existing, err := a.runStore.GetByIdentifier(ctx, req.GetRunId())
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "invalid run_id: %v", err)
+		return nil, status.Errorf(codes.NotFound, "run not found: %s", req.GetRunId())
 	}
-	run, err := a.orch.CancelRun(ctx, runID)
+	run, err := a.orch.CancelRun(ctx, existing.Id)
 	if err != nil {
 		return nil, err
 	}
@@ -203,9 +224,9 @@ func (a *api) CancelRun(ctx context.Context, req *runv1.CancelRunRequest) (*runv
 }
 
 func (a *api) GetRevision(ctx context.Context, req *runv1.GetRevisionRequest) (*runv1.GetRevisionResponse, error) {
-	runID, err := uuid.Parse(req.GetRunId())
+	run, err := a.runStore.GetByIdentifier(ctx, req.GetRunId())
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "invalid run_id: %v", err)
+		return nil, status.Errorf(codes.NotFound, "run not found: %s", req.GetRunId())
 	}
 	revID, err := uuid.Parse(req.GetRevisionId())
 	if err != nil {
@@ -215,18 +236,18 @@ func (a *api) GetRevision(ctx context.Context, req *runv1.GetRevisionRequest) (*
 	if err != nil {
 		return nil, status.Errorf(codes.NotFound, "revision not found: %s", revID)
 	}
-	if rev.RunId != runID {
+	if rev.RunId != run.Id {
 		return nil, status.Errorf(codes.NotFound, "revision not found: %s", revID)
 	}
 	return &runv1.GetRevisionResponse{Revision: rev.ToProto()}, nil
 }
 
 func (a *api) ListRevisions(ctx context.Context, req *runv1.ListRevisionsRequest) (*runv1.ListRevisionsResponse, error) {
-	runID, err := uuid.Parse(req.GetRunId())
+	run, err := a.runStore.GetByIdentifier(ctx, req.GetRunId())
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "invalid run_id: %v", err)
+		return nil, status.Errorf(codes.NotFound, "run not found: %s", req.GetRunId())
 	}
-	revisions, err := a.revisionStore.ListByRun(ctx, runID)
+	revisions, err := a.revisionStore.ListByRun(ctx, run.Id)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to list revisions: %v", err)
 	}
@@ -237,10 +258,16 @@ func (a *api) ListRevisions(ctx context.Context, req *runv1.ListRevisionsRequest
 	return resp, nil
 }
 
-func (a *api) servePlanOutput(w http.ResponseWriter, r *http.Request) {
-	runID, err := uuid.Parse(r.PathValue("run_id"))
+func (a *api) servePhaseOutput(w http.ResponseWriter, r *http.Request) {
+	phase := r.PathValue("phase")
+	phase = strings.ToUpper(phase)
+	if !model.IsValidRevisionPhase(phase) {
+		http.Error(w, "invalid phase: must be PLAN or APPLY", http.StatusBadRequest)
+		return
+	}
+	run, err := a.runStore.GetByIdentifier(r.Context(), r.PathValue("run_id"))
 	if err != nil {
-		http.Error(w, "invalid run_id", http.StatusBadRequest)
+		http.Error(w, "run not found", http.StatusNotFound)
 		return
 	}
 	revID, err := uuid.Parse(r.PathValue("revision_id"))
@@ -254,28 +281,31 @@ func (a *api) servePlanOutput(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "revision not found", http.StatusNotFound)
 		return
 	}
-	if rev.RunId != runID {
+	if rev.RunId != run.Id {
 		http.Error(w, "revision not found", http.StatusNotFound)
 		return
 	}
-	if rev.PlanOutputKey == "" {
-		http.Error(w, "no plan output available", http.StatusNotFound)
+	if !rev.HasPhase(phase) {
+		http.Error(w, fmt.Sprintf("no %s transcript available", phase), http.StatusNotFound)
 		return
 	}
-	data, err := a.objStore.GetObject(r.Context(), a.objBucket, rev.PlanOutputKey)
+	key := rev.PhaseStorageKey(phase)
+	data, err := a.objStore.GetObject(r.Context(), a.objBucket, key)
 	if err != nil {
-		a.logger.Error("failed to read plan output from object storage",
+		a.logger.Error("failed to read transcript from object storage",
 			zap.String("revision_id", revID.String()),
-			zap.String("key", rev.PlanOutputKey),
+			zap.String("phase", phase),
+			zap.String("key", key),
 			zap.Error(err))
-		http.Error(w, "failed to read plan output", http.StatusInternalServerError)
+		http.Error(w, "failed to read transcript", http.StatusInternalServerError)
 		return
 	}
 
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	if _, err := w.Write(data); err != nil {
-		a.logger.Warn("failed to write plan output response",
+		a.logger.Warn("failed to write transcript response",
 			zap.String("revision_id", revID.String()),
+			zap.String("phase", phase),
 			zap.Error(err))
 	}
 }

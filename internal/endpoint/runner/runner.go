@@ -75,38 +75,47 @@ func New(cfg *config.Config, log *zap.Logger, scope tally.Scope) (endpoint.Endpo
 	if err != nil {
 		return nil, err
 	}
+
 	tokenStore, err := store.NewAccessTokenStore(db.GormDB())
 	if err != nil {
 		return nil, err
 	}
+
 	jobStore, err := store.NewJobStore(db.GormDB())
 	if err != nil {
 		return nil, err
 	}
+
 	revisionStore, err := store.NewRevisionStore(db.GormDB())
 	if err != nil {
 		return nil, err
 	}
+
 	runStore, err := store.NewRunStore(db.GormDB())
 	if err != nil {
 		return nil, err
 	}
+
 	componentStore, err := store.NewComponentStore(db.GormDB())
 	if err != nil {
 		return nil, err
 	}
+
 	moduleStore, err := store.NewModuleStore(db.GormDB())
 	if err != nil {
 		return nil, err
 	}
+
 	sourceStore, err := store.NewSourceStore(db.GormDB())
 	if err != nil {
 		return nil, err
 	}
+
 	enc, err := service.GetService[encryption.Service](encryption.Name)
 	if err != nil {
 		return nil, err
 	}
+
 	credentialStore, err := store.NewCredentialStore(db.GormDB(), enc)
 	if err != nil {
 		return nil, err

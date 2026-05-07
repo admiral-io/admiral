@@ -11,6 +11,29 @@ import (
 	"go.admiral.io/admiral/internal/store"
 )
 
+// lockJSON matches Terraform's lock info JSON structure.
+type lockJSON struct {
+	ID        string `json:"ID"`
+	Operation string `json:"Operation"`
+	Info      string `json:"Info"`
+	Who       string `json:"Who"`
+	Version   string `json:"Version"`
+	Created   string `json:"Created"`
+	Path      string `json:"Path"`
+}
+
+func lockToJSON(lock *model.TerraformStateLock) lockJSON {
+	return lockJSON{
+		ID:        lock.LockId,
+		Operation: lock.Operation,
+		Info:      lock.Info,
+		Who:       lock.Who,
+		Version:   lock.Version,
+		Created:   lock.CreatedAt.Format("2006-01-02T15:04:05.999999Z"),
+		Path:      lock.Path,
+	}
+}
+
 // handleLock implements LOCK -- acquires a state lock.
 // Terraform sends a JSON lock info body.
 // Returns 200 on success, 423 if already locked (with existing lock info).
@@ -92,27 +115,4 @@ func (a *api) handleUnlock(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusOK)
-}
-
-// lockJSON matches Terraform's lock info JSON structure.
-type lockJSON struct {
-	ID        string `json:"ID"`
-	Operation string `json:"Operation"`
-	Info      string `json:"Info"`
-	Who       string `json:"Who"`
-	Version   string `json:"Version"`
-	Created   string `json:"Created"`
-	Path      string `json:"Path"`
-}
-
-func lockToJSON(lock *model.TerraformStateLock) lockJSON {
-	return lockJSON{
-		ID:        lock.LockId,
-		Operation: lock.Operation,
-		Info:      lock.Info,
-		Who:       lock.Who,
-		Version:   lock.Version,
-		Created:   lock.CreatedAt.Format("2006-01-02T15:04:05.999999Z"),
-		Path:      lock.Path,
-	}
 }

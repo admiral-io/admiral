@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"sort"
 	"time"
 
 	"github.com/google/uuid"
@@ -12,6 +13,7 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/timestamppb"
 	"gorm.io/gorm"
 
 	"go.admiral.io/admiral/internal/config"
@@ -33,12 +35,15 @@ var filterColumns = []string{"name", "application_id"}
 var variableFilterColumns = []string{"key", "sensitive", "type", "source"}
 
 type api struct {
-	store    *store.EnvironmentStore
-	varStore *store.VariableStore
-	qb       querybuilder.QueryBuilder
-	varQb    querybuilder.QueryBuilder
-	logger   *zap.Logger
-	scope    tally.Scope
+	store     *store.EnvironmentStore
+	varStore  *store.VariableStore
+	compStore *store.ComponentStore
+	revStore  *store.RevisionStore
+	modStore  *store.ModuleStore
+	qb        querybuilder.QueryBuilder
+	varQb     querybuilder.QueryBuilder
+	logger    *zap.Logger
+	scope     tally.Scope
 }
 
 func New(_ *config.Config, log *zap.Logger, scope tally.Scope) (endpoint.Endpoint, error) {
@@ -57,13 +62,31 @@ func New(_ *config.Config, log *zap.Logger, scope tally.Scope) (endpoint.Endpoin
 		return nil, err
 	}
 
+	compStore, err := store.NewComponentStore(db.GormDB())
+	if err != nil {
+		return nil, err
+	}
+
+	revStore, err := store.NewRevisionStore(db.GormDB())
+	if err != nil {
+		return nil, err
+	}
+
+	modStore, err := store.NewModuleStore(db.GormDB())
+	if err != nil {
+		return nil, err
+	}
+
 	return &api{
-		store:    envStore,
-		varStore: varStore,
-		logger:   log.Named(Name),
-		scope:    scope.SubScope("environment"),
-		qb:       querybuilder.New("environments", filterColumns),
-		varQb:    querybuilder.New("variables", variableFilterColumns),
+		store:     envStore,
+		varStore:  varStore,
+		compStore: compStore,
+		revStore:  revStore,
+		modStore:  modStore,
+		logger:    log.Named(Name),
+		scope:     scope.SubScope("environment"),
+		qb:        querybuilder.New("environments", filterColumns),
+		varQb:     querybuilder.New("variables", variableFilterColumns),
 	}, nil
 }
 
@@ -272,4 +295,60 @@ func (a *api) ListEnvironmentVariables(ctx context.Context, req *environmentv1.L
 	}
 
 	return resp, nil
+}
+
+func (a *api) ListEnvironmentComponents(ctx context.Context, req *environmentv1.ListEnvironmentComponentsRequest) (*environmentv1.ListEnvironmentComponentsResponse, error) {
+	envID, err := uuid.Parse(req.GetEnvironmentId())
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "invalid environment ID: %v", err)
+	}
+
+	env, err := a.store.Get(ctx, envID)
+	if err != nil {
+		return nil, status.Errorf(codes.NotFound, "environment not found: %s", envID)
+	}
+
+	comps, err := a.compStore.ListByApplicationEnv(ctx, env.ApplicationId, env.Id)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "list components: %v", err)
+	}
+
+	out := make([]*environmentv1.EnvironmentComponent, 0, len(comps))
+	for i := range comps {
+		c := &comps[i]
+		if c.DesiredState != model.ComponentDesiredStateActive {
+			continue
+		}
+		ec := &environmentv1.EnvironmentComponent{
+			Name:         c.Name,
+			DesiredState: model.ComponentDesiredStateToProto(c.DesiredState),
+			ModuleId:     c.ModuleId.String(),
+			Version:      c.Version,
+		}
+		// Resolve module name + type. Best-effort: a deleted module
+		// shouldn't fail the whole list.
+		if mod, err := a.modStore.Get(ctx, c.ModuleId); err == nil {
+			ec.ModuleName = mod.Name
+			if proto, ok := model.ModuleTypeToProto(mod.Type); ok {
+				ec.ModuleType = proto
+			}
+		}
+		// Last-succeeded revision for the (component, env) pair. nil when
+		// the component has never reached SUCCEEDED.
+		rev, err := a.revStore.LastDeployed(ctx, c.Id, env.Id)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "last deployed for %q: %v", c.Name, err)
+		}
+		if rev != nil {
+			ec.LastRevisionId = rev.Id.String()
+			ec.LastRevisionStatus = model.RevisionStatusToProto(rev.Status)
+			if rev.CompletedAt != nil {
+				ec.LastDeployedAt = timestamppb.New(*rev.CompletedAt)
+			}
+		}
+		out = append(out, ec)
+	}
+	sort.Slice(out, func(i, j int) bool { return out[i].Name < out[j].Name })
+
+	return &environmentv1.ListEnvironmentComponentsResponse{Components: out}, nil
 }

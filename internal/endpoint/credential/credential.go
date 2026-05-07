@@ -52,6 +52,7 @@ func New(_ *config.Config, log *zap.Logger, scope tally.Scope) (endpoint.Endpoin
 	if err != nil {
 		return nil, err
 	}
+
 	srcStore, err := store.NewSourceStore(db.GormDB())
 	if err != nil {
 		return nil, err
