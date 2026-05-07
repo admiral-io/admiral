@@ -10,8 +10,8 @@ type VarRef struct {
 }
 
 type OutputRef struct {
-	Slug   string // component slug, e.g. "vpc"
-	Output string // output name, e.g. "vpc_id"
+	ComponentName string // referenced component, e.g. "vpc"
+	Output        string // output name, e.g. "vpc_id"
 }
 
 var (
@@ -25,18 +25,22 @@ func ExtractRefs(tmpl string) (vars []VarRef, outputs []OutputRef) {
 	return vars, outputs
 }
 
-func ExtractOutputSlugs(tmpl string) []string {
+// ExtractReferencedComponents returns the unique component names whose outputs
+// the given template reads via `{{ .component.<name>.<output> }}`. Used by the
+// run engine to seed dependency edges and by changeset diff to compute
+// downstream impact.
+func ExtractReferencedComponents(tmpl string) []string {
 	_, refs := ExtractRefs(tmpl)
 	seen := make(map[string]struct{}, len(refs))
 	for _, r := range refs {
-		seen[r.Slug] = struct{}{}
+		seen[r.ComponentName] = struct{}{}
 	}
-	slugs := make([]string, 0, len(seen))
+	names := make([]string, 0, len(seen))
 	for s := range seen {
-		slugs = append(slugs, s)
+		names = append(names, s)
 	}
-	sort.Strings(slugs)
-	return slugs
+	sort.Strings(names)
+	return names
 }
 
 func extractVarRefs(tmpl string) []VarRef {
@@ -66,11 +70,11 @@ func extractOutputRefs(tmpl string) []OutputRef {
 			continue
 		}
 		seen[k] = struct{}{}
-		refs = append(refs, OutputRef{Slug: m[1], Output: m[2]})
+		refs = append(refs, OutputRef{ComponentName: m[1], Output: m[2]})
 	}
 	sort.Slice(refs, func(i, j int) bool {
-		if refs[i].Slug != refs[j].Slug {
-			return refs[i].Slug < refs[j].Slug
+		if refs[i].ComponentName != refs[j].ComponentName {
+			return refs[i].ComponentName < refs[j].ComponentName
 		}
 		return refs[i].Output < refs[j].Output
 	})

@@ -27,21 +27,19 @@ type RunMeta struct {
 // SelfMeta exposes the current component's own metadata via {{ .self.* }}.
 type SelfMeta struct {
 	Name string
-	Slug string
 }
 
 // EvalContext holds every namespace reachable from a template expression.
 //
 //	{{ .var.KEY }}                → Var[KEY]
-//	{{ .component.SLUG.OUT }}     → Component[SLUG][OUT]
+//	{{ .component.NAME.OUT }}     → Component[NAME][OUT]
 //	{{ .app.name }}               → App.Name
 //	{{ .env.name }}               → Env.Name
 //	{{ .run.id }}                 → Run.Id
 //	{{ .self.name }}              → Self.Name
-//	{{ .self.slug }}              → Self.Slug
 type EvalContext struct {
 	Var       map[string]any            // resolved variables (hierarchy-merged)
-	Component map[string]map[string]any // component_slug → output_name → value
+	Component map[string]map[string]any // component_name → output_name → value
 	App       AppMeta
 	Env       EnvMeta
 	Run       RunMeta

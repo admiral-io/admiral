@@ -26,8 +26,8 @@ func TestExtractRefs_OutputOnly(t *testing.T) {
 		t.Errorf("expected no var refs, got %v", vars)
 	}
 	wantOutputs := []OutputRef{
-		{Slug: "vpc", Output: "subnet_ids"},
-		{Slug: "vpc", Output: "vpc_id"},
+		{ComponentName: "vpc", Output: "subnet_ids"},
+		{ComponentName: "vpc", Output: "vpc_id"},
 	}
 	if !reflect.DeepEqual(outputs, wantOutputs) {
 		t.Errorf("outputs = %v, want %v", outputs, wantOutputs)
@@ -49,8 +49,8 @@ func TestExtractRefs_Mixed(t *testing.T) {
 	}
 
 	wantOutputs := []OutputRef{
-		{Slug: "database", Output: "endpoint"},
-		{Slug: "vpc", Output: "vpc_id"},
+		{ComponentName: "database", Output: "endpoint"},
+		{ComponentName: "vpc", Output: "vpc_id"},
 	}
 	if !reflect.DeepEqual(outputs, wantOutputs) {
 		t.Errorf("outputs = %v, want %v", outputs, wantOutputs)
@@ -64,7 +64,7 @@ func TestExtractRefs_Deduplicated(t *testing.T) {
 	if len(vars) != 1 || vars[0].Key != "x" {
 		t.Errorf("expected 1 var ref, got %v", vars)
 	}
-	if len(outputs) != 1 || outputs[0].Slug != "vpc" {
+	if len(outputs) != 1 || outputs[0].ComponentName != "vpc" {
 		t.Errorf("expected 1 output ref, got %v", outputs)
 	}
 }
@@ -86,35 +86,35 @@ func TestExtractRefs_WithPipeline(t *testing.T) {
 	if len(vars) != 1 || vars[0].Key != "region" {
 		t.Errorf("expected 1 var ref (region), got %v", vars)
 	}
-	if len(outputs) != 1 || outputs[0].Slug != "vpc" || outputs[0].Output != "subnet_ids" {
+	if len(outputs) != 1 || outputs[0].ComponentName != "vpc" || outputs[0].Output != "subnet_ids" {
 		t.Errorf("expected 1 output ref (vpc.subnet_ids), got %v", outputs)
 	}
 }
 
-func TestExtractOutputSlugs(t *testing.T) {
+func TestExtractReferencedComponents(t *testing.T) {
 	tmpl := `{
 		"vpc_id": "{{ .component.vpc.vpc_id }}",
 		"db": "{{ .component.database.endpoint }}",
 		"cidr": "{{ .component.vpc.cidr_block }}"
 	}`
-	slugs := ExtractOutputSlugs(tmpl)
+	names := ExtractReferencedComponents(tmpl)
 	want := []string{"database", "vpc"}
-	if !reflect.DeepEqual(slugs, want) {
-		t.Errorf("slugs = %v, want %v", slugs, want)
+	if !reflect.DeepEqual(names, want) {
+		t.Errorf("names = %v, want %v", names, want)
 	}
 }
 
-func TestExtractOutputSlugs_Empty(t *testing.T) {
-	slugs := ExtractOutputSlugs(`{"static": "value"}`)
-	if len(slugs) != 0 {
-		t.Errorf("expected no slugs, got %v", slugs)
+func TestExtractReferencedComponents_Empty(t *testing.T) {
+	names := ExtractReferencedComponents(`{"static": "value"}`)
+	if len(names) != 0 {
+		t.Errorf("expected no names, got %v", names)
 	}
 }
 
-func TestExtractRefs_HyphenatedSlug(t *testing.T) {
+func TestExtractRefs_HyphenatedName(t *testing.T) {
 	tmpl := `{"id": "{{ .component.my-vpc.vpc_id }}"}`
 	_, outputs := ExtractRefs(tmpl)
-	if len(outputs) != 1 || outputs[0].Slug != "my-vpc" {
-		t.Errorf("expected slug 'my-vpc', got %v", outputs)
+	if len(outputs) != 1 || outputs[0].ComponentName != "my-vpc" {
+		t.Errorf("expected component name 'my-vpc', got %v", outputs)
 	}
 }
