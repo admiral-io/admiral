@@ -14,5 +14,4 @@ CREATE TABLE IF NOT EXISTS environments (
 
 CREATE UNIQUE INDEX IF NOT EXISTS idx_environments_app_name ON environments(application_id, name) WHERE deleted_at IS NULL;
 CREATE INDEX IF NOT EXISTS idx_environments_application_id ON environments(application_id) WHERE deleted_at IS NULL;
-CREATE INDEX IF NOT EXISTS idx_environments_deleted_at ON environments(deleted_at);
 CREATE INDEX IF NOT EXISTS idx_environments_labels ON environments USING GIN (labels);

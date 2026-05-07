@@ -13,4 +13,3 @@ CREATE TABLE IF NOT EXISTS runners (
 );
 
 CREATE UNIQUE INDEX IF NOT EXISTS idx_runners_name ON runners(name) WHERE deleted_at IS NULL;
-CREATE INDEX IF NOT EXISTS idx_runners_deleted_at ON runners(deleted_at);

@@ -3,7 +3,7 @@ CREATE TABLE IF NOT EXISTS credentials (
     name TEXT NOT NULL CHECK (length(name) > 0 AND name ~ '^[a-z]([a-z0-9-]{0,61}[a-z0-9])?$'),
     description TEXT NOT NULL DEFAULT '',
     type TEXT NOT NULL CHECK (type IN ('SSH_KEY', 'BASIC_AUTH', 'BEARER_TOKEN')),
-    auth_config JSONB NOT NULL DEFAULT '{}',
+    auth_config JSONB NOT NULL DEFAULT '{}', -- retrievable secrets; will be AES-256-GCM envelope-encrypted at app layer (V1 blocker; today plaintext)
     labels JSONB NOT NULL DEFAULT '{}',
     created_by TEXT NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
@@ -12,6 +12,5 @@ CREATE TABLE IF NOT EXISTS credentials (
 );
 
 CREATE UNIQUE INDEX IF NOT EXISTS idx_credentials_name ON credentials(name) WHERE deleted_at IS NULL;
-CREATE INDEX IF NOT EXISTS idx_credentials_deleted_at ON credentials(deleted_at);
 CREATE INDEX IF NOT EXISTS idx_credentials_type ON credentials(type) WHERE deleted_at IS NULL;
 CREATE INDEX IF NOT EXISTS idx_credentials_labels ON credentials USING GIN (labels);

@@ -10,5 +10,4 @@ CREATE TABLE IF NOT EXISTS applications (
 );
 
 CREATE UNIQUE INDEX IF NOT EXISTS idx_applications_name ON applications(name) WHERE deleted_at IS NULL;
-CREATE INDEX IF NOT EXISTS idx_applications_deleted_at ON applications(deleted_at);
 CREATE INDEX IF NOT EXISTS idx_applications_labels ON applications USING GIN (labels);

@@ -18,7 +18,6 @@ CREATE TABLE IF NOT EXISTS sources (
 );
 
 CREATE UNIQUE INDEX IF NOT EXISTS idx_sources_name ON sources(name) WHERE deleted_at IS NULL;
-CREATE INDEX IF NOT EXISTS idx_sources_deleted_at ON sources(deleted_at);
 CREATE INDEX IF NOT EXISTS idx_sources_type ON sources(type) WHERE deleted_at IS NULL;
 CREATE INDEX IF NOT EXISTS idx_sources_credential_id ON sources(credential_id) WHERE deleted_at IS NULL;
 CREATE INDEX IF NOT EXISTS idx_sources_catalog ON sources(catalog) WHERE deleted_at IS NULL;

@@ -15,7 +15,6 @@ CREATE TABLE IF NOT EXISTS modules (
 );
 
 CREATE UNIQUE INDEX IF NOT EXISTS idx_modules_name ON modules(name) WHERE deleted_at IS NULL;
-CREATE INDEX IF NOT EXISTS idx_modules_deleted_at ON modules(deleted_at);
 CREATE INDEX IF NOT EXISTS idx_modules_type ON modules(type) WHERE deleted_at IS NULL;
 CREATE INDEX IF NOT EXISTS idx_modules_source_id ON modules(source_id) WHERE deleted_at IS NULL;
 CREATE INDEX IF NOT EXISTS idx_modules_labels ON modules USING GIN (labels);

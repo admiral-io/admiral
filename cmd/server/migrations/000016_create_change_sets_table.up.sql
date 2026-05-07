@@ -10,8 +10,8 @@ CREATE TABLE IF NOT EXISTS change_sets (
     run_id UUID REFERENCES runs(id) ON DELETE SET NULL,
     base_head_revisions JSONB NOT NULL DEFAULT '{}',
     created_by TEXT NOT NULL,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
 );
 
 CREATE INDEX IF NOT EXISTS idx_change_sets_app_env ON change_sets(application_id, environment_id);
@@ -22,16 +22,19 @@ CREATE TABLE IF NOT EXISTS change_set_entries (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     change_set_id UUID NOT NULL REFERENCES change_sets(id) ON DELETE CASCADE,
     component_id UUID REFERENCES components(id) ON DELETE CASCADE,
-    component_slug TEXT NOT NULL CHECK (length(component_slug) > 0 AND component_slug ~ '^[a-z]([a-z0-9-]{0,61}[a-z0-9])?$'),
+    component_name TEXT NOT NULL CHECK (length(component_name) > 0 AND component_name ~ '^[a-z]([a-z0-9-]{0,61}[a-z0-9])?$'),
+    -- User intent. Distinct from revisions.change_type (computed effect) which adds
+    -- RECREATE/IMPORT/NO_CHANGE. ORPHAN here produces no revision (handled by
+    -- post-run reconciliation flipping components.desired_state).
     change_type TEXT NOT NULL CHECK (change_type IN ('CREATE', 'UPDATE', 'DESTROY', 'ORPHAN')),
     module_id UUID,
     version TEXT,
     values_template TEXT,
     depends_on TEXT[],
     description TEXT,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    UNIQUE (change_set_id, component_slug)
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    UNIQUE (change_set_id, component_name)
 );
 
 CREATE INDEX IF NOT EXISTS idx_change_set_entries_change_set_id ON change_set_entries(change_set_id);
@@ -44,7 +47,7 @@ CREATE TABLE IF NOT EXISTS change_set_variable_entries (
     value TEXT,
     type TEXT NOT NULL DEFAULT 'STRING' CHECK (type IN ('STRING', 'NUMBER', 'BOOLEAN', 'COMPLEX')),
     sensitive BOOLEAN NOT NULL DEFAULT false,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
     UNIQUE (change_set_id, key)
 );
 
@@ -53,3 +56,5 @@ CREATE INDEX IF NOT EXISTS idx_change_set_variable_entries_change_set_id ON chan
 ALTER TABLE runs
     ADD CONSTRAINT runs_change_set_id_fkey
     FOREIGN KEY (change_set_id) REFERENCES change_sets(id) ON DELETE SET NULL;
+
+CREATE INDEX IF NOT EXISTS idx_runs_change_set_id ON runs(change_set_id) WHERE change_set_id IS NOT NULL;

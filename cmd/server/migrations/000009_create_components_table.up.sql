@@ -3,7 +3,6 @@ CREATE TABLE IF NOT EXISTS components (
     application_id UUID NOT NULL REFERENCES applications(id) ON DELETE CASCADE,
     environment_id UUID NOT NULL REFERENCES environments(id) ON DELETE CASCADE,
     name TEXT NOT NULL CHECK (length(name) > 0 AND name ~ '^[a-z]([a-z0-9-]{0,61}[a-z0-9])?$'),
-    slug TEXT NOT NULL CHECK (length(slug) > 0 AND slug ~ '^[a-z]([a-z0-9-]{0,61}[a-z0-9])?$'),
     description TEXT NOT NULL DEFAULT '',
     kind TEXT NOT NULL CHECK (kind IN ('INFRASTRUCTURE', 'WORKLOAD')),
     desired_state TEXT NOT NULL DEFAULT 'ACTIVE' CHECK (desired_state IN ('ACTIVE', 'DESTROY', 'ORPHAN', 'DESTROYED')),
@@ -20,8 +19,6 @@ CREATE TABLE IF NOT EXISTS components (
 );
 
 CREATE UNIQUE INDEX IF NOT EXISTS idx_components_app_env_name ON components(application_id, environment_id, name) WHERE deleted_at IS NULL;
-CREATE UNIQUE INDEX IF NOT EXISTS idx_components_app_env_slug ON components(application_id, environment_id, slug) WHERE deleted_at IS NULL;
 CREATE INDEX IF NOT EXISTS idx_components_app_env ON components(application_id, environment_id) WHERE deleted_at IS NULL;
 CREATE INDEX IF NOT EXISTS idx_components_module_id ON components(module_id) WHERE deleted_at IS NULL;
 CREATE INDEX IF NOT EXISTS idx_components_kind ON components(kind) WHERE deleted_at IS NULL;
-CREATE INDEX IF NOT EXISTS idx_components_deleted_at ON components(deleted_at);
