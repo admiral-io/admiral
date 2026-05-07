@@ -90,20 +90,20 @@ func (s *RevisionStore) LastDeployed(ctx context.Context, componentID, environme
 	return &rev, nil
 }
 
-// LatestSucceededByEnv returns a slug-keyed map of the most recent SUCCEEDED
+// LatestSucceededByEnv returns a name-keyed map of the most recent SUCCEEDED
 // revision id per component for an (application, environment). Used by
 // change set conflict detection: snapshot at change set creation, compare
-// per-entry at deploy time. Slugs not present in the map mean the component
+// per-entry at deploy time. Names not present in the map mean the component
 // has never been successfully deployed in this env.
 func (s *RevisionStore) LatestSucceededByEnv(ctx context.Context, applicationID, environmentID uuid.UUID) (map[string]uuid.UUID, error) {
 	type row struct {
-		Slug       string    `gorm:"column:slug"`
+		Name       string    `gorm:"column:name"`
 		RevisionId uuid.UUID `gorm:"column:revision_id"`
 	}
 	var rows []row
 	err := s.db.WithContext(ctx).
 		Raw(`
-			SELECT DISTINCT ON (r.component_id) c.slug AS slug, r.id AS revision_id
+			SELECT DISTINCT ON (r.component_id) c.name AS name, r.id AS revision_id
 			FROM revisions r
 			JOIN runs ru ON ru.id = r.run_id
 			JOIN components c ON c.id = r.component_id
@@ -118,7 +118,7 @@ func (s *RevisionStore) LatestSucceededByEnv(ctx context.Context, applicationID,
 	}
 	result := make(map[string]uuid.UUID, len(rows))
 	for _, r := range rows {
-		result[r.Slug] = r.RevisionId
+		result[r.Name] = r.RevisionId
 	}
 	return result, nil
 }

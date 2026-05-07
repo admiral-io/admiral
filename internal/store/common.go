@@ -18,6 +18,11 @@ type JoinSpec struct {
 	// Columns are the parent columns to surface on the result row, each with
 	// the alias to read them back into the model.
 	Columns []JoinedColumn
+	// SoftDelete indicates whether the parent table uses gorm.DeletedAt.
+	// When true, the join predicate excludes soft-deleted parents (mirroring
+	// Gorm's default Find behavior). Tables like `change_sets` and `runs`
+	// that use a status column instead of soft-delete must set this false.
+	SoftDelete bool
 }
 
 // JoinedColumn names a parent column to select and the alias it should be
@@ -40,6 +45,7 @@ func ActorJoin(column string) JoinSpec {
 			{Source: "name", As: column + "_name"},
 			{Source: "email", As: column + "_email"},
 		},
+		SoftDelete: true,
 	}
 }
 
@@ -52,6 +58,25 @@ func NameJoin(fkColumn, parentTable string) JoinSpec {
 		FkColumn:    fkColumn,
 		ParentTable: parentTable,
 		Columns:     []JoinedColumn{{Source: "name", As: fkColumn + "_name"}},
+		SoftDelete:  true,
+	}
+}
+
+// MultiJoin builds a JoinSpec that selects multiple columns from a single
+// parent in one LEFT JOIN. Use when one denorm requires more than one column
+// from the same parent (e.g. denormalizing both `display_id` and `title` from
+// a referenced changeset). Each JoinedColumn.As becomes the alias on the
+// result row and must match a `gorm:"->;column:<alias>"` field on the model.
+//
+// The motivating use case (denorming change_sets onto runs) targets a parent
+// table that uses a status column instead of gorm.DeletedAt, so SoftDelete
+// defaults to false here. If you call MultiJoin against a soft-deleted parent,
+// set the JoinSpec.SoftDelete field on the returned value.
+func MultiJoin(fkColumn, parentTable string, columns ...JoinedColumn) JoinSpec {
+	return JoinSpec{
+		FkColumn:    fkColumn,
+		ParentTable: parentTable,
+		Columns:     columns,
 	}
 }
 
@@ -71,10 +96,14 @@ func WithEnrichment(table string, joins ...JoinSpec) func(*gorm.DB) *gorm.DB {
 		d := db
 		for _, j := range joins {
 			alias := j.FkColumn + "_join"
-			d = d.Joins(fmt.Sprintf(
-				"LEFT JOIN %s AS %s ON %s.id::text = %s.%s::text AND %s.deleted_at IS NULL",
-				j.ParentTable, alias, alias, table, j.FkColumn, alias,
-			))
+			predicate := fmt.Sprintf(
+				"LEFT JOIN %s AS %s ON %s.id::text = %s.%s::text",
+				j.ParentTable, alias, alias, table, j.FkColumn,
+			)
+			if j.SoftDelete {
+				predicate += fmt.Sprintf(" AND %s.deleted_at IS NULL", alias)
+			}
+			d = d.Joins(predicate)
 			for _, c := range j.Columns {
 				sel = append(sel, fmt.Sprintf("%s.%s AS %s", alias, c.Source, c.As))
 			}

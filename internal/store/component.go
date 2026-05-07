@@ -48,17 +48,17 @@ func (s *ComponentStore) Get(ctx context.Context, id uuid.UUID) (*model.Componen
 	return &c, nil
 }
 
-func (s *ComponentStore) GetByApplicationEnvSlug(ctx context.Context, appID, envID uuid.UUID, slug string) (*model.Component, error) {
+func (s *ComponentStore) GetByApplicationEnvName(ctx context.Context, appID, envID uuid.UUID, name string) (*model.Component, error) {
 	var c model.Component
 	err := s.db.WithContext(ctx).
 		Scopes(WithActorRef("components", "created_by")).
-		Where("components.application_id = ? AND components.environment_id = ? AND components.slug = ?", appID, envID, slug).
+		Where("components.application_id = ? AND components.environment_id = ? AND components.name = ?", appID, envID, name).
 		Take(&c).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
-		return nil, fmt.Errorf("component not found: %s/%s/%s", appID, envID, slug)
+		return nil, fmt.Errorf("component not found: %s/%s/%s", appID, envID, name)
 	}
 	if err != nil {
-		return nil, fmt.Errorf("failed to get component by slug: %w", err)
+		return nil, fmt.Errorf("failed to get component by name: %w", err)
 	}
 	return &c, nil
 }

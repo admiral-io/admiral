@@ -84,9 +84,9 @@ func (s *ChangeSetStore) GetByIdentifier(ctx context.Context, ident string) (*mo
 		var cs model.ChangeSet
 		err := s.db.WithContext(ctx).
 			Scopes(WithEnrichment("change_sets",
-			ActorJoin("created_by"),
-			NameJoin("application_id", "applications"),
-			NameJoin("environment_id", "environments"))).
+				ActorJoin("created_by"),
+				NameJoin("application_id", "applications"),
+				NameJoin("environment_id", "environments"))).
 			Where("change_sets.display_id = ?", ident).
 			Take(&cs).Error
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -182,7 +182,7 @@ func (s *ChangeSetStore) Copy(ctx context.Context, source *model.ChangeSet, targ
 			// source env and is meaningless in the target env. CREATE
 			// entries materialize fresh in the target env at deploy time
 			// (clear the ID); UPDATE/DESTROY/ORPHAN must point at the
-			// target env's component with the same slug.
+			// target env's component with the same name.
 			switch e.ChangeType {
 			case model.ChangeSetEntryTypeCreate:
 				e.ComponentId = nil
@@ -191,10 +191,10 @@ func (s *ChangeSetStore) Copy(ctx context.Context, source *model.ChangeSet, targ
 				model.ChangeSetEntryTypeOrphan:
 				var targetComp model.Component
 				if err := tx.Where(
-					"application_id = ? AND environment_id = ? AND slug = ? AND deleted_at IS NULL",
-					source.ApplicationId, targetEnvID, e.ComponentSlug,
+					"application_id = ? AND environment_id = ? AND name = ? AND deleted_at IS NULL",
+					source.ApplicationId, targetEnvID, e.ComponentName,
 				).Take(&targetComp).Error; err != nil {
-					return fmt.Errorf("component %q does not exist in target environment: %w", e.ComponentSlug, err)
+					return fmt.Errorf("component %q does not exist in target environment: %w", e.ComponentName, err)
 				}
 				e.ComponentId = &targetComp.Id
 			}
@@ -228,7 +228,7 @@ func (s *ChangeSetStore) UpsertEntry(ctx context.Context, e *model.ChangeSetEntr
 	}
 	err := s.db.WithContext(ctx).
 		Clauses(clause.OnConflict{
-			Columns: []clause.Column{{Name: "change_set_id"}, {Name: "component_slug"}},
+			Columns: []clause.Column{{Name: "change_set_id"}, {Name: "component_name"}},
 			DoUpdates: clause.AssignmentColumns([]string{
 				"component_id", "change_type", "module_id", "version",
 				"values_template", "depends_on", "description", "updated_at",
@@ -238,16 +238,16 @@ func (s *ChangeSetStore) UpsertEntry(ctx context.Context, e *model.ChangeSetEntr
 	if err != nil {
 		return nil, fmt.Errorf("failed to upsert entry: %w", err)
 	}
-	return s.GetEntryBySlug(ctx, e.ChangeSetId, e.ComponentSlug)
+	return s.GetEntryByName(ctx, e.ChangeSetId, e.ComponentName)
 }
 
-func (s *ChangeSetStore) GetEntryBySlug(ctx context.Context, changeSetID uuid.UUID, slug string) (*model.ChangeSetEntry, error) {
+func (s *ChangeSetStore) GetEntryByName(ctx context.Context, changeSetID uuid.UUID, name string) (*model.ChangeSetEntry, error) {
 	var e model.ChangeSetEntry
 	err := s.db.WithContext(ctx).
-		Where("change_set_id = ? AND component_slug = ?", changeSetID, slug).
+		Where("change_set_id = ? AND component_name = ?", changeSetID, name).
 		Take(&e).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
-		return nil, fmt.Errorf("entry not found: %s/%s: %w", changeSetID, slug, err)
+		return nil, fmt.Errorf("entry not found: %s/%s: %w", changeSetID, name, err)
 	}
 	if err != nil {
 		return nil, fmt.Errorf("failed to get entry: %w", err)
@@ -287,15 +287,15 @@ func (s *ChangeSetStore) SetEntryComponentID(ctx context.Context, entryID, compo
 	return nil
 }
 
-func (s *ChangeSetStore) DeleteEntryBySlug(ctx context.Context, changeSetID uuid.UUID, slug string) error {
+func (s *ChangeSetStore) DeleteEntryByName(ctx context.Context, changeSetID uuid.UUID, name string) error {
 	result := s.db.WithContext(ctx).
-		Where("change_set_id = ? AND component_slug = ?", changeSetID, slug).
+		Where("change_set_id = ? AND component_name = ?", changeSetID, name).
 		Delete(&model.ChangeSetEntry{})
 	if result.Error != nil {
 		return fmt.Errorf("failed to delete entry: %w", result.Error)
 	}
 	if result.RowsAffected == 0 {
-		return fmt.Errorf("entry not found: %s/%s", changeSetID, slug)
+		return fmt.Errorf("entry not found: %s/%s", changeSetID, name)
 	}
 	return nil
 }

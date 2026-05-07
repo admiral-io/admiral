@@ -130,10 +130,10 @@ func (s *VariableStore) DeleteByEnvKey(ctx context.Context, envID uuid.UUID, key
 func (s *VariableStore) UpsertInfraOutputs(
 	ctx context.Context,
 	appID, envID uuid.UUID,
-	componentSlug string,
+	componentName string,
 	outputs []model.Variable,
 ) error {
-	prefix := componentSlug + "."
+	prefix := componentName + "."
 
 	return s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		// Delete all existing INFRASTRUCTURE variables for this component+env.
@@ -157,9 +157,9 @@ func (s *VariableStore) UpsertInfraOutputs(
 func (s *VariableStore) DeleteInfraOutputs(
 	ctx context.Context,
 	appID, envID uuid.UUID,
-	componentSlug string,
+	componentName string,
 ) error {
-	prefix := componentSlug + "."
+	prefix := componentName + "."
 	result := s.db.WithContext(ctx).
 		Where("application_id = ? AND environment_id = ? AND source = ? AND key LIKE ?",
 			appID, envID, model.VariableSourceInfrastructure, prefix+"%").

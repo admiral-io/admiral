@@ -8,8 +8,24 @@ import (
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 
+	"go.admiral.io/admiral/internal/displayid"
 	"go.admiral.io/admiral/internal/model"
 )
+
+// runEnrichment composes the LEFT JOINs that surface denormalized fields on
+// every Run read: the triggering actor's name/email, the parent application
+// and environment names, and the deployed changeset's display_id + title.
+// Built once and reused so Get / List / GetByIdentifier stay symmetrical.
+func runEnrichment() func(*gorm.DB) *gorm.DB {
+	return WithEnrichment("runs",
+		ActorJoin("triggered_by"),
+		NameJoin("application_id", "applications"),
+		NameJoin("environment_id", "environments"),
+		MultiJoin("change_set_id", "change_sets",
+			JoinedColumn{Source: "display_id", As: "change_set_id_display_id"},
+			JoinedColumn{Source: "title", As: "change_set_id_title"}),
+	)
+}
 
 type RunStore struct {
 	db *gorm.DB
@@ -26,19 +42,31 @@ func (s *RunStore) DB() *gorm.DB {
 	return s.db
 }
 
+// displayIDInsertAttempts bounds the regenerate-on-collision loop in Create.
+// With 60 bits of entropy in the suffix, three tries is several orders of
+// magnitude beyond any realistic collision rate.
+const runDisplayIDInsertAttempts = 3
+
 func (s *RunStore) Create(ctx context.Context, r *model.Run) (*model.Run, error) {
 	if err := r.Validate(); err != nil {
 		return nil, fmt.Errorf("invalid run: %w", err)
 	}
-	if err := s.db.WithContext(ctx).Create(r).Error; err != nil {
-		return nil, fmt.Errorf("failed to create run: %w", err)
+	tx := s.db.WithContext(ctx)
+	var lastErr error
+	for range runDisplayIDInsertAttempts {
+		r.DisplayId = displayid.Generate(model.DisplayIDPrefixRun)
+		if err := tx.Create(r).Error; err != nil {
+			lastErr = err
+			continue
+		}
+		return s.Get(ctx, r.Id)
 	}
-	return r, nil
+	return nil, fmt.Errorf("failed to create run: %w", lastErr)
 }
 
 func (s *RunStore) Get(ctx context.Context, id uuid.UUID) (*model.Run, error) {
 	var r model.Run
-	err := s.db.WithContext(ctx).Scopes(WithActorRef("runs", "triggered_by")).Where("runs.id = ?", id).Take(&r).Error
+	err := s.db.WithContext(ctx).Scopes(runEnrichment()).Where("runs.id = ?", id).Take(&r).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, fmt.Errorf("run not found: %s", id)
 	}
@@ -48,9 +76,33 @@ func (s *RunStore) Get(ctx context.Context, id uuid.UUID) (*model.Run, error) {
 	return &r, nil
 }
 
+// GetByIdentifier resolves either a UUID or a `run-<suffix>` display ID to a
+// Run. Used by lookup endpoints to accept both forms transparently.
+func (s *RunStore) GetByIdentifier(ctx context.Context, ident string) (*model.Run, error) {
+	if displayid.Is(ident, model.DisplayIDPrefixRun) {
+		var r model.Run
+		err := s.db.WithContext(ctx).
+			Scopes(runEnrichment()).
+			Where("runs.display_id = ?", ident).
+			Take(&r).Error
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, fmt.Errorf("run not found: %s", ident)
+		}
+		if err != nil {
+			return nil, fmt.Errorf("failed to get run: %w", err)
+		}
+		return &r, nil
+	}
+	id, err := uuid.Parse(ident)
+	if err != nil {
+		return nil, fmt.Errorf("invalid run_id: %s", ident)
+	}
+	return s.Get(ctx, id)
+}
+
 func (s *RunStore) List(ctx context.Context, scopes ...func(*gorm.DB) *gorm.DB) ([]model.Run, error) {
 	var runs []model.Run
-	err := s.db.WithContext(ctx).Scopes(append(scopes, WithActorRef("runs", "triggered_by"))...).Order("created_at DESC").Find(&runs).Error
+	err := s.db.WithContext(ctx).Scopes(append(scopes, runEnrichment())...).Order("created_at DESC").Find(&runs).Error
 	if err != nil {
 		return nil, fmt.Errorf("failed to list runs: %w", err)
 	}

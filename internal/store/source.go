@@ -43,7 +43,7 @@ func (s *SourceStore) Create(ctx context.Context, src *model.Source) (*model.Sou
 
 func (s *SourceStore) Get(ctx context.Context, id uuid.UUID) (*model.Source, error) {
 	var src model.Source
-	err := s.db.WithContext(ctx).Scopes(WithActorRef("sources", "created_by")).Where("sources.id = ?", id).Take(&src).Error
+	err := s.db.WithContext(ctx).Scopes(sourceEnrichment()).Where("sources.id = ?", id).Take(&src).Error
 
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, fmt.Errorf("source not found: %s", id)
@@ -58,13 +58,23 @@ func (s *SourceStore) Get(ctx context.Context, id uuid.UUID) (*model.Source, err
 
 func (s *SourceStore) List(ctx context.Context, scopes ...func(*gorm.DB) *gorm.DB) ([]model.Source, error) {
 	var srcs []model.Source
-	err := s.db.WithContext(ctx).Scopes(append(scopes, WithActorRef("sources", "created_by"))...).Find(&srcs).Error
+	err := s.db.WithContext(ctx).Scopes(append(scopes, sourceEnrichment())...).Find(&srcs).Error
 
 	if err != nil {
 		return nil, fmt.Errorf("failed to list sources: %w", err)
 	}
 
 	return srcs, nil
+}
+
+// sourceEnrichment composes the LEFT JOINs that surface denormalized fields
+// on every Source read: the creator's name/email and the attached
+// credential's name (empty for public sources where credential_id is null).
+func sourceEnrichment() func(*gorm.DB) *gorm.DB {
+	return WithEnrichment("sources",
+		ActorJoin("created_by"),
+		NameJoin("credential_id", "credentials"),
+	)
 }
 
 func (s *SourceStore) Update(ctx context.Context, src *model.Source, fields map[string]any) (*model.Source, error) {
