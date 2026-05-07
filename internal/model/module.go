@@ -38,6 +38,11 @@ func ModuleTypeFromProto(t modulev1.ModuleType) string {
 	return moduleTypeFromProto[t]
 }
 
+func ModuleTypeToProto(t string) (modulev1.ModuleType, bool) {
+	v, ok := moduleTypeToProto[t]
+	return v, ok
+}
+
 var moduleSourceCompat = map[string]map[string]bool{
 	ModuleTypeTerraform: {
 		SourceTypeGit:       true,
@@ -76,10 +81,9 @@ type Module struct {
 	DeletedAt      gorm.DeletedAt `gorm:"index"`
 	CreatedByName  string         `gorm:"->;column:created_by_name"`
 	CreatedByEmail string         `gorm:"->;column:created_by_email"`
+	SourceName     string         `gorm:"->;column:source_id_name"`
 }
 
-// moduleNameRegex permits slug-style segments separated by /, e.g.
-// "platform/postgres". Mirrors the migration's CHECK constraint.
 var moduleNameRegex = regexp.MustCompile(`^[a-z][a-z0-9-]*(/[a-z][a-z0-9-]*)*$`)
 
 func (m *Module) Validate() error {
@@ -112,6 +116,7 @@ func (m *Module) ToProto() *modulev1.Module {
 		Description: m.Description,
 		Type:        moduleTypeToProto[m.Type],
 		SourceId:    m.SourceId.String(),
+		SourceName:  m.SourceName,
 		Ref:         m.Ref,
 		Root:        m.Root,
 		Path:        m.Path,

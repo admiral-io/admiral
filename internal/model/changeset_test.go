@@ -22,7 +22,7 @@ func TestChangeSetEntryValidateDependsOn(t *testing.T) {
 			name: "create accepts slug deps",
 			entry: ChangeSetEntry{
 				ChangeSetId:   csID,
-				ComponentSlug: "database",
+				ComponentName: "database",
 				ChangeType:    ChangeSetEntryTypeCreate,
 				ModuleId:      &modID,
 				DependsOn:     pq.StringArray{"network", "security-group"},
@@ -32,7 +32,7 @@ func TestChangeSetEntryValidateDependsOn(t *testing.T) {
 			name: "create rejects non-slug deps",
 			entry: ChangeSetEntry{
 				ChangeSetId:   csID,
-				ComponentSlug: "database",
+				ComponentName: "database",
 				ChangeType:    ChangeSetEntryTypeCreate,
 				ModuleId:      &modID,
 				DependsOn:     pq.StringArray{"123-leading-digit"},
@@ -44,7 +44,7 @@ func TestChangeSetEntryValidateDependsOn(t *testing.T) {
 			entry: ChangeSetEntry{
 				ChangeSetId:   csID,
 				ComponentId:   &compID,
-				ComponentSlug: "database",
+				ComponentName: "database",
 				ChangeType:    ChangeSetEntryTypeUpdate,
 				DependsOn:     pq.StringArray{"network"},
 			},

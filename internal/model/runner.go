@@ -122,7 +122,7 @@ type Runner struct {
 }
 
 func (r *Runner) Validate() error {
-	if err := ValidateSlug(r.Name); err != nil {
+	if err := ValidateName(r.Name); err != nil {
 		return fmt.Errorf("invalid name: %w", err)
 	}
 	if err := r.Labels.Validate(); err != nil {

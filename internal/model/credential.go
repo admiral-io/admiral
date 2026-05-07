@@ -220,7 +220,7 @@ type Credential struct {
 }
 
 func (c *Credential) Validate() error {
-	if err := ValidateSlug(c.Name); err != nil {
+	if err := ValidateName(c.Name); err != nil {
 		return fmt.Errorf("invalid name: %w", err)
 	}
 	switch c.Type {

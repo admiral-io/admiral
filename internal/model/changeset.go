@@ -58,8 +58,30 @@ const (
 	ChangeSetEntryTypeOrphan  = "ORPHAN"
 )
 
-// DisplayIDPrefixChangeSet is the typed prefix for changeset display IDs
-// (e.g. cs-3k7m9p2q4rvw). Used with displayid.Generate / displayid.Is.
+var changeSetStatusToProto = map[string]changesetv1.ChangeSetStatus{
+	ChangeSetStatusOpen:      changesetv1.ChangeSetStatus_CHANGE_SET_STATUS_OPEN,
+	ChangeSetStatusDeployed:  changesetv1.ChangeSetStatus_CHANGE_SET_STATUS_DEPLOYED,
+	ChangeSetStatusDiscarded: changesetv1.ChangeSetStatus_CHANGE_SET_STATUS_DISCARDED,
+}
+
+var changeSetEntryTypeToProto = map[string]changesetv1.ChangeSetEntryType{
+	ChangeSetEntryTypeCreate:  changesetv1.ChangeSetEntryType_CHANGE_SET_ENTRY_TYPE_CREATE,
+	ChangeSetEntryTypeUpdate:  changesetv1.ChangeSetEntryType_CHANGE_SET_ENTRY_TYPE_UPDATE,
+	ChangeSetEntryTypeDestroy: changesetv1.ChangeSetEntryType_CHANGE_SET_ENTRY_TYPE_DESTROY,
+	ChangeSetEntryTypeOrphan:  changesetv1.ChangeSetEntryType_CHANGE_SET_ENTRY_TYPE_ORPHAN,
+}
+
+var changeSetEntryTypeFromProto = map[changesetv1.ChangeSetEntryType]string{
+	changesetv1.ChangeSetEntryType_CHANGE_SET_ENTRY_TYPE_CREATE:  ChangeSetEntryTypeCreate,
+	changesetv1.ChangeSetEntryType_CHANGE_SET_ENTRY_TYPE_UPDATE:  ChangeSetEntryTypeUpdate,
+	changesetv1.ChangeSetEntryType_CHANGE_SET_ENTRY_TYPE_DESTROY: ChangeSetEntryTypeDestroy,
+	changesetv1.ChangeSetEntryType_CHANGE_SET_ENTRY_TYPE_ORPHAN:  ChangeSetEntryTypeOrphan,
+}
+
+func ChangeSetEntryTypeFromProto(p changesetv1.ChangeSetEntryType) string {
+	return changeSetEntryTypeFromProto[p]
+}
+
 const DisplayIDPrefixChangeSet = "cs"
 
 func IsTerminalChangeSetStatus(s string) bool {
@@ -130,7 +152,7 @@ func (cs *ChangeSet) ToProto(entries []ChangeSetEntry, varEntries []ChangeSetVar
 		ApplicationName: cs.ApplicationName,
 		EnvironmentId:   cs.EnvironmentId.String(),
 		EnvironmentName: cs.EnvironmentName,
-		Status:          cs.Status,
+		Status:          changeSetStatusToProto[cs.Status],
 		Title:           cs.Title,
 		Description:     cs.Description,
 		CreatedBy: &commonv1.ActorRef{
@@ -166,7 +188,7 @@ type ChangeSetEntry struct {
 	Id             uuid.UUID      `gorm:"type:uuid;default:gen_random_uuid();primaryKey"`
 	ChangeSetId    uuid.UUID      `gorm:"type:uuid;not null;index"`
 	ComponentId    *uuid.UUID     `gorm:"type:uuid"`
-	ComponentSlug  string         `gorm:"not null"`
+	ComponentName  string         `gorm:"column:component_name;not null"`
 	ChangeType     string         `gorm:"not null"`
 	ModuleId       *uuid.UUID     `gorm:"type:uuid"`
 	Version        *string        `gorm:"type:text"`
@@ -181,8 +203,8 @@ func (e *ChangeSetEntry) Validate() error {
 	if e.ChangeSetId == uuid.Nil {
 		return fmt.Errorf("change_set_id is required")
 	}
-	if err := ValidateSlug(e.ComponentSlug); err != nil {
-		return fmt.Errorf("invalid component_slug: %w", err)
+	if err := ValidateName(e.ComponentName); err != nil {
+		return fmt.Errorf("invalid component_name: %w", err)
 	}
 
 	switch e.ChangeType {
@@ -228,7 +250,7 @@ func (e *ChangeSetEntry) Validate() error {
 		return fmt.Errorf("invalid change_type: %s", e.ChangeType)
 	}
 	for _, dep := range e.DependsOn {
-		if err := ValidateSlug(dep); err != nil {
+		if err := ValidateName(dep); err != nil {
 			return fmt.Errorf("invalid depends_on entry %q: %w", dep, err)
 		}
 	}
@@ -239,8 +261,8 @@ func (e *ChangeSetEntry) ToProto() *changesetv1.ChangeSetEntry {
 	out := &changesetv1.ChangeSetEntry{
 		Id:            e.Id.String(),
 		ChangeSetId:   e.ChangeSetId.String(),
-		ComponentSlug: e.ComponentSlug,
-		ChangeType:    e.ChangeType,
+		ComponentName: e.ComponentName,
+		ChangeType:    changeSetEntryTypeToProto[e.ChangeType],
 		DependsOn:     []string(e.DependsOn),
 		CreatedAt:     timestamppb.New(e.CreatedAt),
 		UpdatedAt:     timestamppb.New(e.UpdatedAt),

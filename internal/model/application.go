@@ -26,7 +26,7 @@ type Application struct {
 }
 
 func (app *Application) Validate() error {
-	if err := ValidateSlug(app.Name); err != nil {
+	if err := ValidateName(app.Name); err != nil {
 		return fmt.Errorf("invalid name: %w", err)
 	}
 	if err := app.Labels.Validate(); err != nil {

@@ -3,6 +3,7 @@ package model
 import (
 	"encoding/json"
 	"fmt"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -14,6 +15,8 @@ import (
 	runnerv1 "go.admiral.io/sdk/proto/admiral/runner/v1"
 	variablev1 "go.admiral.io/sdk/proto/admiral/variable/v1"
 )
+
+var userVariableKeyRegex = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]{0,62}$`)
 
 const (
 	VariableTypeString  = "STRING"
@@ -52,7 +55,7 @@ func VariableTypeFromProto(t variablev1.VariableType) string {
 
 type Variable struct {
 	Id             uuid.UUID `gorm:"type:uuid;default:gen_random_uuid();primaryKey"`
-	Key            string    `gorm:"type:varchar(63);not null"`
+	Key            string    `gorm:"type:text;not null"`
 	Value          string    `gorm:"type:text;not null;default:''"`
 	Sensitive      bool      `gorm:"not null;default:false"`
 	Type           string    `gorm:"type:text;not null;default:'STRING'"`
@@ -96,8 +99,8 @@ func (v *Variable) Validate() error {
 	if v.Key == "" {
 		return fmt.Errorf("key is required")
 	}
-	if len(v.Key) > 63 {
-		return fmt.Errorf("key must be 63 characters or less")
+	if !userVariableKeyRegex.MatchString(v.Key) {
+		return fmt.Errorf("key must start with a letter or underscore and contain only letters, digits, and underscores (max 63 chars)")
 	}
 	if err := ValidateVariableValue(v.Type, v.Value); err != nil {
 		return err
@@ -147,14 +150,14 @@ func ValidateVariableValue(varType, value string) error {
 
 func VariablesFromEngineOutputs(
 	outputs map[string]*runnerv1.EngineOutput,
-	componentSlug string,
+	componentName string,
 	appID, envID uuid.UUID,
 	createdBy string,
 ) []Variable {
 	vars := make([]Variable, 0, len(outputs))
 	for name, out := range outputs {
 		vars = append(vars, Variable{
-			Key:           componentSlug + "." + name,
+			Key:           componentName + "." + name,
 			Value:         out.GetValue(),
 			Sensitive:     out.GetSensitive(),
 			Type:          tfTypeToVariableType(out.GetType()),

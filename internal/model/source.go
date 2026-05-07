@@ -254,10 +254,11 @@ type Source struct {
 	DeletedAt      gorm.DeletedAt `gorm:"index"`
 	CreatedByName  string         `gorm:"->;column:created_by_name"`
 	CreatedByEmail string         `gorm:"->;column:created_by_email"`
+	CredentialName string         `gorm:"->;column:credential_id_name"`
 }
 
 func (s *Source) Validate() error {
-	if err := ValidateSlug(s.Name); err != nil {
+	if err := ValidateName(s.Name); err != nil {
 		return fmt.Errorf("invalid name: %w", err)
 	}
 	switch s.Type {
@@ -284,17 +285,18 @@ func (s *Source) Validate() error {
 
 func (s *Source) ToProto() *sourcev1.Source {
 	out := &sourcev1.Source{
-		Id:            s.Id.String(),
-		Name:          s.Name,
-		Description:   s.Description,
-		Type:          sourceTypeToProto[s.Type],
-		Url:           s.URL,
-		Catalog:       s.Catalog,
-		Labels:        map[string]string(s.Labels),
-		LastTestError: s.LastTestError,
-		CreatedBy:     &commonv1.ActorRef{Id: s.CreatedBy, DisplayName: s.CreatedByName, Email: s.CreatedByEmail},
-		CreatedAt:     timestamppb.New(s.CreatedAt),
-		UpdatedAt:     timestamppb.New(s.UpdatedAt),
+		Id:             s.Id.String(),
+		Name:           s.Name,
+		Description:    s.Description,
+		Type:           sourceTypeToProto[s.Type],
+		Url:            s.URL,
+		Catalog:        s.Catalog,
+		Labels:         map[string]string(s.Labels),
+		LastTestError:  s.LastTestError,
+		CredentialName: s.CredentialName,
+		CreatedBy:      &commonv1.ActorRef{Id: s.CreatedBy, DisplayName: s.CreatedByName, Email: s.CreatedByEmail},
+		CreatedAt:      timestamppb.New(s.CreatedAt),
+		UpdatedAt:      timestamppb.New(s.UpdatedAt),
 	}
 
 	if s.CredentialId != nil {

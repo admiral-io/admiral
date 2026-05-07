@@ -96,11 +96,70 @@ func (s *ChangeSummary) ToProto() *runv1.ChangeSummary {
 	}
 }
 
+const (
+	RevisionPhasePlan  = "PLAN"
+	RevisionPhaseApply = "APPLY"
+)
+
+var revisionChangeTypeToProto = map[string]runv1.RevisionChangeType{
+	RevisionChangeTypeCreate:   runv1.RevisionChangeType_REVISION_CHANGE_TYPE_CREATE,
+	RevisionChangeTypeUpdate:   runv1.RevisionChangeType_REVISION_CHANGE_TYPE_UPDATE,
+	RevisionChangeTypeDestroy:  runv1.RevisionChangeType_REVISION_CHANGE_TYPE_DESTROY,
+	RevisionChangeTypeRecreate: runv1.RevisionChangeType_REVISION_CHANGE_TYPE_RECREATE,
+	RevisionChangeTypeImport:   runv1.RevisionChangeType_REVISION_CHANGE_TYPE_IMPORT,
+	RevisionChangeTypeNoChange: runv1.RevisionChangeType_REVISION_CHANGE_TYPE_NO_CHANGE,
+}
+
+var revisionPhaseToProto = map[string]runv1.RevisionPhase{
+	RevisionPhasePlan:  runv1.RevisionPhase_REVISION_PHASE_PLAN,
+	RevisionPhaseApply: runv1.RevisionPhase_REVISION_PHASE_APPLY,
+}
+
+var revisionPhaseFromProto = map[runv1.RevisionPhase]string{
+	runv1.RevisionPhase_REVISION_PHASE_PLAN:  RevisionPhasePlan,
+	runv1.RevisionPhase_REVISION_PHASE_APPLY: RevisionPhaseApply,
+}
+
+func RevisionPhaseFromProto(p runv1.RevisionPhase) string {
+	return revisionPhaseFromProto[p]
+}
+
+func RevisionStatusToProto(s string) runv1.RevisionStatus {
+	return revisionStatusToProto[s]
+}
+
+func availablePhasesToProto(phases pq.StringArray) []runv1.RevisionPhase {
+	if len(phases) == 0 {
+		return nil
+	}
+	out := make([]runv1.RevisionPhase, 0, len(phases))
+	for _, p := range phases {
+		if v, ok := revisionPhaseToProto[p]; ok {
+			out = append(out, v)
+		}
+	}
+	return out
+}
+
+func PhaseFromJobType(jobType string) string {
+	switch jobType {
+	case JobTypePlan, JobTypeDestroyPlan:
+		return RevisionPhasePlan
+	case JobTypeApply, JobTypeDestroyApply:
+		return RevisionPhaseApply
+	}
+	return ""
+}
+
+func IsValidRevisionPhase(s string) bool {
+	return s == RevisionPhasePlan || s == RevisionPhaseApply
+}
+
 type Revision struct {
 	Id                 uuid.UUID      `gorm:"type:uuid;default:gen_random_uuid();primaryKey"`
 	RunId              uuid.UUID      `gorm:"type:uuid;not null;index"`
 	ComponentId        uuid.UUID      `gorm:"type:uuid;not null;index"`
-	ComponentSlug      string         `gorm:"column:component_slug;not null"`
+	ComponentName      string         `gorm:"column:component_name;not null"`
 	Kind               string         `gorm:"not null"`
 	Status             string         `gorm:"not null"`
 	ChangeType         string         `gorm:"not null;default:CREATE"`
@@ -115,7 +174,7 @@ type Revision struct {
 	WorkingDirectory   string         `gorm:"type:text;not null;default:''"`
 	ArtifactChecksum   string         `gorm:"type:text;not null;default:''"`
 	ArtifactUrl        string         `gorm:"type:text;not null;default:''"`
-	PlanOutputKey      string         `gorm:"type:text;not null;default:''"`
+	AvailablePhases    pq.StringArray `gorm:"type:text[];not null;default:'{}'"`
 	PlanFileKey        string         `gorm:"type:text;not null;default:''"`
 	PlanSummary        *ChangeSummary `gorm:"type:jsonb"`
 	ErrorMessage       string         `gorm:"type:text;not null;default:''"`
@@ -125,6 +184,19 @@ type Revision struct {
 	CompletedAt        *time.Time
 }
 
+func (r *Revision) HasPhase(phase string) bool {
+	for _, p := range r.AvailablePhases {
+		if p == phase {
+			return true
+		}
+	}
+	return false
+}
+
+func (r *Revision) PhaseStorageKey(phase string) string {
+	return fmt.Sprintf("runs/%s/%s/%s.txt", r.RunId, r.Id, phase)
+}
+
 func (r *Revision) Validate() error {
 	if r.RunId == uuid.Nil {
 		return fmt.Errorf("run_id is required")
@@ -132,8 +204,8 @@ func (r *Revision) Validate() error {
 	if r.ComponentId == uuid.Nil {
 		return fmt.Errorf("component_id is required")
 	}
-	if r.ComponentSlug == "" {
-		return fmt.Errorf("component_slug is required")
+	if r.ComponentName == "" {
+		return fmt.Errorf("component_name is required")
 	}
 	switch r.Kind {
 	case ComponentKindInfrastructure, ComponentKindWorkload:
@@ -171,10 +243,10 @@ func (r *Revision) ToProto() *runv1.Revision {
 		Id:               r.Id.String(),
 		RunId:            r.RunId.String(),
 		ComponentId:      r.ComponentId.String(),
-		ComponentSlug:    r.ComponentSlug,
+		ComponentName:    r.ComponentName,
 		Kind:             revisionKindToProto[r.Kind],
 		Status:           revisionStatusToProto[r.Status],
-		ChangeType:       r.ChangeType,
+		ChangeType:       revisionChangeTypeToProto[r.ChangeType],
 		ModuleId:         r.ModuleId.String(),
 		Version:          r.Version,
 		ResolvedValues:   r.ResolvedValues,
@@ -183,7 +255,7 @@ func (r *Revision) ToProto() *runv1.Revision {
 		WorkingDirectory: r.WorkingDirectory,
 		ArtifactChecksum: r.ArtifactChecksum,
 		ArtifactUrl:      r.ArtifactUrl,
-		HasPlanOutput:    r.PlanOutputKey != "",
+		AvailablePhases:  availablePhasesToProto(r.AvailablePhases),
 		PlanSummary:      r.PlanSummary.ToProto(),
 		ErrorMessage:     r.ErrorMessage,
 		RetryCount:       r.RetryCount,
@@ -264,7 +336,7 @@ func DeriveRevisionUpdate(jobType, reportedStatus string, result *runnerv1.JobRe
 
 // IsRevisionSatisfiedFor decides whether a blocker has reached a status that
 // lets a downstream job proceed. requiresOutputs is true when the downstream's
-// values_template references the blocker's outputs via {{ .component.<slug>.* }};
+// values_template references the blocker's outputs via {{ .component.<name>.* }};
 // in that case the blocker must be SUCCEEDED (apply done, outputs captured),
 // because plan-time alone produces no concrete output values for substitution.
 // Without an output reference, plan jobs unblock once the blocker reaches

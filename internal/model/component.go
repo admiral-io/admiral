@@ -35,6 +35,28 @@ var componentKindToProto = map[string]componentv1.ComponentKind{
 	ComponentKindWorkload:       componentv1.ComponentKind_COMPONENT_KIND_WORKLOAD,
 }
 
+var componentDesiredStateToProto = map[string]componentv1.ComponentDesiredState{
+	ComponentDesiredStateActive:    componentv1.ComponentDesiredState_COMPONENT_DESIRED_STATE_ACTIVE,
+	ComponentDesiredStateDestroy:   componentv1.ComponentDesiredState_COMPONENT_DESIRED_STATE_DESTROY,
+	ComponentDesiredStateOrphan:    componentv1.ComponentDesiredState_COMPONENT_DESIRED_STATE_ORPHAN,
+	ComponentDesiredStateDestroyed: componentv1.ComponentDesiredState_COMPONENT_DESIRED_STATE_DESTROYED,
+}
+
+var componentDesiredStateFromProto = map[componentv1.ComponentDesiredState]string{
+	componentv1.ComponentDesiredState_COMPONENT_DESIRED_STATE_ACTIVE:    ComponentDesiredStateActive,
+	componentv1.ComponentDesiredState_COMPONENT_DESIRED_STATE_DESTROY:   ComponentDesiredStateDestroy,
+	componentv1.ComponentDesiredState_COMPONENT_DESIRED_STATE_ORPHAN:    ComponentDesiredStateOrphan,
+	componentv1.ComponentDesiredState_COMPONENT_DESIRED_STATE_DESTROYED: ComponentDesiredStateDestroyed,
+}
+
+func ComponentDesiredStateFromProto(p componentv1.ComponentDesiredState) string {
+	return componentDesiredStateFromProto[p]
+}
+
+func ComponentDesiredStateToProto(s string) componentv1.ComponentDesiredState {
+	return componentDesiredStateToProto[s]
+}
+
 type ComponentOutput struct {
 	Name          string `json:"name"`
 	ValueTemplate string `json:"value_template"`
@@ -106,7 +128,6 @@ type Component struct {
 	ApplicationId      uuid.UUID        `gorm:"type:uuid;not null;index"`
 	EnvironmentId      uuid.UUID        `gorm:"type:uuid;not null;index"`
 	Name               string           `gorm:"not null"`
-	Slug               string           `gorm:"not null"`
 	Description        string           `gorm:"type:text"`
 	Kind               string           `gorm:"not null"`
 	DesiredState       string           `gorm:"not null;default:ACTIVE"`
@@ -131,11 +152,8 @@ func (c *Component) Validate() error {
 	if c.EnvironmentId == uuid.Nil {
 		return fmt.Errorf("environment_id is required")
 	}
-	if err := ValidateSlug(c.Name); err != nil {
+	if err := ValidateName(c.Name); err != nil {
 		return fmt.Errorf("invalid name: %w", err)
-	}
-	if err := ValidateSlug(c.Slug); err != nil {
-		return fmt.Errorf("invalid slug: %w", err)
 	}
 	switch c.Kind {
 	case ComponentKindInfrastructure, ComponentKindWorkload:
@@ -164,7 +182,7 @@ func (c *Component) Validate() error {
 		return fmt.Errorf("invalid values_template: %w", err)
 	}
 	for _, dep := range c.DependsOn {
-		if err := ValidateSlug(dep); err != nil {
+		if err := ValidateName(dep); err != nil {
 			return fmt.Errorf("invalid depends_on entry %q: %w", dep, err)
 		}
 	}
@@ -177,10 +195,9 @@ func (c *Component) ToProto() *componentv1.Component {
 		ApplicationId:      c.ApplicationId.String(),
 		EnvironmentId:      c.EnvironmentId.String(),
 		Name:               c.Name,
-		Slug:               c.Slug,
 		Description:        c.Description,
 		Kind:               componentKindToProto[c.Kind],
-		DesiredState:       c.DesiredState,
+		DesiredState:       componentDesiredStateToProto[c.DesiredState],
 		DeletionProtection: c.DeletionProtection,
 		ModuleId:           c.ModuleId.String(),
 		Version:            c.Version,
@@ -213,9 +230,9 @@ func ValidateValuesTemplate(s string) error {
 
 var slugRegex = regexp.MustCompile(`^[a-z]([a-z0-9-]{0,61}[a-z0-9])?$`)
 
-func ValidateSlug(s string) error {
+func ValidateName(s string) error {
 	if !slugRegex.MatchString(s) {
-		return fmt.Errorf("invalid slug %q: must be lowercase alphanumeric with hyphens, start with a letter", s)
+		return fmt.Errorf("invalid name %q: must be lowercase alphanumeric with hyphens, start with a letter", s)
 	}
 	return nil
 }

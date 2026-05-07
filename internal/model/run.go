@@ -24,6 +24,8 @@ const (
 	RunStatusSuperseded      = "SUPERSEDED"
 )
 
+const DisplayIDPrefixRun = "run"
+
 var runStatusToProto = map[string]runv1.RunStatus{
 	RunStatusPending:         runv1.RunStatus_RUN_STATUS_PENDING,
 	RunStatusQueued:          runv1.RunStatus_RUN_STATUS_QUEUED,
@@ -60,36 +62,49 @@ func (r *Run) Validate() error {
 }
 
 type Run struct {
-	Id               uuid.UUID  `gorm:"type:uuid;default:gen_random_uuid();primaryKey"`
-	ApplicationId    uuid.UUID  `gorm:"type:uuid;not null;index"`
-	EnvironmentId    uuid.UUID  `gorm:"type:uuid;not null;index"`
-	Status           string     `gorm:"not null"`
-	TriggeredBy      string     `gorm:"not null"`
-	Message          string     `gorm:"type:text;not null;default:''"`
-	Destroy          bool       `gorm:"not null;default:false"`
-	SourceRunId      *uuid.UUID `gorm:"type:uuid"`
-	ChangeSetId      *uuid.UUID `gorm:"type:uuid"`
-	CreatedAt        time.Time
-	UpdatedAt        time.Time
-	CompletedAt      *time.Time
-	TriggeredByName  string `gorm:"->;column:triggered_by_name"`
-	TriggeredByEmail string `gorm:"->;column:triggered_by_email"`
+	Id                 uuid.UUID  `gorm:"type:uuid;default:gen_random_uuid();primaryKey"`
+	DisplayId          string     `gorm:"type:text;not null;uniqueIndex;column:display_id"`
+	ApplicationId      uuid.UUID  `gorm:"type:uuid;not null;index"`
+	EnvironmentId      uuid.UUID  `gorm:"type:uuid;not null;index"`
+	Status             string     `gorm:"not null"`
+	TriggeredBy        string     `gorm:"not null"`
+	Message            string     `gorm:"type:text;not null;default:''"`
+	Destroy            bool       `gorm:"not null;default:false"`
+	SourceRunId        *uuid.UUID `gorm:"type:uuid"`
+	ChangeSetId        *uuid.UUID `gorm:"type:uuid"`
+	CreatedAt          time.Time
+	UpdatedAt          time.Time
+	CompletedAt        *time.Time
+	TriggeredByName    string `gorm:"->;column:triggered_by_name"`
+	TriggeredByEmail   string `gorm:"->;column:triggered_by_email"`
+	ApplicationName    string `gorm:"->;column:application_id_name"`
+	EnvironmentName    string `gorm:"->;column:environment_id_name"`
+	ChangeSetDisplayId string `gorm:"->;column:change_set_id_display_id"`
+	ChangeSetTitle     string `gorm:"->;column:change_set_id_title"`
 }
 
 func (r *Run) ToProto(summary *runv1.RevisionSummary) *runv1.Run {
 	proto := &runv1.Run{
-		Id:              r.Id.String(),
-		ApplicationId:   r.ApplicationId.String(),
-		EnvironmentId:   r.EnvironmentId.String(),
-		Status:          runStatusToProto[r.Status],
-		TriggeredBy:     &commonv1.ActorRef{Id: r.TriggeredBy, DisplayName: r.TriggeredByName, Email: r.TriggeredByEmail},
-		Message:         r.Message,
-		Destroy:         r.Destroy,
-		RevisionSummary: summary,
-		CreatedAt:       timestamppb.New(r.CreatedAt),
+		Id:                 r.Id.String(),
+		DisplayId:          r.DisplayId,
+		ApplicationId:      r.ApplicationId.String(),
+		ApplicationName:    r.ApplicationName,
+		EnvironmentId:      r.EnvironmentId.String(),
+		EnvironmentName:    r.EnvironmentName,
+		Status:             runStatusToProto[r.Status],
+		TriggeredBy:        &commonv1.ActorRef{Id: r.TriggeredBy, DisplayName: r.TriggeredByName, Email: r.TriggeredByEmail},
+		Message:            r.Message,
+		Destroy:            r.Destroy,
+		ChangeSetDisplayId: r.ChangeSetDisplayId,
+		ChangeSetTitle:     r.ChangeSetTitle,
+		RevisionSummary:    summary,
+		CreatedAt:          timestamppb.New(r.CreatedAt),
 	}
 	if r.SourceRunId != nil {
 		proto.SourceRunId = r.SourceRunId.String()
+	}
+	if r.ChangeSetId != nil {
+		proto.ChangeSetId = r.ChangeSetId.String()
 	}
 	if r.CompletedAt != nil {
 		proto.CompletedAt = timestamppb.New(*r.CompletedAt)

@@ -94,7 +94,7 @@ func (env *Environment) Validate() error {
 	if env.ApplicationId == uuid.Nil {
 		return fmt.Errorf("application_id is required")
 	}
-	if err := ValidateSlug(env.Name); err != nil {
+	if err := ValidateName(env.Name); err != nil {
 		return fmt.Errorf("invalid name: %w", err)
 	}
 	if err := env.Labels.Validate(); err != nil {
